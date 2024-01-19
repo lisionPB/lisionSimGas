@@ -45,6 +45,7 @@ class Pruefung(QObject):
         
         # Bestimme ReglerAuswahl
         self._reglerAuswahl = self._rs.calc_reglerAuswahl(fluss)
+        self._rs.set_reglerAuswahl(self._reglerAuswahl)
         self._reglerAuswahlArbeitsBereichMax = self.calc_gesArbeitsBereichMax()
         
         self.__gesZeit = gesZeit
@@ -62,10 +63,10 @@ class Pruefung(QObject):
         """
         
         if(self._reglerAuswahlArbeitsBereichMax > 0):
-            self._gsr.start_Regler(log=False)
+            self._gsr.start_Regler(self._reglerAuswahl, log=False)
             anteil = self._gsr.calc_stellwert(0) / self._reglerAuswahlArbeitsBereichMax
             
-            print (anteil)
+            # print (anteil)
             
             if (anteil > 0):
                 # Prüfung kann gestartet werden
@@ -91,7 +92,7 @@ class Pruefung(QObject):
         
         """
         if(self._reglerAuswahlArbeitsBereichMax > 0):
-            stellwert = self._gsr.start_Regler()
+            stellwert = self._gsr.start_Regler(self._reglerAuswahl)
             
             # Erstes Setzen des Sollwertes            
             anteil = stellwert / self._reglerAuswahlArbeitsBereichMax
@@ -237,3 +238,6 @@ class Pruefung(QObject):
     
     def get_pruefLaufMenge(self):
         return self._gsr.totalFlowSum
+    
+    def get_pruefCurrentFlowSum(self):
+        return self._gsr.lastFlow

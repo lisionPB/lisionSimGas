@@ -32,7 +32,7 @@ class GesamtSollwertRegler:
         self.lastUpdate_SystemTime = 0
                 
         
-    def start_Regler(self, log=True) -> float:
+    def start_Regler(self, reglerAuswahl, log=True) -> float:
         """Startet den Regler -> Werte werden zurückgesetzt
         
         Returns:
@@ -40,6 +40,8 @@ class GesamtSollwertRegler:
         """
         
         self.reset_Regler()
+
+        self._reglerAuswahl = reglerAuswahl
 
         if(log):
             self.create_logFile()
@@ -79,7 +81,10 @@ class GesamtSollwertRegler:
             
         """
         
-        # Aktualisiere bisher erreichte Gasmenge
+        # Aktualisiere bisher erreichte Gasmenge von aktiven Reglern
+        
+        
+        
         self.update_totalFlowSum(data)
 
         self.lastUpdate_SystemTime = time.time()
@@ -132,7 +137,7 @@ class GesamtSollwertRegler:
         
         self.lastDataTime = t
         
-        currentFlow = calc_dataSum(data)
+        currentFlow = self.calc_dataSum(data)
         deltaFlow = (self.lastFlow + currentFlow) / 2.0 * (dt/60.0) # Gasfluss seit letzter Messung in Gramm mit linearer Approx.
         self.totalFlowSum  += deltaFlow
         
@@ -201,23 +206,23 @@ class GesamtSollwertRegler:
             except:
                 print ("Schreiben in LOG-Datei fehlgeschlagen.")
         
+                
             
+    def calc_dataSum(self, data) -> float:
+        """Summiert den Fluss aller Regel-Stellglieder auf
+
+        Args:
+            data (dict): Fluss-Messwerte der Regel-Stellglieder
+
+        Returns:
+            float: Summe der Flüsse aller Regel-Stellglieder [g/min]
+        """
+        messSum = 0
         
-def calc_dataSum(data) -> float:
-    """Summiert den Fluss aller Regel-Stellglieder auf
-
-    Args:
-        data (dict): Fluss-Messwerte der Regel-Stellglieder
-
-    Returns:
-        float: Summe der Flüsse aller Regel-Stellglieder [g/min]
-    """
-    messSum = 0
-    
-    for d in data:
-        if d != DataManager.TIME_LABEL:
-            messSum += data[d]
-    return messSum        
+        for d in data:
+            if d != DataManager.TIME_LABEL and d in self._reglerAuswahl:
+                messSum += data[d]
+        return messSum        
 
 
     

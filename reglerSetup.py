@@ -31,9 +31,9 @@ class SimGasRegler(hws.HWSetup):
     
     ALLOW_IGNORE_PUFFER = False
     
-    # TESTMODE FÜR REGLERAUSWAHL
-    # CALC_REGLERAUSWAHL_TEST = True # Ermöglicht Verwenden von Reglern für die Auswahl, auch wenn diese nicht verbunden sind. 
-            
+    
+    
+    
     def __init__(self):
         super().__init__()
         
@@ -41,6 +41,10 @@ class SimGasRegler(hws.HWSetup):
         
         # Laden der Reglerkonfiguration und setzen zugehörigen Ports
         self._load_reglerConfig(self.CONFIG_FILE) # -> self._ports wird gefüllt.
+        
+        
+        # TESTFUNKTION zu
+        # self.test_reglerStellwerteBeiKonfiguration()
         
         # Definition der Channel über Reglerkonfig + Umgebungssensoren
         chNames = []
@@ -63,6 +67,7 @@ class SimGasRegler(hws.HWSetup):
         self.__minGesStellwert = self.calc_min_gesSollwert()
         
         self.__gesSoll = 0
+        self.__reglerAuswahl = None
         
         # Sicherungseigenschaften
         # self.__safety_setZero = self.safetyCheck_allConnectedAndZero()
@@ -86,6 +91,26 @@ class SimGasRegler(hws.HWSetup):
             self._zuweisen_Port(conf[d]["port"], r)
 
         f.close()
+
+
+
+
+    def test_reglerStellwerteBeiKonfiguration(self):
+        maxStellwert = 1300
+        minStellwert = 0
+        resolution = 10
+        
+        for s in range(minStellwert  * resolution, maxStellwert * resolution, 1):
+            stellwert = s/resolution
+            
+            self.log_csv_stellwerte(stellwert, self.calc_reglerAuswahl(stellwert), "reglerauswahltest.csv")
+            
+        print ("regerauswahltest abgeschlossen.")
+        
+        
+        
+        
+        
     
     
     def save_reglerConfig(self):
@@ -153,7 +178,7 @@ class SimGasRegler(hws.HWSetup):
     
     def select_reglerStellglieder_zentriert(self, totalSoll) -> dict:
         """
-        Berechnet eine Auswahl der aktiven Reglern, unter der die Abweichung aller Stellwerte der ausgewählten Stellglieder vom Mittel
+        Berechnet eine Auswahl aktiver Regler, unter der die Abweichung ihrer Stellwerte für den Gesamtsollwert der ausgewählten Stellglieder vom Mittel
         ihrer jeweiligen Arbeitsbereiche minimal ist.
 
         Args:
@@ -196,7 +221,7 @@ class SimGasRegler(hws.HWSetup):
                         perc = totalSoll / totalActiveMax
                         if(abs(bestPerc - 0.5) > abs(perc - 0.5)):
                             # Überprüfe, ob Lösung gültig
-                            if (perc > rgl.Regler_Dvr.ARBEITSBEREICH_PUFFER and perc <= 1.0):
+                            if (perc > rgl.Regler_Dvr.ARBEITSBEREICH_PUFFER and perc <= 1.1): # TODO: Arbeitsbereich Überschreitung abstimmen
                                 bestPerc = perc
                                 for i in range (len(active)):
                                     bestSet[i] = active[i]
@@ -216,10 +241,12 @@ class SimGasRegler(hws.HWSetup):
         else:
             return {}
         
-        
+    
+    def set_reglerAuswahl(self, reglerAuswahl):
+        self.__reglerAuswahl = reglerAuswahl
             
         
-    def log_csv_stellwerte(totalSoll, stellwerte, pfad):
+    def log_csv_stellwerte(self, totalSoll, stellwerte, pfad):
         """Testfunktion zur Auswahl der Regler nach gegebenem Sollwert
 
         Args:
@@ -390,17 +417,19 @@ class SimGasRegler(hws.HWSetup):
         Returns:
             Float: Messwerte aller Regelstellglieder + Umgebungssensoren. None, falls keine gültigen Messwerte vorliegen
         """
-        messsum = 0
+        messsum = 0 # Summer aller aktiven Regler (Reglerauswahl bei Prüfung)
         mess = super()._read_Messwerte()
         soll = {}
         
         busy = False
         if(mess != None):
             for p in mess:
-                if (mess [p] != "BUSY"):
-                    messsum += mess[p]
-                else:
-                    busy = True
+                print (p)
+                if(self.__reglerAuswahl == None or p in self.__reglerAuswahl):
+                    if (mess [p] != "BUSY"):
+                        messsum += mess[p]
+                    else:
+                        busy = True
                 soll[p + "_SOLL"] = self._ports[p].get_soll()
                 
             for ps in soll:

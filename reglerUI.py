@@ -535,7 +535,10 @@ class ReglerListe_Widget(QGroupBox):
     def update_ReglerListWidget(self):
         for row in self.reglerWidgets:
             self.reglerWidgets[row].update_ReglerWidget()
-        self.sumReglerWidget.update_ReglerWidget(totalSet=self.__setup.get_GesamtSollWert(), totalIst=self.__setup.get_GesamtIstWert(), hwStatus=self.__setup._hwConnectStatus)     
+        if (self.parent.rmw.pruefWidget.pruefung != None and self.parent.rmw.pruefWidget.pruefung._state == self.parent.rmw.pruefWidget.pruefung.PRUEF_STATE_RUNNING):
+            self.sumReglerWidget.update_ReglerWidget(totalSet=self.__setup.get_GesamtSollWert(), totalIst=self.parent.rmw.pruefWidget.pruefung.get_pruefCurrentFlowSum(), hwStatus=self.__setup._hwConnectStatus)             
+        else:
+            self.sumReglerWidget.update_ReglerWidget(totalSet=self.__setup.get_GesamtSollWert(), totalIst=self.__setup.get_GesamtIstWert(), hwStatus=self.__setup._hwConnectStatus)     
 
 
     def set_secLockOpen(self, open):
