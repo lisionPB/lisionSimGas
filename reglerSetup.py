@@ -424,7 +424,7 @@ class SimGasRegler(hws.HWSetup):
         busy = False
         if(mess != None):
             for p in mess:
-                print (p)
+                # print (p)
                 if(self.__reglerAuswahl == None or p in self.__reglerAuswahl):
                     if (mess [p] != "BUSY"):
                         messsum += mess[p]
