@@ -25,8 +25,8 @@ class HWSetup(QObject):
     Verwende _start_MessSchleife(self) um Messschleife zu starten
     """
     
-    TEST_MODE = False    # True setzen, um Verbindungstests zur Hardware zu umgehen
-    EMULATION = False    # True setzen, um Virtuelle Daten zum Testen der Anzeige zu generieren
+    TEST_MODE = True    # True setzen, um Verbindungstests zur Hardware zu umgehen
+    EMULATION = True    # True setzen, um Virtuelle Daten zum Testen der Anzeige zu generieren
     
     DEFAULT_SCAN_INTERVAL = 1000
     
@@ -45,7 +45,8 @@ class HWSetup(QObject):
         
         self._hwConnectStatus = self.HW_CONNECT_STATUS_FAILURE
         
-        self._ports = {}
+        self._ports = {}            # HW Ports
+        self._virtualPorts = {}     # Über HW Verbundene Submodule
                 
         # Lade Datenmanager
         self.dm = dmgr.DataManager(self._ports)
@@ -127,10 +128,8 @@ class HWSetup(QObject):
                     print ("Fehler beim Auslesen der Messdaten: data=" + str(data))
                     self._hwConnectStatus = self.HW_CONNECT_STATUS_NONE
                     
-                    #print ("---------------------------------------------^")
                     return None
-                
-                #print ("---------------------------------------------^")
+
                 
                 return data
         
@@ -143,6 +142,8 @@ class HWSetup(QObject):
     
     def set_externData(self, extData):
         self.externData = extData
+    
+    
     
     
     def _emulate_Messwerte(self):
@@ -339,5 +340,3 @@ class HW_ConnectThread(QThread):
             
             if(self.hws._hwConnectStatus != lastStatus):
                 self.hws.sig_HWConnectFinished.emit(status)
-            
-            

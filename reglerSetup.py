@@ -9,33 +9,27 @@ from PyQt5 import QtWidgets
 
 import json
 
-import regler_dvr as rgl
-import hwSetup as hws
+import regler_dvr_modbus as rgl
+import hwSetupModbus as hws
 import consoleWidget as cw
 import gesamtSollwertRegler as gsr
 
 
-class SimGasRegler(hws.HWSetup):
+class SimGasRegler(hws.HWSetupModBus):
     """
     Stellt die Verwaltung der Hardware dar.
 
     Args:
         hws (_type_): _description_
     """
- 
- 
-    # CONFIG_FILE = "config.json"
-    # CONFIG_FILE = "config_test_pb.json"
-    CONFIG_FILE = "config_cori.json"
-    # CONFIG_FILE = "config_test.json"   
+  
+    CONFIG_FILE = "config_cori_modbus.json" 
     
     ALLOW_IGNORE_PUFFER = False
     
     
-    
-    
-    def __init__(self):
-        super().__init__()
+    def __init__(self, modbusCtrl):
+        super().__init__( modbusCtrl )
         
         self.protokoll = []
         
@@ -87,12 +81,12 @@ class SimGasRegler(hws.HWSetup):
             kalib = [0.0, 1.0, 0.0, 0.0]
             if("kalibrierung" in conf[d]):
                 kalib = conf[d]["kalibrierung"]
-            r = rgl.Regler_Dvr(d, conf[d]["port"], conf[d]["bereich"], kalib)
-            self._zuweisen_Port(conf[d]["port"], r)
+                
+            r = rgl.Regler_Dvr_ModBus(d, conf[d]["bereich"], kalib, self.modBusCtrl)
+            
+            self._zuweisen_Port(d, r)
 
         f.close()
-
-
 
 
     def test_reglerStellwerteBeiKonfiguration(self):
@@ -109,16 +103,11 @@ class SimGasRegler(hws.HWSetup):
         
         
         
-        
-        
-    
-    
     def save_reglerConfig(self):
         conf = {}
         for p in self._ports:
             # print (p)
             config = {}
-            config["port"] = self._ports[p].get_port()
             config["bereich"] = self._ports[p].get_arbeitsBereich()
             config["kalibrierung"] = self._ports[p].get_kalibrierung()
             conf[self._ports[p].get_name()] = config
@@ -221,7 +210,7 @@ class SimGasRegler(hws.HWSetup):
                         perc = totalSoll / totalActiveMax
                         if(abs(bestPerc - 0.5) > abs(perc - 0.5)):
                             # Überprüfe, ob Lösung gültig
-                            if (perc > rgl.Regler_Dvr.ARBEITSBEREICH_PUFFER and perc <= 1.1): # TODO: Arbeitsbereich Überschreitung abstimmen
+                            if (perc > rgl.Regler_Dvr_ModBus.ARBEITSBEREICH_PUFFER and perc <= 1.1): # TODO: Arbeitsbereich Überschreitung abstimmen
                                 bestPerc = perc
                                 for i in range (len(active)):
                                     bestSet[i] = active[i]
@@ -335,6 +324,8 @@ class SimGasRegler(hws.HWSetup):
         else:
             return self.set_GesamtSollWert(0, None)
 
+
+
     def set_GesamtSollWert(self, anteil, reglerAuswahl, pruefung=False) -> bool:
         """ 1. Schließen aller Regler, wenn anteil = 0
             2. Überprüfung ob Sollwert innerhalb der Systemgrenzen abgebildet werden kann
@@ -362,7 +353,7 @@ class SimGasRegler(hws.HWSetup):
         
         # Überprüfung des Stellwertes auf Grenzen durch Arbeitsbereiche
         
-        print ("anteil: " + str(anteil))
+        # print ("anteil: " + str(anteil))
         
         if(anteil < 0.02):
             if(not pruefung):
@@ -371,7 +362,7 @@ class SimGasRegler(hws.HWSetup):
                 print ("Fehler beim Setzen des Sollwertes: Sollwert liegt unterhalb des Gesamtarbeitsbereichs des Regelsystems!")
                 return False
             else:
-                # Setze Sollwert auf Minimum (0.02)                
+                # In Prüfung: Nicht abbrechen -> Setze Sollwert auf Minimum (0.02)                
                 self.protokoll.append(cw.ProtokollEintrag("Warnung! Sollwert unterschreitet minimalen Stellwert! Stellwert auf untere Grenze gesetzt.", typ=cw.ProtokollEintrag.TYPE_WARNING))
                 print ("Warnung! Sollwert unterschreitet minimalen Stellwert! Stellwert auf untere Grenze gesetzt.")
                 anteil = 0.02
@@ -383,10 +374,10 @@ class SimGasRegler(hws.HWSetup):
                 print ("Fehler beim Setzen des Sollwertes: Sollwert liegt oberhalb des Gesamtarbeitsbereichs des Regelsystems!")
                 return False
             else:
-                # Setze Sollwert auf Maximum (1.0)                
+                # In Prüfung: Nicht abbrechen -> Setze Sollwert auf Maximum (1.0)                
                 self.protokoll.append(cw.ProtokollEintrag("Warnung! Sollwert überschreitet maximalen Stellwert! Stellwert auf obere Grenze gesetzt.", typ=cw.ProtokollEintrag.TYPE_WARNING))
                 print ("Warnung! Sollwert überschreitet maximalen Stellwert! Stellwert auf obere Grenze gesetzt.")
-                anteil = 0.02
+                anteil = 1.0
         
     
         # Setze Stellglieder gleichmäßig Anteil an Gesamtarbeitsbereich
@@ -417,14 +408,24 @@ class SimGasRegler(hws.HWSetup):
         Returns:
             Float: Messwerte aller Regelstellglieder + Umgebungssensoren. None, falls keine gültigen Messwerte vorliegen
         """
-        messsum = 0 # Summer aller aktiven Regler (Reglerauswahl bei Prüfung)
+        
+        # --------------------------
+        
+        = # TODO: Triggern des Auslesens von ModBus FELDKOPPLER und Warten bis Messwerte bereitstehen
+        
+        #
+        #   
+        # --------------------------
+        
         mess = super()._read_Messwerte()
         soll = {}
         
+        
+        # Summe aller aktiven Regler (Reglerauswahl bei Prüfung)
+        messsum = 0 
         busy = False
         if(mess != None):
             for p in mess:
-                # print (p)
                 if(self.__reglerAuswahl == None or p in self.__reglerAuswahl):
                     if (mess [p] != "BUSY"):
                         messsum += mess[p]
@@ -438,7 +439,7 @@ class SimGasRegler(hws.HWSetup):
             if(not busy):
                 mess["GES_IST"] = messsum
             else:
-                # self.dm.get_LastData() and 
+                
                 if(len(self.dm.get_LastData()) > 0 and "GES_IST" in self.dm.get_LastData()): 
                     mess["GES_IST"] = self.dm.get_LastData()["GES_IST"]
                 else:
@@ -450,7 +451,8 @@ class SimGasRegler(hws.HWSetup):
             # Integriere Externe Daten
             for k in self.externData:
                 mess[k] = self.externData[k]
-        
+                
+                
         
         return mess 
 

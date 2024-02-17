@@ -1,13 +1,22 @@
-from PyQt5 import QtCore
+from PyQt5 import QtCore, QtGui, QtWidgets, QtPrintSupport
 from PyQt5.QtWidgets import QGroupBox, QVBoxLayout, QHBoxLayout, QPushButton, QDoubleSpinBox, QLabel
-from PyQt5.QtCore import QTimer
+from PyQt5.QtCore import QTimer, pyqtSignal
 
 
 import pyqtgraph as pg
+import pyqtgraph.exporters as pyexp
 
 import random
 
 import time
+from datetime import datetime
+
+from reportlab.pdfgen import canvas
+from reportlab.lib import utils
+from reportlab.lib.units import cm
+from reportlab.platypus import Frame, Image
+
+#from PIL import Image 
 
 from datamanager import DataManager
 from pruefung import Pruefung
@@ -21,6 +30,8 @@ class PruefWidget(QGroupBox):
     DEFAULT_MASSE_G = 8
     DEFAULT_TOTZEIT_S = 10
     DEFAULT_VORLAUFZEIT_S = 10
+    
+    _sig_pdfSaved = pyqtSignal(str) # "" wenn fehler, sonst Filename
     
     def __init__(self, rs, sms, mw):
         """
@@ -60,9 +71,9 @@ class PruefWidget(QGroupBox):
     
     def init_UI(self):
         
-        ####################################################
-        # KONFIGURATION
-        ###############
+    ####################################################
+    # KONFIGURATION
+    ###############
         
         self.groupConfig = QGroupBox("Konfiguration")
         self.layoutConfig = QVBoxLayout()
@@ -78,7 +89,7 @@ class PruefWidget(QGroupBox):
         
         lZeitLabel = QLabel("Zeit [min]")
         layoutZeit.addWidget(lZeitLabel)
-        lZeitLabel.setFixedWidth(150)
+        lZeitLabel.setFixedWidth(200)
         
         self.sZeitSpinner = QDoubleSpinBox()
         layoutZeit.addWidget(self.sZeitSpinner)
@@ -86,7 +97,7 @@ class PruefWidget(QGroupBox):
         self.sZeitSpinner.setSingleStep(1)
         self.sZeitSpinner.setValue(self.DEFAULT_ZEIT_MIN)
         self.sZeitSpinner.setMinimum(1)
-        self.sZeitSpinner.setFixedWidth(100)
+        self.sZeitSpinner.setFixedWidth(150)
         self.sZeitSpinner.valueChanged.connect(self.calc_initFluss)
             
         
@@ -98,7 +109,7 @@ class PruefWidget(QGroupBox):
         
         lMengeLabel = QLabel("Menge [g]")
         layoutMenge.addWidget(lMengeLabel)
-        lMengeLabel.setFixedWidth(150)
+        lMengeLabel.setFixedWidth(200)
         
         self.sMengeSpinner = QDoubleSpinBox()
         layoutMenge.addWidget(self.sMengeSpinner)
@@ -107,7 +118,7 @@ class PruefWidget(QGroupBox):
         self.sMengeSpinner.setMinimum(0.4)
         self.sMengeSpinner.setMaximum(1250) 
         self.sMengeSpinner.setValue(self.DEFAULT_MASSE_G)
-        self.sMengeSpinner.setFixedWidth(100)
+        self.sMengeSpinner.setFixedWidth(150)
         self.sMengeSpinner.valueChanged.connect(self.calc_initFluss)
         
         # Totzeit für Reglernachführung
@@ -118,7 +129,7 @@ class PruefWidget(QGroupBox):
         
         lTotzeitLabel = QLabel("Totzeit [s]")
         layoutTotzeit.addWidget(lTotzeitLabel)
-        lTotzeitLabel.setFixedWidth(150)
+        lTotzeitLabel.setFixedWidth(200)
         
         self.sTotzeitSpinner = QDoubleSpinBox()
         layoutTotzeit.addWidget(self.sTotzeitSpinner)
@@ -126,7 +137,7 @@ class PruefWidget(QGroupBox):
         self.sTotzeitSpinner.setValue(self.DEFAULT_TOTZEIT_S)
         self.sTotzeitSpinner.setMinimum(0)
         self.sTotzeitSpinner.setMaximum(300)
-        self.sTotzeitSpinner.setFixedWidth(100)
+        self.sTotzeitSpinner.setFixedWidth(150)
         
         # Faktor Reglerstartwert
         groupInitFaktor = QGroupBox("")
@@ -136,7 +147,7 @@ class PruefWidget(QGroupBox):
         
         lInitFaktor = QLabel("Faktor Reglerstartwert")
         layoutInitFaktor.addWidget(lInitFaktor)
-        lInitFaktor.setFixedWidth(150)
+        lInitFaktor.setFixedWidth(200)
         
         self.sInitFaktor = QDoubleSpinBox()
         layoutInitFaktor.addWidget(self.sInitFaktor)
@@ -144,7 +155,7 @@ class PruefWidget(QGroupBox):
         self.sInitFaktor.setMinimum(0.1)
         self.sInitFaktor.setMaximum(2.0)
         self.sInitFaktor.setValue(0.9)
-        self.sInitFaktor.setFixedWidth(100)
+        self.sInitFaktor.setFixedWidth(150)
         self.sInitFaktor.setSingleStep(0.1)
         
         # Vorlauf Zeit
@@ -155,7 +166,7 @@ class PruefWidget(QGroupBox):
         
         lVorlaufZeitLabel = QLabel("Vorlaufzeit Magnetventil[s]")
         layoutVorlaufZeit.addWidget(lVorlaufZeitLabel)
-        lVorlaufZeitLabel.setFixedWidth(150)
+        lVorlaufZeitLabel.setFixedWidth(200)
         
         self.sVorlaufZeitSpinner = QDoubleSpinBox()
         layoutVorlaufZeit.addWidget(self.sVorlaufZeitSpinner)
@@ -164,7 +175,7 @@ class PruefWidget(QGroupBox):
         self.sVorlaufZeitSpinner.setValue(self.DEFAULT_VORLAUFZEIT_S)
         self.sVorlaufZeitSpinner.setMinimum(0)
         self.sVorlaufZeitSpinner.setMaximum(100)
-        self.sVorlaufZeitSpinner.setFixedWidth(100)
+        self.sVorlaufZeitSpinner.setFixedWidth(150)
         
         
         
@@ -176,16 +187,18 @@ class PruefWidget(QGroupBox):
         
         lInitFlussLabel = QLabel("Reglerdurchschnittswert [g/min]")
         layoutInitFluss.addWidget(lInitFlussLabel)
-        lInitFlussLabel.setFixedWidth(150)
+        lInitFlussLabel.setFixedWidth(200)
         
         self.lInitFlussLabel = QLabel()
         layoutInitFluss.addWidget(self.lInitFlussLabel)
         self.lInitFlussLabel.setText(str(self.sMengeSpinner.value() / self.sZeitSpinner.value()))
+        self.lInitFlussLabel.setFixedWidth(150)
+    
         
         
-        ####################################################
-        # DURCHFÜHRUNG
-        ###############
+    ####################################################
+    # DURCHFÜHRUNG
+    ###############
         
         self.groupRun = QGroupBox("Durchführung")
         self.layoutRun = QVBoxLayout()
@@ -200,11 +213,12 @@ class PruefWidget(QGroupBox):
         
         lRunZeitLabel = QLabel("Prüflaufzeit")
         layoutRunZeit.addWidget(lRunZeitLabel)
-        lRunZeitLabel.setFixedWidth(150)
+        lRunZeitLabel.setFixedWidth(200)
         
         self.lRunZeitValue = QLabel()
         layoutRunZeit.addWidget(self.lRunZeitValue)
-        self.lRunZeitValue.setText("--:--:--")        
+        self.lRunZeitValue.setText("--:--:--")
+        self.lRunZeitValue.setFixedWidth(150)    
         
         # Ermittelter Gesamtfluss
         groupRunMenge = QGroupBox("")
@@ -214,33 +228,51 @@ class PruefWidget(QGroupBox):
         
         lRunMengeLabel = QLabel("Gesamtmenge [g]")
         layoutRunMenge.addWidget(lRunMengeLabel)
-        lRunMengeLabel.setFixedWidth(150)
+        lRunMengeLabel.setFixedWidth(200)
         
         self.lRunMengeValue = QLabel()
         layoutRunMenge.addWidget(self.lRunMengeValue)
-        self.lRunMengeValue.setText("----.--")           
+        self.lRunMengeValue.setText("----.--")        
+        self.lRunMengeValue.setFixedWidth(150)   
         
         
         #####################################################
         # CONTROLS
         ############
         
+        groupPruefControls = QGroupBox()
+        layoutPruefControls = QHBoxLayout()
+        groupPruefControls.setLayout(layoutPruefControls)
+        self.mainLayout.addWidget(groupPruefControls)
+        
         # Start Prüfung
         
         self.pbStartPruefung = QPushButton("Prüfung starten")
-        self.mainLayout.addWidget(self.pbStartPruefung)
+        layoutPruefControls.addWidget(self.pbStartPruefung)
         self.pbStartPruefung.clicked.connect(self.start_pruefungClicked)
         
         # Prüfung Abbrechen
         
         self.pbCancelPruefung = QPushButton("Prüfung abbrechen")
-        self.mainLayout.addWidget(self.pbCancelPruefung)
+        layoutPruefControls.addWidget(self.pbCancelPruefung)
         self.pbCancelPruefung.clicked.connect(self.cancel_pruefungClicked)
         self.pbCancelPruefung.setVisible(False)
         
         
+        # Save PDF
+        self.buttonSavePDF = QPushButton("PDF exportieren...")
+        self.buttonSavePDF.clicked.connect(self.buttonSavePDF_clicked)
+        self.buttonSavePDF.setFixedWidth(200)
+        self.buttonSavePDF.setEnabled(False)
+        layoutPruefControls.addWidget(self.buttonSavePDF)
         
         
+    
+    def buttonSavePDF_clicked(self):
+        self.exportPruefPDF()
+
+    
+    
     def calc_initFluss(self):
         fluss = self.sMengeSpinner.value() / self.sZeitSpinner.value()
         # self.reglerAuswahl = self.sgr.select_reglerStellglieder_zentriert(fluss)
@@ -262,6 +294,7 @@ class PruefWidget(QGroupBox):
             # Graph Aktualisierung aussetzen wenn Prüfung nicht mehr läuft.
             self.pruefung._sig_pruefCanceled.connect(self.mw.graphWidget.stop_update)
             self.pruefung._sig_pruefEnded.connect(self.mw.graphWidget.stop_update)
+            self.pruefung._sig_pruefEnded.connect(self.reportPruefung)
         else: # SafetyCheck Connect And Zero Failed
             self.sgr.protokoll.append(cw.ProtokollEintrag("Prüfung konnte nicht gestartet werden!", typ=cw.ProtokollEintrag.TYPE_FAILURE))
 
@@ -275,6 +308,8 @@ class PruefWidget(QGroupBox):
 
 
     def cmd_init_pruefung(self):
+        
+        self.buttonSavePDF.setEnabled(False)
         
         self.pruefung = Pruefung(self.sgr, self.sms, self.sZeitSpinner.value(), self.sMengeSpinner.value(), self.sTotzeitSpinner.value(), self.sInitFaktor.value())
         
@@ -297,7 +332,7 @@ class PruefWidget(QGroupBox):
             self.timer_startPruefung.setInterval(int(self.sVorlaufZeitSpinner.value() * 1000))
             self.timer_startPruefung.start()
             self.sgr.protokoll.append(cw.ProtokollEintrag("Prüfung wird gestartet... ", typ=cw.ProtokollEintrag.TYPE_STANDARD))
-        
+
         else:
             self.sgr.protokoll.append(cw.ProtokollEintrag("Prüfung konnte nicht gestartet werden! Konfiguration überprüfen!", typ=cw.ProtokollEintrag.TYPE_FAILURE))
 
@@ -374,7 +409,76 @@ class PruefWidget(QGroupBox):
             self.resetPruefButtons()
         
             
+    
+    def reportPruefung(self):
+        if(self.pruefung._state == self.pruefung.PRUEF_STATE_DONE):
+            self.buttonSavePDF.setEnabled(True)
+            self.exportPruefPDF("protokolle/")
             
+        print("Prüf-Report erstellt.")
+    
+    
+    def exportPruefPDF(self, parentDir=""):
+        
+        if(self.pruefung and self.pruefung._state == self.pruefung.PRUEF_STATE_DONE):  
+            
+            result = ""
+            try:
+
+                fn, _ = QtWidgets.QFileDialog.getSaveFileName(
+                    self, "Export PDF", None, "PDF files (.pdf);;All Files()"
+                )
+                
+                if fn:
+                    if QtCore.QFileInfo(fn).suffix() == "":
+                        fn += ".pdf"
+                        
+                    c = canvas.Canvas(fn)
+                    c.setFont("Courier", 12)
+                    
+                    offsetX = 50
+                    lineHeight = 20
+                
+                    
+                    # Titel
+                    c.drawString(offsetX, 800, "SimGas Prüfprotokoll - " + self.format_timeString(time.time()))
+                    
+                    # Prüfparameter
+                    offsetParams = 750
+                    c.drawString(offsetX, offsetParams, "Prüfparameter:")
+                    c.drawString(offsetX, offsetParams - 1 * lineHeight, "Soll Prüfgasmenge: " + str(self.pruefung.get_gesMenge()) + "g")
+                    c.drawString(offsetX, offsetParams - 2 * lineHeight, "Soll Prüfzeit: " + str(self.pruefung.get_gesZeit()) + "min")
+                              
+                    # Prüfergebnisse
+                    offsetErgebnisse = 650
+                    c.drawString(offsetX, offsetErgebnisse,"Prüfergebnisse:")
+                    c.drawString(offsetX, offsetErgebnisse - 1 * lineHeight, "Ist Prüfgasmenge: " + str(self.pruefung.get_pruefLaufMenge()) + "g")
+                                                 
+                    # Graph
+                    exporter = pyexp.ImageExporterExporter(self.mw.graphWidget.graphWidget.plotItem)
+                    imgName = QtCore.QFileInfo(fn).baseName() + ".png"
+                    exporter.parameters()["invertValue"] = True
+                    exporter.export(imgName)
+                    c.drawImage(imgName, offsetX , 0, width = 17 * cm, preserveAspectRatio=True)
+                    
+                    
+
+                    # Speichern
+                    c.showPage()
+                    c.save()           
+                    
+                    self._sig_pdfSaved.emit(fn)     
+                
+            except Exception as e:
+                print(e)
+                print("Schreiben der Prüf-PDF fehlgeschlagen!")
+                
+                self._sig_pdfSaved.emit(result)
+                
+        else:
+            print("Kann nur von abgeschlossenen Prüfungen PDF erstellen!")
+        
+    
         
     def update_pruefWidget(self, data):
         if(self.pruefung != None):
@@ -405,12 +509,14 @@ class PruefWidget(QGroupBox):
         
             
             
-    def format_timeString(self, timeSeconds):
+    def format_timeString(self, timeSeconds) -> str:
         
             s = ((int(timeSeconds) % 86400) % 3600) % 60	
             m = int(((int(timeSeconds) % 86400) % 3600) / 60)		
             h = int((int(timeSeconds) % 86400) / 3600)
             d = int(int(timeSeconds) / 86400)
+            
+            
             
             return ("%.2d:%.2d:%.2d:%.2d" % (d, h, m, s))	
         

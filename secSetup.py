@@ -32,10 +32,12 @@ class SecSetup(QObject):
     
     _sig_NewSecData = pyqtSignal(dict)
     _sig_SEC_SetupConnect = pyqtSignal()
-    sig_SEC_ConnectFinished = pyqtSignal(int)
+    _sig_SEC_ConnectFinished = pyqtSignal(int)
     
-    def __init__(self, ms):
+    def __init__(self, ms, modbusCtrl):
         super().__init__()
+        
+        self._mbCtrl = modbusCtrl
         
         self._sms = ms
         self._smsPort = "11"
@@ -70,8 +72,8 @@ class SecSetup(QObject):
         
         ####
         
-        self.htc = SEC_ConnectThread(self)
-        self._sig_SEC_SetupConnect.connect(self.htc.start)
+        self.stc = SEC_ConnectThread(self)
+        self._sig_SEC_SetupConnect.connect(self.stc.start)
         self._update_SECSetupInProcess = False
         
         ###
@@ -79,9 +81,7 @@ class SecSetup(QObject):
         self.terminated = False
 
         
-    def _connect_sec(self, port):
-        self._sms._set_Port(port)
-        self._smsPort = port
+    def _connect_sec(self):
         if(not self._update_SECSetupInProcess):
             self._sig_SEC_SetupConnect.emit()
 
@@ -96,7 +96,7 @@ class SecSetup(QObject):
 
         # Versuche Verbindung neu aufzubauen, wenn Fehler vorliegt:
         if(self._secConnectStatus != self.SEC_CONNECT_STATUS_OK):
-            self._connect_sec(self._smsPort)
+            self._connect_sec()
         
         if(self._secConnectStatus == self.SEC_CONNECT_STATUS_OK):
             
@@ -104,14 +104,14 @@ class SecSetup(QObject):
             if(self.cmdSwitch == 0):
                 # Setze Ventil Open / Closed abhängig von
                 if(self.cmdOpen):
-                    self._sms._set_MO_open()
+                    self._mbCtrl.setValue("MAG_soll", 1)
                 else:
-                    self._sms._set_MO_closed()
+                    self._mbCtrl.setValue("MAG_soll", 0)
                 self._sms_Open = self.cmdOpen
             
             else:
                 cmd = self.CMD_TABLE[self.cmdSwitch]
-                msg = self._sms._read(cmd)
+                msg = self._mbCtrl.getValue(cmd)
                 val = "---"
                 try:
                     val = float(msg)
@@ -145,12 +145,17 @@ class SecSetup(QObject):
 
     def _close_secSetup(self):
                 
+        
+        
         # Ports schließen
         cnt = 0
         allClosed = False
         while(not allClosed and cnt < 10):
             print ("Closing SEC Setup ...")
-            if(not self._sms._close()):
+            self._mbCtrl.setValue("MAG_soll", 0)        
+        
+            # TODO: Check ob Schließen erfolgreich
+            if( -- ):
                 allClosed = False
                 cnt += 1
                 time.sleep(0.1)
@@ -244,12 +249,13 @@ class SEC_ConnectThread(QThread):
             
             self.hws._secConnectStatus = SecSetup.SEC_CONNECT_STATUS_NONE # Noch kein COM-Port wurde verbunden      
 
-            if(self.hws._sms._connect() == True):
+            if(self.hws._mbCtrl.getValue("MAG_ist")):
+                # Verbindugscheck durch Abfrage von Messwert zu MAG (None, wenn nicht verfügbar)
                 self.hws._secConnectStatus = SecSetup.SEC_CONNECT_STATUS_OK # Alle COM-Ports wurden verbunden
 
             self.hws._update_SECSetupInProcess = False
             
             if(self.hws._secConnectStatus != lastStatus):
-                self.hws.sig_SEC_ConnectFinished.emit(self.hws._secConnectStatus)
+                self.hws._sig_SEC_ConnectFinished.emit(self.hws._secConnectStatus)
             
             
