@@ -6,6 +6,7 @@ Created on Wed Jul 20 17:07:37 2022
 """
 
 from PyQt5 import QtWidgets
+from PyQt5.QtCore import pyqtSignal
 
 import json
 
@@ -23,22 +24,25 @@ class SimGasRegler(hws.HWSetup):
         hws (_type_): _description_
     """
  
+    # DataReceived Signal
+    sig_newIntegralData = pyqtSignal()
  
-    # CONFIG_FILE = "config.json"
-    # CONFIG_FILE = "config_test_pb.json"
+
     CONFIG_FILE = "config_cori.json"
-    # CONFIG_FILE = "config_test.json"   
+    # CONFIG_FILE = "config_cori_test.json"
+
     
-    ALLOW_IGNORE_PUFFER = False
+    REGLER_ARBEITSBEREICH_UNTERGRENZE = 0.02
+    ALLOW_IGNORE_PUFFER = True
     
     
     
     
-    def __init__(self):
-        super().__init__()
+    def __init__(self, sgEA):
+        super().__init__(sgEA)
         
         self.protokoll = []
-        
+
         # Laden der Reglerkonfiguration und setzen zugehörigen Ports
         self._load_reglerConfig(self.CONFIG_FILE) # -> self._ports wird gefüllt.
         
@@ -72,7 +76,8 @@ class SimGasRegler(hws.HWSetup):
         # Sicherungseigenschaften
         # self.__safety_setZero = self.safetyCheck_allConnectedAndZero()
         
-                
+
+         
     
     def _load_reglerConfig(self, confFileURL):
         """
@@ -89,6 +94,9 @@ class SimGasRegler(hws.HWSetup):
                 kalib = conf[d]["kalibrierung"]
             r = rgl.Regler_Dvr(d, conf[d]["port"], conf[d]["bereich"], kalib)
             self._zuweisen_Port(conf[d]["port"], r)
+            
+            #
+            r.sig_newIntegral.connect(self.calc_newGesamtIntegral)
 
         f.close()
 
@@ -145,8 +153,8 @@ class SimGasRegler(hws.HWSetup):
         """
         if (not self._testmode):
             for p in self._ports:
-                soll = self._ports[p]._read_Sollwert()
-                print ("Check Soll: " + str(soll))
+                soll = self._ports[p].get_soll()
+                # print ("Check Soll: " + str(soll))
                 if(soll != 0 or soll == None):       
                     self.protokoll.append(cw.ProtokollEintrag("SAFETY-CHECK: Verbindung und 0-Position: FEHLGESCHLAGEN!", typ=cw.ProtokollEintrag.TYPE_FAILURE))
                     return False
@@ -274,6 +282,8 @@ class SimGasRegler(hws.HWSetup):
            
            
            
+    def calc_newGesamtIntegral(self):            
+        self.sig_newIntegralData.emit()
            
            
            
@@ -334,6 +344,8 @@ class SimGasRegler(hws.HWSetup):
             return self.set_GesamtSollWert(anteil, reglerAuswahl)
         else:
             return self.set_GesamtSollWert(0, None)
+        
+        
 
     def set_GesamtSollWert(self, anteil, reglerAuswahl, pruefung=False) -> bool:
         """ 1. Schließen aller Regler, wenn anteil = 0
@@ -362,10 +374,10 @@ class SimGasRegler(hws.HWSetup):
         
         # Überprüfung des Stellwertes auf Grenzen durch Arbeitsbereiche
         
-        print ("anteil: " + str(anteil))
+        # print ("anteil: " + str(anteil))
         
-        if(anteil < 0.02):
-            if(not pruefung):
+        if(anteil < self.REGLER_ARBEITSBEREICH_UNTERGRENZE):
+            if(not pruefung and not self.ALLOW_IGNORE_PUFFER):
                 # Stellwert zu klein
                 self.protokoll.append(cw.ProtokollEintrag("Fehler beim Setzem des Sollwertes! Stellwert zu niedrig!", typ=cw.ProtokollEintrag.TYPE_FAILURE))
                 print ("Fehler beim Setzen des Sollwertes: Sollwert liegt unterhalb des Gesamtarbeitsbereichs des Regelsystems!")
@@ -374,10 +386,10 @@ class SimGasRegler(hws.HWSetup):
                 # Setze Sollwert auf Minimum (0.02)                
                 self.protokoll.append(cw.ProtokollEintrag("Warnung! Sollwert unterschreitet minimalen Stellwert! Stellwert auf untere Grenze gesetzt.", typ=cw.ProtokollEintrag.TYPE_WARNING))
                 print ("Warnung! Sollwert unterschreitet minimalen Stellwert! Stellwert auf untere Grenze gesetzt.")
-                anteil = 0.02
+                anteil = self.REGLER_ARBEITSBEREICH_UNTERGRENZE
         
         if(anteil > 1.0):
-            if (not pruefung):
+            if (not pruefung and not self.ALLOW_IGNORE_PUFFER):
                 # Stellwert zu groß    
                 self.protokoll.append(cw.ProtokollEintrag("Fehler beim Setzem des Sollwertes! Stellwert zu hoch!", typ=cw.ProtokollEintrag.TYPE_FAILURE))
                 print ("Fehler beim Setzen des Sollwertes: Sollwert liegt oberhalb des Gesamtarbeitsbereichs des Regelsystems!")
@@ -386,7 +398,7 @@ class SimGasRegler(hws.HWSetup):
                 # Setze Sollwert auf Maximum (1.0)                
                 self.protokoll.append(cw.ProtokollEintrag("Warnung! Sollwert überschreitet maximalen Stellwert! Stellwert auf obere Grenze gesetzt.", typ=cw.ProtokollEintrag.TYPE_WARNING))
                 print ("Warnung! Sollwert überschreitet maximalen Stellwert! Stellwert auf obere Grenze gesetzt.")
-                anteil = 0.02
+                anteil = 1.0
         
     
         # Setze Stellglieder gleichmäßig Anteil an Gesamtarbeitsbereich
@@ -396,11 +408,11 @@ class SimGasRegler(hws.HWSetup):
             if(p in reglerAuswahl):
                 val = self._ports[p].get_arbeitsBereich()[1] * anteil
                 gesSoll += val
-                if(not self._ports[p]._set_Sollwert(val) and not self._testmode):
+                if(not self._ports[p].set_Sollwert(val) and not self._testmode):
                     gesSoll = 0
                     return False
             else:
-                if(not self._ports[p]._set_Sollwert(0) and not self._testmode):
+                if(not self._ports[p].set_Sollwert(0) and not self._testmode):
                     return False
         
         self.__gesSoll = gesSoll
@@ -417,7 +429,7 @@ class SimGasRegler(hws.HWSetup):
         Returns:
             Float: Messwerte aller Regelstellglieder + Umgebungssensoren. None, falls keine gültigen Messwerte vorliegen
         """
-        messsum = 0 # Summer aller aktiven Regler (Reglerauswahl bei Prüfung)
+        messsum = 0 # Summe aller aktiven Regler (Reglerauswahl bei Prüfung)
         mess = super()._read_Messwerte()
         soll = {}
         
@@ -431,9 +443,11 @@ class SimGasRegler(hws.HWSetup):
                     else:
                         busy = True
                 soll[p + "_SOLL"] = self._ports[p].get_soll()
-                
+            
+            sollsum = 0
             for ps in soll:
                 mess[ps] = soll[ps]
+                sollsum += soll[ps]
                 
             if(not busy):
                 mess["GES_IST"] = messsum
@@ -444,14 +458,15 @@ class SimGasRegler(hws.HWSetup):
                 else:
                     mess["GES_IST"] = 0
 
-            mess["GES_SOLL"] = self.__gesSoll
+            
+            # mess["GES_SOLL"] = self.__gesSoll
+            mess["GES_SOLL"] = sollsum
             
                             
-            # Integriere Externe Daten
+            # Integriere Externe Daten in Datenpaket
             for k in self.externData:
                 mess[k] = self.externData[k]
-        
-        
+                
         return mess 
 
 
@@ -539,14 +554,10 @@ class SimGasRegler(hws.HWSetup):
 ##############################################################
 #
 # Sollwerte von einzelnen Reglern
-        
-        
     
     def set_Sollwert(self, port, soll):
-        return self._ports[port]._set_Sollwert(soll)
-    
-    
-    def get_Sollwert(self, port):
-        return self._ports[port]._read_Sollwert()
+        self._ports[port].set_Sollwert(soll)
+        #TODO: Prüfung Sollwert Gesetzt
+        return True
 
 

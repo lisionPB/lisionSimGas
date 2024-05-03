@@ -11,6 +11,7 @@ from PyQt5 import QtCore
 from PyQt5.QtWidgets import QGroupBox, QVBoxLayout, QHBoxLayout, QPushButton, QDoubleSpinBox, QLabel, QCheckBox
 
 import pyqtgraph as pg
+import pyqtgraph.exporters as pyexp
 
 import random
 
@@ -19,10 +20,16 @@ import time
 from datamanager import DataManager
 from messdatenUI import MessdatenUI
 
+from PyQt5.QtCore import pyqtSignal
+
+
+
 class MessdatenGraphWidget(QGroupBox):
     """
     Beinhaltet einen Graph zur Anzeige von Messdaten inklusive Control-Buttons zum Handling des Graphen
     """
+    
+    _sig_pdfSaved = pyqtSignal(str) # "" wenn fehler, sonst Filename
     
     
     def __init__(self, parent, dataMan):
@@ -48,13 +55,20 @@ class MessdatenGraphWidget(QGroupBox):
         # Reset Fokus
         self.buttonResetFokus = QPushButton("Reset Fokus")
         self.buttonResetFokus.clicked.connect(self.graphWidget.resetFokus)
-        self.controlLayout.addWidget(self.buttonResetFokus, 1)
+        self.controlLayout.addWidget(self.buttonResetFokus)
+        self.buttonResetFokus.setFixedWidth(200)
               
         # update
         self.cbUpdate = QCheckBox("Update Graph")
         self.cbUpdate.setChecked(True)
         self.cbUpdate.stateChanged.connect(self.cbUpdate_stateChanged)
         self.controlLayout.addWidget(self.cbUpdate)
+        
+        # Open Extern
+        self.buttonOpenExtern = QPushButton("Diagramm maximieren")
+        self.buttonOpenExtern.clicked.connect(self.buttonOpenExtern_clicked)
+        self.buttonOpenExtern.setFixedWidth(185)
+        self.controlLayout.addWidget(self.buttonOpenExtern) 
         
         # Spacing
         self.controlLayout.addSpacing(1) 
@@ -72,13 +86,7 @@ class MessdatenGraphWidget(QGroupBox):
         
         self.controlLayout.addWidget(self.refLineLabel, 1)
         self.controlLayout.addWidget(self.referenzSpinner, 1)
-        
-        # Open Extern
-        self.buttonOpenExtern = QPushButton("In eigenem Fenster öffnen")
-        self.buttonOpenExtern.clicked.connect(self.buttonOpenExtern_clicked)
-        self.bottomLayout.addWidget(self.buttonOpenExtern)
-              
-        
+             
             
               
     def update_MessGraphWidget(self, visibilities=None, sampletime=1000):
@@ -97,6 +105,22 @@ class MessdatenGraphWidget(QGroupBox):
             timeRange (float): [s]
         """
         self.graphWidget.set_timeRangeOnFocus(timeRange)
+
+
+    def buttonSavePNG_clicked(self):
+        
+        exporter = pyexp.ImageExporter(self.graphWidget.plotItem)
+        fName = "test.png"
+        result = ""
+        
+        try:
+            exporter.export(fName)
+            result = fName
+        except:
+            print("Schreiben des Graphen in Datei fehlgeschlagen!")
+            
+        self._sig_pdfSaved.emit(result)
+
 
     def buttonOpenExtern_clicked(self):
         if(not self.openedExtern):
@@ -157,7 +181,7 @@ class MessdatenGraphPlot(pg.PlotWidget):
         self.__show_only_data_in_range = False        
         
         xInit = []        
-        yInit = []      
+        yInit = []
         
         self.getPlotItem().getAxis("left").setWidth(40)
         self.getPlotItem().getAxis("bottom").setHeight(40)
@@ -177,10 +201,27 @@ class MessdatenGraphPlot(pg.PlotWidget):
         self.refLinie.setPen(pg.mkPen(255,0,0))
         self.addItem(self.refLinie)
         
+        
+        # 2. Graph auf rechter yAchse
+        """
+        y2Init = []      
+        self.p2 = pg.ViewBox()
+        
+        self.showAxis("right")
+        self.plotItem.addItem(self.p2)
+        self.getPlotItem().getAxis("right").linkToView(self.p2)
+        self.p2.setXLink(self)
+        self.getPlotItem().getAxis("right").setLabel("Test")
+        self.updateViews()
+        self.plotItem.vb.sigResized.connect(self.updateViews)
+        """
+        
+        
         # Daten 
         for k in self.__dataMan.get_channelNames():
             self.plotVis[k] = True                
-            self.curves[k]  = self.plot(xInit, yInit, name=self.__dataMan.get_channelLabels()[k], pen=pg.mkPen((random.randint(30, 250),random.randint(30, 250),random.randint(30, 250)), width=1))
+            self.curves[k]  = self.plot(xInit, yInit, name=self.__dataMan.get_channelLabels()[k], pen=pg.mkPen((random.randint(30, 250),random.randint(30, 250),random.randint(30, 250)), width=1))                
+        
         
         self.showGrid(x=True,y=True)
         
@@ -188,7 +229,11 @@ class MessdatenGraphPlot(pg.PlotWidget):
                         
         self.resetFokus()
         
-        
+    
+    
+    def set_rightAxisLabels(self, labels):
+        pass
+    
                 
     def set_showOnlyDateInRange(self, enabled):
         self.__show_only_data_in_range = enabled

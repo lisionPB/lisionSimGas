@@ -79,11 +79,12 @@ class DataManager(QObject):
             - data: dict mit ChannelNames als keys
         """
         
+        # print(data)
         
         # Hole für jeden Kanal die Daten aus data
         for cn in self.__channelNames:
             if(not cn in data or data[cn] == "BUSY"):
-                print ("Datenframe unvollständig ( " + cn  + " )!")
+                # print ("Datenframe unvollständig ( " + cn  + " )!")
                 data[cn] = self.replace_incompleteData(cn)
                 
             self.__data.get(cn).append(data[cn])

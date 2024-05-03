@@ -34,20 +34,22 @@ class SecSetup(QObject):
     _sig_SEC_SetupConnect = pyqtSignal()
     sig_SEC_ConnectFinished = pyqtSignal(int)
     
-    def __init__(self, ms):
+    def __init__(self, sgEA):
         super().__init__()
-        
-        self._sms = ms
-        self._smsPort = "11"
+                
+        self._sgEA = sgEA   
         
         self._secConnectStatus = self.SEC_CONNECT_STATUS_NONE
-        
-        # Verbinde Receiver für neue Daten
-        # self._sig_NewSecData.connect(self.dm.append_RawData) 
         
         self.cmdSwitch = 0
         self.cmdOpen = 0
         self.data = {"FP?":0, "TE?":0, "HU?":0}
+        
+        # Init Flaschendruck Data
+        self.dataVordruck = {}
+        for f in self._sgEA._sensorsNames:
+            self.dataVordruck[f] = 0
+
         
         ##############
         # Status
@@ -68,67 +70,66 @@ class SecSetup(QObject):
         self._worker._sig_finished.connect(self._worker.deleteLater)
         self._threadMessLoop.finished.connect(self._threadMessLoop.deleteLater)
         
+                        
         ####
         
         self.htc = SEC_ConnectThread(self)
         self._sig_SEC_SetupConnect.connect(self.htc.start)
         self._update_SECSetupInProcess = False
         
-        ###
+        ####
         
         self.terminated = False
 
-        
-    def _connect_sec(self, port):
-        self._sms._set_Port(port)
-        self._smsPort = port
-        if(not self._update_SECSetupInProcess):
-            self._sig_SEC_SetupConnect.emit()
-
             
     def _start_MessSchleife(self):
-        self._threadMessLoop.start()
-        
+        if(self._secConnectStatus == self.SEC_CONNECT_STATUS_OK):
+            self._threadMessLoop.start()
+        else:
+            print ("Warte auf Verbindung zur SEC-Harware...")    
+
+                    
+    def _connect_sec(self):
+        if(not self._update_SECSetupInProcess):
+            self._sig_SEC_SetupConnect.emit()
+            
                 
         
     def _read_Messwerte(self):
         
-
         # Versuche Verbindung neu aufzubauen, wenn Fehler vorliegt:
         if(self._secConnectStatus != self.SEC_CONNECT_STATUS_OK):
-            self._connect_sec(self._smsPort)
-        
+            self._connect_sec()
+                
+                
         if(self._secConnectStatus == self.SEC_CONNECT_STATUS_OK):
-            
-            # Sende Befehl, der an der Reihe ist.
-            if(self.cmdSwitch == 0):
-                # Setze Ventil Open / Closed abhängig von
-                if(self.cmdOpen):
-                    self._sms._set_MO_open()
-                else:
-                    self._sms._set_MO_closed()
-                self._sms_Open = self.cmdOpen
-            
-            else:
-                cmd = self.CMD_TABLE[self.cmdSwitch]
-                msg = self._sms._read(cmd)
-                val = "---"
-                try:
-                    val = float(msg)
-                except:
-                    pass
-                self.data[cmd] = val
-
-                if(msg == None):
-                    # Fehler beim Auslesen des Messwertes
-                    print ("SEC: Fehler beim Auslesen des Messwertes!")
-                    self._secConnectStatus = self.SEC_CONNECT_STATUS_NONE
+            # Vordruck
+            try:
+                err, msg = self._sgEA.VORDRUCK()
+                
+                
+                # TO BE TESTED
+                for f in self.dataVordruck:
+                    err2, msg2 = self._sgEA.VORDRUCK_ID(f)
                     
-            self.cmdSwitch = (self.cmdSwitch + 1) % 4
-
-            return self.data                
-        
-        return None                 
+                ####
+                    
+                    
+                if(err):
+                    raise Exception("Fehler beim Auslesen des Vordrucks")
+                
+            except:
+                # Fehler beim Auslesen des Messwertes
+                print ("SEC: Fehler beim Auslesen des Messwertes!")
+                self._secConnectStatus = self.SEC_CONNECT_STATUS_NONE
+            
+            val = "---"
+            try:
+                val = float(msg)
+            except:
+                pass
+            self.data["FP?"] = val
+            return self.data                 
     
            
 
@@ -139,24 +140,23 @@ class SecSetup(QObject):
 
 
     def set_sms_open(self, open):
-        self.cmdOpen = open
+        self._sgEA.MAGVENT(int(open))
+        self._sms_Open = self._sgEA.MAGVENT()
+    
+        
+    def is_sms_open(self):
+        return self._sms_Open
+    
+        
+    def set_gasFlowLED(self, activ):
+        self._sgEA.GASFLOWACTIVE(int(activ))
 
 
 
     def _close_secSetup(self):
-                
-        # Ports schließen
-        cnt = 0
-        allClosed = False
-        while(not allClosed and cnt < 10):
-            print ("Closing SEC Setup ...")
-            if(not self._sms._close()):
-                allClosed = False
-                cnt += 1
-                time.sleep(0.1)
-            else:
-                allClosed = True
-            
+    
+        self.set_sms_open(False)
+    
         # Update Thread beenden    
         self._worker._stop_worker()
         
@@ -172,7 +172,7 @@ class SecSetup(QObject):
 
 class SEC_UpdateWorker(QObject):
     """
-    Enthält den Haupttask zum Update des Sec
+    Enthält den Haupttask zum Update des SEC-Setup
     """
     _sig_finished = pyqtSignal()
     _sig_progress = pyqtSignal(int)
@@ -222,6 +222,7 @@ class SEC_UpdateWorker(QObject):
 
 
 
+
 class SEC_ConnectThread(QThread):
     
     _sig_finished = pyqtSignal()
@@ -238,18 +239,20 @@ class SEC_ConnectThread(QThread):
                 
         if(not self.hws._update_SECSetupInProcess):
         
-            print ("connect SEC")
+            print ("Verbinde SEC-Setup ...")
     
             self.hws._update_SECSetupInProcess = True         
             
             self.hws._secConnectStatus = SecSetup.SEC_CONNECT_STATUS_NONE # Noch kein COM-Port wurde verbunden      
 
-            if(self.hws._sms._connect() == True):
+            if(self.hws._sgEA.connect() == True):
                 self.hws._secConnectStatus = SecSetup.SEC_CONNECT_STATUS_OK # Alle COM-Ports wurden verbunden
 
             self.hws._update_SECSetupInProcess = False
             
             if(self.hws._secConnectStatus != lastStatus):
                 self.hws.sig_SEC_ConnectFinished.emit(self.hws._secConnectStatus)
-            
-            
+                
+            # Neuen Verbindungsversuch starten, wenn vorheriger fehlschlägt
+            if(self.hws._secConnectStatus != SecSetup.SEC_CONNECT_STATUS_OK):
+                self.hws._sig_SEC_SetupConnect.emit()

@@ -73,11 +73,17 @@ class ProtokollEintrag():
 	TYPE_WARNING = 1
 	TYPE_FAILURE = 2
 	TYPE_SUCCESS = 3
+ 
+	ENABLE_CONSOLE_OUT = False
 	
 	def __init__(self, eintrag, typ=0):
 		self.__time = time.time()
 		self.__text = eintrag
 		self.__type = typ
+
+		if(self.ENABLE_CONSOLE_OUT):
+			print(str(self.__type) + ": " + str(self.__text))
+  
 		
 	def get_time(self):
 		return self.__time

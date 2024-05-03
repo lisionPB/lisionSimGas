@@ -24,7 +24,7 @@ class Pruefung(QObject):
     _sig_pruefFinalized = pyqtSignal()
     _sig_pruefEnded = pyqtSignal()
     
-    def __init__(self, rs, sms, gesZeit, gesMenge, totZeit, initFaktor):
+    def __init__(self, rs, sms, gesZeit, gesMenge, startZeit):
         """
         Initialisierung der Prüfung
 
@@ -38,7 +38,10 @@ class Pruefung(QObject):
         
         self._rs = rs
         self._sms = sms
-        self._gsr = gesamtSollwertRegler.GesamtSollwertRegler(gesZeit, gesMenge, totZeit, initFaktor)
+        self._gsr = gesamtSollwertRegler.GesamtSollwertRegler(gesZeit, gesMenge, startZeit)
+        
+        # Verbindung: Neuer Messwert -> Update der Prüfung
+        self._rs.sig_newIntegralData.connect(self.update_pruefung) 
         
         # Bestimme regelmäßigen Fluss, um Menge über Zeit zu erreichen
         fluss = gesMenge / gesZeit
@@ -58,40 +61,52 @@ class Pruefung(QObject):
     def prepare_pruefung(self):
         """
         Bereitet die Prüfung mit den gesetzten Einstellungen vor.
-        Öffnet das Sicherheitsventil, um den Vordruck aufzubauen, wenn Konfiguration gültig.
+        Prüft, ob Sicherheitsmagnetventil offen
         Kein Starten des Timers bis zum Start der eigentlichen Prüfung !!! -> pruefWidget
         """
+                    
+        # Prüfe, ob Sicherheitsmagnetventil geöffnet wurde
+        if(not self._sms.is_sms_open()):
+            self._rs.protokoll.append(cw.ProtokollEintrag("Sicherheitsmagnetventil nicht geöffnet! Prüfung wird nicht gestartet!", typ=cw.ProtokollEintrag.TYPE_FAILURE))
+            return False
         
-        if(self._reglerAuswahlArbeitsBereichMax > 0):
-            self._gsr.start_Regler(self._reglerAuswahl, log=False)
-            anteil = self._gsr.calc_stellwert(0) / self._reglerAuswahlArbeitsBereichMax
-            
-            # print (anteil)
-            
-            if (anteil > 0):
-                # Prüfung kann gestartet werden
-                # Öffne Sicherheitsventil
-                self._sms.set_sms_open(True)
-                
-                # Messungen starten
-                self._rs.set_paused(False)
-                # STATE auf RUNNING setzen
-                self._state = self.PRUEF_STATE_STARTING
-                
-                return True
         
-        # Keine Gültige Reglerkonfiguration
-        return False
-       
+        # Prüfe auf gültige Reglerkonfiguration        
+        if(not self._reglerAuswahlArbeitsBereichMax > 0):
+            self.sgr.protokoll.append(cw.ProtokollEintrag("Prüfung konnte nicht gestartet werden! Prüf-Konfiguration überprüfen!", typ=cw.ProtokollEintrag.TYPE_FAILURE))
+            return False
+            
+            
+            
+        for p in self._rs._ports:
+            self._rs._ports[p].start_Integration()
+        self._gsr.start_Regler(self._reglerAuswahl, log=False)
+        anteil = self._gsr.calc_stellwert(0, True) / self._reglerAuswahlArbeitsBereichMax
+        
+        # print (anteil)           
+        
+        if (anteil > 0):
+            # Prüfung kann gestartet werden
+            
+            # Messungen starten
+            self._rs.set_paused(False)
+            # STATE auf RUNNING setzen
+            self._state = self.PRUEF_STATE_STARTING
+            
+            return True
+            
+            
+        
         
     def start_pruefung(self):
         """
-        Starte die Prüfung:
+        Starte die tatsächliche Prüfung (nach Vorlaufzeit):
         Startet den Gesamtsollwertregler
-        Setze ersten Stellwert (intern multipliziert mit initFaktor)
         
         """
         if(self._reglerAuswahlArbeitsBereichMax > 0):
+            for p in self._rs._ports:
+                self._rs._ports[p].start_Integration()
             stellwert = self._gsr.start_Regler(self._reglerAuswahl)
             
             # Erstes Setzen des Sollwertes            
@@ -100,6 +115,7 @@ class Pruefung(QObject):
             if(anteil >= 0):
                 # Reglerstellwerte müssen aktualisiert werden.
                 if(not self._rs.set_GesamtSollWert(anteil, self._reglerAuswahl)):
+                    self._rs.protokoll.append(cw.ProtokollEintrag("Fehler beim Setzen des Gesamtsollwertes! Prüfung wird nicht gestartet!", typ=cw.ProtokollEintrag.TYPE_FAILURE))
                     return False
             else:
                 return False
@@ -126,10 +142,6 @@ class Pruefung(QObject):
     def cancel_pruefung(self):
         if(not self._rs.set_allClosed()):
             self._rs.protokoll.append(cw.ProtokollEintrag("ACHTUNG! Automatisches Schließen der Regler fehlgeschlagen!", typ=cw.ProtokollEintrag.TYPE_FAILURE))
-        self._sms.set_sms_open(False)   
-        
-        # Messungen pausieren
-        # self._rs.set_paused(True)
 
         self._state = self.PRUEF_STATE_FAILURE        
         self._sig_pruefCanceled.emit()
@@ -143,7 +155,11 @@ class Pruefung(QObject):
         if(not self._rs.set_allClosed()):
             self._rs.protokoll.append(cw.ProtokollEintrag("ACHTUNG! Automatisches Schließen der Regler fehlgeschlagen!", typ=cw.ProtokollEintrag.TYPE_FAILURE))            
 
-        self._gsr.finalize_Regler()
+        gasmengen = {}
+        for p in self._rs._ports:
+            gasmengen[p] = self._rs._ports[p].get_integrierteMenge()  
+
+        self._gsr.finalize_Regler(gasmengen)
         
         # Messungen pausieren
         # self._rs.set_paused(True)
@@ -157,15 +173,15 @@ class Pruefung(QObject):
     
     def end_pruefung(self):
         """
-        Abschließendes Schließen des Magnetventils
+        Abschließende Vorgänge
         """
         self._state = self.PRUEF_STATE_DONE
-        self._sms.set_sms_open(False)
         self._sig_pruefEnded.emit()
+        
     
         
-    def update_pruefung(self, data):
-        """Aktualisiert die Regler der Prüfung
+    def update_pruefung(self):
+        """Aktualisiert die Regler der Prüfung, inklusive Setzen neuer Sollwerte
 
         Args:
             data (dict): Dictionary mit Messdaten
@@ -175,37 +191,30 @@ class Pruefung(QObject):
             
             try:
                 # extrahiere Regler-Messwerte     
-
                 busy = False
-                messwerte = {}  # Lege Frame an
+                gasmengen = {}
                 for p in self._rs._ports:
-                    if(p in data):
-                        if(data[p] != "BUSY"):
-                            messwerte[p] = data[p]  # Schreibe Messwert in Frame
-                        else:
-                            busy = True
-                    else:
-                        raise Exception("1")
-                        
-                messwerte[dm.DataManager.TIME_LABEL] = data[dm.DataManager.TIME_LABEL]        
+                    gasmengen[p] = self._rs._ports[p].get_integrierteMenge()  
+
+                # print(time.time())
+                # print(gasmengen)
             
                 anteil = -1
                 if(not busy):
-                    anteil = self._gsr.update_Regler(messwerte) / self._reglerAuswahlArbeitsBereichMax
-                
+                    anteil = self._gsr.update_Regler(gasmengen) / self._reglerAuswahlArbeitsBereichMax
+                  
                 if(anteil >= 0):
                     # Reglerstellwerte müssen aktualisiert werden.
-                    print("Update Stellglieder")
+                    # print("Update Stellglieder")
                     if(not self._rs.set_GesamtSollWert(anteil, self._reglerAuswahl, pruefung=True)):
-                        raise Exception("2")
+                        self._rs.protokoll.append(cw.ProtokollEintrag("ACHTUNG! Reglerstellwert liegt außerhalb des Arbeitsbereichs!", typ=cw.ProtokollEintrag.TYPE_WARNING))
+                        # raise Exception("2")
                     
             except Exception as e:
                 print (e)
                 self._rs.protokoll.append(cw.ProtokollEintrag("Verbindungsverlust! Prüfung wird abgebrochen!", typ=cw.ProtokollEintrag.TYPE_FAILURE))
                 self.cancel_pruefung()
                 
-            
-            
             
             
         

@@ -28,7 +28,7 @@ class HWSetup(QObject):
     TEST_MODE = False    # True setzen, um Verbindungstests zur Hardware zu umgehen
     EMULATION = False    # True setzen, um Virtuelle Daten zum Testen der Anzeige zu generieren
     
-    DEFAULT_SCAN_INTERVAL = 1000
+    DEFAULT_COM_TAKT = 300
     
     HW_CONNECT_STATUS_NONE = -1     # Verbindung zu keinem COM-Port aufgebaut
     HW_CONNECT_STATUS_FAILURE = 0   # Verbindugn zu mindestems 1 COM-Port erfolgreich
@@ -38,12 +38,14 @@ class HWSetup(QObject):
     _sig_HWSetupConnect = pyqtSignal()
     sig_HWConnectFinished = pyqtSignal(int)
     
-    def __init__(self):
+    def __init__(self, sgEA):
         super().__init__()
         
         self._testmode = self.TEST_MODE
         
         self._hwConnectStatus = self.HW_CONNECT_STATUS_FAILURE
+        
+        self.sgEA = sgEA
         
         self._ports = {}
                 
@@ -56,8 +58,8 @@ class HWSetup(QObject):
         
         ##############
         # Messschleife
-        
-        self._interval = self.DEFAULT_SCAN_INTERVAL
+
+        self._interval = self.DEFAULT_COM_TAKT
         
         self._threadMessLoop = QThread()
         self._worker = HWUpdateWorker(self, self._interval)
@@ -85,10 +87,16 @@ class HWSetup(QObject):
     def _connect_Ports(self):
         if(not self._updateHWSetupInProcess):
             self._sig_HWSetupConnect.emit()
+        
 
             
     def _start_MessSchleife(self):
-        self._threadMessLoop.start()
+        if(self._hwConnectStatus == self.HW_CONNECT_STATUS_OK):
+            self._threadMessLoop.start()
+            for p in self._ports:
+                self._ports[p]._start_MessSchleife()
+        else:
+            print("Warte auf Verbindung zur Hardware...")
         
                 
         
@@ -97,6 +105,7 @@ class HWSetup(QObject):
         #print ("---------------------------------------------v")
         if(not self._testmode):
             # Versuche Verbindung neu aufzubauen, wenn Fehler vorliegt:
+            print("hw108: ConnectStatus: " + str(self._hwConnectStatus))
             if(self._hwConnectStatus != self.HW_CONNECT_STATUS_OK):
                 self._connect_Ports()
         
@@ -108,7 +117,8 @@ class HWSetup(QObject):
                 disconnectCount = 0
                 data = dict()
                 for p in self._ports:
-                    val = self._ports[p]._read_Messwert()
+                    # Messwerte
+                    val = self._ports[p].get_ist()
                     if(val == None):
                         # Fehler beim Auslesen des Messwertes
                         print (p + ": Fehler beim Auslesen des Messwertes: val=" + str(val))
@@ -120,6 +130,11 @@ class HWSetup(QObject):
                         data[p] = "BUSY"
                     else: 
                         data[p] = val
+                        # print("hw128" + str(data))
+                        
+                    #TODO: Sollwert Überprüfung
+                    # if(not self._ports[p].sollIsValid) :
+                    #    print (p + ": Sollwert nicht erfolgreich gesetzt!")
                         
                         
                 if (disconnectCount == len(self._ports)):
@@ -127,11 +142,9 @@ class HWSetup(QObject):
                     print ("Fehler beim Auslesen der Messdaten: data=" + str(data))
                     self._hwConnectStatus = self.HW_CONNECT_STATUS_NONE
                     
-                    #print ("---------------------------------------------^")
                     return None
                 
-                #print ("---------------------------------------------^")
-                
+                # print (data)
                 return data
         
         else:
@@ -145,15 +158,30 @@ class HWSetup(QObject):
         self.externData = extData
     
     
+    
+    
     def _emulate_Messwerte(self):
         
         # Generiere Messwerte
         data = dict()
         for p in self._ports:
-            #data[p] = simulation.sim_flussMessung_lin(self.dm.get_currentTime(), 0.01, 40)
             data[p] = simulation.sim_flussMessung_sin(self.dm.get_currentTime(), 1, 2, 10)
             
         return data
+
+                
+    
+    
+    def _read_Sollwerte(self):
+        gasFlow = False
+        for p in self._ports:
+            self._ports[p]._read_Sollwert()
+            if(self._ports[p].get_soll() > 0):
+                gasFlow = True
+            
+        # GasFluss offen?
+        self.sgEA.GASFLOWACTIVE(gasFlow)
+        
     
     
     
@@ -172,11 +200,11 @@ class HWSetup(QObject):
         
         # Ports schließen
         cnt = 0
+        print ("Closing HW Setup ...")
         while(not allClosed and cnt < 10):
-            print ("Closing HW Setup ...")
             allClosed = True
             for p in self._ports:
-                print ("Closing: " + str(p))
+                # print ("Closing: " + str(p))
                 if(not self._ports[p]._close()):
                     allClosed = False
                     cnt += 1
@@ -250,6 +278,8 @@ class HWUpdateWorker(QObject):
         
         self._paused = False
         
+        self._currentComTakt = -1
+        
         
     def _start_worker(self):
         self._start_timer()
@@ -268,12 +298,16 @@ class HWUpdateWorker(QObject):
     def _start_timer(self):
         self._timer = QTimer()
         self._timer.setInterval(self._interval)
-        self._timer.timeout.connect(self._dataUpdate)
+        self._timer.timeout.connect(self._executeComTakt)
         self._timer.start()
         
     def _set_paused(self, paused):
         self._paused = int(paused)
-        
+
+
+    def _executeComTakt(self):
+        self._dataUpdate()
+                
 
     def _dataUpdate(self):
         """
@@ -313,13 +347,16 @@ class HW_ConnectThread(QThread):
         QThread.__init__(self)
         self.hws = hwSetup
         
+        
     def run(self):
+                
+        print("connect ...")
                 
         lastStatus = self.hws._hwConnectStatus
                 
         if(not self.hws._updateHWSetupInProcess):
         
-            print ("connect HW")
+            print ("Verbinde HW ...")
     
             self.hws._updateHWSetupInProcess = True
                 
@@ -339,5 +376,9 @@ class HW_ConnectThread(QThread):
             
             if(self.hws._hwConnectStatus != lastStatus):
                 self.hws.sig_HWConnectFinished.emit(status)
+            
+            # Neuen Verbindungsversuch starten, wenn vorheriger fehlschlägt
+            if(status != 1):
+                self.hws._sig_HWSetupConnect.emit()
             
             

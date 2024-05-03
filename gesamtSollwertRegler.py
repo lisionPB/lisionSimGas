@@ -11,23 +11,25 @@ class GesamtSollwertRegler:
     """
     
     ENABLE_LOG = True
+    KORREKTUR_FAKTOR_SOLLWERTSPITZE = 1.002
 
 
-    def __init__(self, finalTime, finalFlowSum, totZeit, initFaktor):
+    def __init__(self, finalTime, finalFlowSum, rampenzeit):
         """
         Legt den GesamtSollwertRegler an
 
         Args:
             finalTime (float): [min]
             finalFlowSum (float): [g]
-            totZeit (float): [s]
         """
         self.reset_Regler()
         
         self.finalTime = finalTime * 60     # Gesamtlaufzeit, nach welcher finalFlowSum erreicht werden muss [s]
         self.finalFlowSum = finalFlowSum    # Gasmasse, die nach finalTime geflossen sein muss [g].
-        self.totZeit = totZeit
-        self.initFaktor = initFaktor        # Faktor auf ersten Stellwert zum Ausgleich des Einschwingverhaltens
+        self.initZeit = rampenzeit          # RampenZeit für Reglerwert [s]
+        self.initFlow = calc_theoreticalStaticFlow(mass=finalFlowSum, time=self.finalTime)
+        print(self.initFlow)
+        self.initDone = False
         
         self.lastUpdate_SystemTime = 0
                 
@@ -39,20 +41,20 @@ class GesamtSollwertRegler:
             (float): Fluss [g/min], um in Zielzeit, die Ziel-Gasmenge zu erreichen. 
         """
         
-        self.reset_Regler()
-
         self._reglerAuswahl = reglerAuswahl
+        
+        self.reset_Regler()
 
         if(log):
             self.create_logFile()
         
-        # Lege erste Messung ab.
+        # Lege erste Messung ab. 
         self.lastUpdate_SystemTime = time.time()
         
         self.lastFlow = 0
-        self.lastDataTime = 0
+        self.lastDataTime = self.lastUpdate_SystemTime
         self.startTime = self.lastDataTime # [s]
-        self.endTime = self.startTime + self.finalTime # [s]
+        self.endTime = self.finalTime # [s]
         
         # Bestimme ersten Stellwert
         self.calc_stellwert(0)
@@ -68,12 +70,12 @@ class GesamtSollwertRegler:
 #
 # Interner Regler zum Nachführen des Gesamtsollwertes
 
-    def update_Regler(self, data) -> float:
+    def update_Regler(self, gasmengen) -> float:
         """
         Aktualisiert den internen Regler zum Nachführen des Gesamtsollwertes
 
         Args:
-            data (dict): Dictionary mit Kanalname + Messwert der Regelstellglieder [g/min]
+            gasmengen (dict): Addierte Gesamtgasmenge, pro Regler, die durch die Regler geströmt ist [g]
             
         Returns:
             (float): -1: wenn Stellwert nicht angepasst wird
@@ -82,17 +84,13 @@ class GesamtSollwertRegler:
         """
         
         # Aktualisiere bisher erreichte Gasmenge von aktiven Reglern
-        
-        
-        
-        self.update_totalFlowSum(data)
+        self.update_totalFlowSum(gasmengen)
 
+        # Bestimme TimeStamp
         self.lastUpdate_SystemTime = time.time()
-        timeStamp = data[DataManager.TIME_LABEL]
-        update = -1
-        # Wenn Zeit zwischen Stellwertkorrekturen abgelaufen ist, berechne neuen Gesamtsollwert
-        if(timeStamp - self.lastKorrTime > self.totZeit):
-            update = self.calc_stellwert(timeStamp)
+        timeStamp = self.lastUpdate_SystemTime - self.startTime
+        
+        update = self.calc_stellwert(timeStamp)
         
         self.log_gesamtSollwertRegler()
         
@@ -100,63 +98,66 @@ class GesamtSollwertRegler:
         
         
         
-    def finalize_Regler(self):
-        lastTime = time.time()
-        deltaT = lastTime - self.lastUpdate_SystemTime
-        
-        deltaFlow = self.lastFlow * (deltaT/60.0) # Gasfluss seit letzter Messung in Gramm mit linearer Approx.
-        self.totalFlowSum  += deltaFlow
+    def finalize_Regler(self, gasmengen):
+        self.update_totalFlowSum(gasmengen)
         
         
-    def calc_stellwert(self, timeStamp):
+    def calc_stellwert(self, timeStamp, ignoreInit:bool = False):
+        """
+        Schreibt theoretischen Gesamtgasfluss zum Erreichen der Zielgasmenge in self.lastTheoFlow und gibt diesen zurück.
+
+        Args:
+            timeStamp (float): Zeit in [s] seit Start der Prüfung
+
+        Returns:
+            float: neuen Gesamtstellwert [g/min] 
+        """
         
-        # Bestimme Restdauer und Gasmenge
-        timeLeft = self.endTime - timeStamp
-        massLeft = self.finalFlowSum - self.totalFlowSum
+        # Bestimme ob Rampen-Zeit abgelaufen ist
+        if(timeStamp > self.initZeit or self.initZeit == 0):
+            self.initDone = True
         
-        self.lastKorrTime = timeStamp
         
-        # Berechne theoretischen Fluss
-        self.lastTheoFlow = calc_theoreticalStaticFlow(timeLeft, massLeft)
-        # print ("theoFlow: " + str(massLeft) + "/" + str(timeLeft) + " = " + str(theoFlow))
+        # Rampenfunktion
+        if(not self.initDone and not ignoreInit):
+            rampenZeitAnteil = timeStamp / self.initZeit          
+            self.lastTheoFlow = max(self.initFlow * rampenZeitAnteil, sum(self._reglerAuswahl.values()) * 0.02)  
         
-        # print("LastTheoFlow: " + str(self.lastTheoFlow))
-        
-        # Multipliziere Startstellwert mit initFaktor zum Ausgleich von Einschwingverhalten
-        if(timeStamp == 0):
-            self.lastTheoFlow = self.lastTheoFlow * self.initFaktor
-        
+        else:
+            # Bestimme Restdauer und Gasmenge
+            timeLeft = self.endTime - timeStamp
+            massLeft = self.finalFlowSum - self.totalFlowSum
+            
+            # Berechne theoretischen Fluss
+            self.lastTheoFlow = calc_theoreticalStaticFlow(timeLeft, massLeft)
+
+            # Faktor zur Reduktion von Sollwertspitzen am Ende der Prüfung.
+            # Wenn im allerletzten Moment nur eine minimale Menge fehlt, würde der Sollwert unendlich hoch werden, die die Zeit gegen 0 geht (soll = m_rest / t_rest)
+            self.lastTheoFlow = self.lastTheoFlow * self.KORREKTUR_FAKTOR_SOLLWERTSPITZE
+            
         return self.lastTheoFlow
     
     
-    def update_totalFlowSum(self, data):
-
-        # Verarbeite Messung wenn es nicht die erste ist.
-        t = data[DataManager.TIME_LABEL]
-        dt = t - self.lastDataTime # [s]
-        
-        self.lastDataTime = t
-        
-        currentFlow = self.calc_dataSum(data)
-        deltaFlow = (self.lastFlow + currentFlow) / 2.0 * (dt/60.0) # Gasfluss seit letzter Messung in Gramm mit linearer Approx.
-        self.totalFlowSum  += deltaFlow
-        
-        self.lastFlow = currentFlow
+    
+    
+    
+    
+    def update_totalFlowSum(self, gasmengen):
+        self.totalFlowSum = self.calc_dataSum(gasmengen)
             
     
     
     
     def reset_Regler(self):
         """
-        Setzt den Regler zurück, sodass keine Informationen über die vergangenen Messungen vorhanden sind.
+        Setzt den GesamtsollwertRegler zurück, sodass keine Informationen über die vergangenen Messungen vorhanden sind.
         """
         self.lastFlow = 0
-        self.lastKorrTime = -float("inf")
         self.lastDataTime = 0
         self.totalFlowSum = 0
         self.startTime = 0
         self.endTime = 0
-        
+        self.initDone = False   
         
         
         
@@ -208,8 +209,8 @@ class GesamtSollwertRegler:
         
                 
             
-    def calc_dataSum(self, data) -> float:
-        """Summiert den Fluss aller Regel-Stellglieder auf
+    def calc_dataSum(self, gasmengen) -> float:
+        """Summiert den Fluss aller aktiven Regel-Stellglieder auf
 
         Args:
             data (dict): Fluss-Messwerte der Regel-Stellglieder
@@ -219,9 +220,14 @@ class GesamtSollwertRegler:
         """
         messSum = 0
         
-        for d in data:
-            if d != DataManager.TIME_LABEL and d in self._reglerAuswahl:
-                messSum += data[d]
+        # print (gasmengen)
+        
+        for p in gasmengen:
+            if  p in self._reglerAuswahl:
+                messSum += gasmengen[p]
+                
+        # print (messSum)
+        
         return messSum        
 
 
@@ -234,6 +240,9 @@ def calc_theoreticalStaticFlow(time, mass):
         time (float): Gesamtlaufzeit, nach welcher finalFlowSum erreicht werden muss [s]
         mass (float): Gasmasse, die nach finalTime geflossen sein muss [g].
     """
+    
+    # print (f"m: {mass}, t: {time}")
+    
     if(time > 0):
         return mass / (time / 60.0)
     

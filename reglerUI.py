@@ -16,6 +16,8 @@ from PyQt5.QtCore import Qt, QTimer, pyqtSignal
 
 from lisionStyle import LisionStyle
 
+from SimGasEA import SimGasEA
+
 import hwSetup as hs
 import reglerSetup as rs
 import messdatenGraphWidget as mgw
@@ -24,8 +26,8 @@ import pruefWidget as pw
 import consoleWidget as cw
 import helpDialog as hd
 import reglerConfigUI as rc
+import sensorConfigUI as sc
 import reglerConfigNullUI as rcn
-import wika_cpu5000_dvr as wcpu
 import secSetup as ss
 import reglerReadOutputLog as rrol
 
@@ -33,8 +35,8 @@ import reglerReadOutputLog as rrol
 class ReglerUI(QMainWindow):
     
     TITEL = "SimGas Regler GUI - CORI"
-    VERSION = "0.6"
-    YEAR = "2023"
+    VERSION = "0.11.2"
+    YEAR = "2024"
     
     _sig_close = pyqtSignal()
     
@@ -47,9 +49,12 @@ class ReglerUI(QMainWindow):
     # Manuelle Messung Controls
     ENABLE_MANUAL_CONTROLS = True
     
-    # Sicherheitsmagnetschalter # NICHT ANPASSEN, WENN MAN NICHT WEIß WAS MAN TUT!
+    # Sicherheitsmagnetschalter # NICHT ANPASSEN, WENN MAN NICHT WEIß, WAS MAN TUT!
     ENABLE_SEC_MAGNET_SWITCH = True
-    DEFAULT_SEC_COM = "COM11"
+    DEFAULT_SEC_IP = "172.20.20.2"
+    
+    # Entwickleransicht
+    SHOW_EXTENDED_FUNCTIONS = False
     
     ###################################
     
@@ -62,13 +67,16 @@ class ReglerUI(QMainWindow):
         self.sms = sms
             
         self.rmw = ReglerMainWidget(self)     
-        self.setCentralWidget(self.rmw)    
+        self.setCentralWidget(self.rmw)  
+        
+        # Hide Extended Functions
+        self.rmw.set_extendedFunctionVisibility(self.SHOW_EXTENDED_FUNCTIONS)  
                 
         self.setWindowTitle(self.TITEL)
         self.setWindowIcon(QIcon("symbols/lision.ico"))
 
         # Setzt Symbol in der Taskleiste
-        myappid = u'lision.DaEf.simgas.v0_6'
+        myappid = u'lision.DaEf.simgas.' + self.VERSION
         ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
         
         
@@ -90,10 +98,16 @@ class ReglerUI(QMainWindow):
         configAct.setStatusTip('Reglerkonfiguration')
         configAct.triggered.connect(self.open_config)
         configMenu.addAction(configAct)
-        configNullAct = QAction('&Nullpunktabgleich', self)
-        configNullAct.setStatusTip('Nullpunktabgleich')
-        configNullAct.triggered.connect(self.open_configNull)
-        configMenu.addAction(configNullAct)
+        
+        configSensorAct = QAction('&Sensorkonfiguration', self)
+        configSensorAct.setStatusTip('Sensorkonfiguration')
+        configSensorAct.triggered.connect(self.open_config_sensors)
+        configMenu.addAction(configSensorAct)
+        
+        #configNullAct = QAction('&Nullpunktabgleich', self)
+        #configNullAct.setStatusTip('Nullpunktabgleich')
+        #configNullAct.triggered.connect(self.open_configNull)
+        #configMenu.addAction(configNullAct)
         
         #########################
         
@@ -103,32 +117,37 @@ class ReglerUI(QMainWindow):
         
         # Verbinde Datenankunft mit Darstellung
         self.sgr.get_datamanager().sig_newDataReceived.connect(self.rmw.display_data)
-        
-        
+               
+            
         # Verbinde Sec Setup
         if(self.ENABLE_SEC_MAGNET_SWITCH):
             # Message bei Verbindungsversuch
             self.sms.sig_SEC_ConnectFinished.connect(self.print_ConnectTryMessage_SEC)
-            # Verbindung herstellen
-            self.sms._connect_sec(self.DEFAULT_SEC_COM)
+            # Starten der SEC-Messschleife, sobald Verbindung hergestellt
+            self.sms.sig_SEC_ConnectFinished.connect(self.sms._start_MessSchleife)            
+
             # Schließe Sicherheitsmagnetschalter bei Schließen der Anwendung
             self._sig_close.connect(self.sms._close_secSetup)
+
+            # Verbindung herstellen
+            self.sms._connect_sec()
             
-        
+
         # Verbinde Hardware
         self.sgr.sig_HWConnectFinished.connect(self.print_ConnectTryMessage)
+        # Starten der Messschleife, sobald Verbindung hergestellt
+        self.sgr.sig_HWConnectFinished.connect(self.sgr._start_MessSchleife)
+        
         self.sgr._connect_Ports()
                   
-        self.show()
                   
-        # Starten der Messschleife          
-        self.sgr._start_MessSchleife()
-        
-        # Starten der Sicherheits Messschleife
-        if(self.ENABLE_SEC_MAGNET_SWITCH):
-            self.sms._start_MessSchleife()
-        
-        
+                  
+                  
+        #########
+        # Start der UI
+                  
+        self.showMaximized()
+                          
         # Starte UI Update Timer
         self.timer_updateUI = QTimer()
         self.timer_updateUI.setInterval(self.UI_UPDATE_INTERVAL)
@@ -198,6 +217,10 @@ class ReglerUI(QMainWindow):
         configUI = rc.ReglerConfigUI(self.sgr)
         configUI.exec()
         
+    def open_config_sensors(self):
+        configUIsensors = sc.SensorConfigUI(self.sms)
+        configUIsensors.exec()
+         
     
     def open_configNull(self):
         configNullUI = rcn.ReglerConfigNullUI(self.sgr)
@@ -210,11 +233,7 @@ class ReglerUI(QMainWindow):
         self.rmw.reglerTable.update_ReglerListWidget()
         
         if(self.ENABLE_SEC_MAGNET_SWITCH):
-            self.rmw.smsWidget.update_SecMagnetSwitch()
-        
-        if(self.ENABLE_MANUAL_CONTROLS):
-            self.rmw.messStatWidget.update_MessungStatus()
-        
+            self.rmw.smsWidget.update_SecMagnetSwitch()        
 
 
 
@@ -230,12 +249,22 @@ class ReglerMainWidget(QWidget):
         self.mainLayout = QHBoxLayout()
         self.setLayout(self.mainLayout)
         
-        #========================
+    #========================
+    # LEFT
+    #========================
+        
+        leftGroup = QGroupBox()
+        self.leftLayout = QVBoxLayout()
+        leftGroup.setLayout(self.leftLayout)
+        self.mainLayout.addWidget(leftGroup)     
+        
+        #~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # Graph
-        #========================
+        #~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        
         
         self.graphWidget = mgw.MessdatenGraphWidget(self, mw.sgr.get_datamanager())
-        self.mainLayout.addWidget(self.graphWidget)
+        self.leftLayout.addWidget(self.graphWidget)
         self.graphWidget.set_floatingWindowEnabled(False)
         
         # CurveNames
@@ -243,98 +272,13 @@ class ReglerMainWidget(QWidget):
         for p in mw.sgr._ports:
             curveNames[p] = mw.sgr._ports[p].get_name()   
         self.graphWidget.set_curveNames(curveNames)
-
-        #=========================
-        # Right Group
-        #=========================
-
-
-        rightGroup = QGroupBox()
-        rightLayout = QVBoxLayout()
-        rightGroup.setLayout(rightLayout)
-        self.mainLayout.addWidget(rightGroup)        
         
-        # Sicherheitsmagnetschalter
-        if(self.__mainWindow.ENABLE_SEC_MAGNET_SWITCH):
-            self.smsWidget = SecMagnetSwitch(self.__mainWindow.sms, self.__mainWindow.sgr)
-            rightLayout.addWidget(self.smsWidget)
         
-        # Reglerliste
-        self.reglerTable = ReglerListe_Widget(self.__mainWindow, self.__mainWindow.sgr)
-        rightLayout.addWidget(self.reglerTable)
+        
         
         #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # Manual Control Group
-        #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        self.manualControlGroup = QGroupBox()
-        manualControlLayout = QHBoxLayout()
-        self.manualControlGroup.setLayout(manualControlLayout)
-        rightLayout.addWidget(self.manualControlGroup)
-        
-        #
-        
-        #--------------------------
-        # Regler Stellwert Group
-        #---------------------------
-        
-        
-        self.setGetReglerGroup = QGroupBox()
-        setGetReglerLayout = QVBoxLayout()
-        self.setGetReglerGroup.setLayout(setGetReglerLayout)
-        manualControlLayout.addWidget(self.setGetReglerGroup)        
-        
-        
-        # Set Stellwert
-        
-        self.setReglerGroup = QGroupBox()
-        setReglerLayout = QHBoxLayout()
-        self.setReglerGroup.setLayout(setReglerLayout)
-        setGetReglerLayout.addWidget(self.setReglerGroup)
-        
-        self.sollSpin = QDoubleSpinBox()
-        self.sollSpin.setMaximum(self.__mainWindow.sgr.get_max_gesSollwert())
-        self.sollSpin.setSingleStep(0.01)
-        self.sollSpin.setDecimals(2)
-        #self.sollSpin.setValue(10)
-        #self.sollSpin.setFont(QFont("Arial", 24))
-        self.sollSpin.setAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
-        setReglerLayout.addWidget(self.sollSpin, 1)
-        
-        self.sollUnitLabel = QLabel("[g/min]")
-        self.sollUnitLabel.setAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
-        setReglerLayout.addWidget(self.sollUnitLabel)
- 
-        self.setSollButton = QPushButton("Setze Gesamt-Sollwert")
-        self.setSollButton.clicked.connect(self.buttonSetSollwert_clicked)
-        setReglerLayout.addWidget(self.setSollButton,1)
-        
-        
-        # Get Stellwert
-        
-        getReglerGroup = QGroupBox()
-        getReglerLayout = QHBoxLayout()
-        getReglerGroup.setLayout(getReglerLayout)
-        setGetReglerLayout.addWidget(getReglerGroup)
-        
-        self.aktReglerText = QLineEdit("{:4.2f}".format(mw.sgr.get_GesamtSollWert()))
-        self.aktReglerText.setReadOnly(True)
-        self.aktReglerText.setAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
-        getReglerLayout.addWidget(self.aktReglerText, 1)
-        
-        self.sollUnitLabelAkt = QLabel("[g/min]")
-        self.sollUnitLabelAkt.setAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
-        getReglerLayout.addWidget(self.sollUnitLabelAkt)
-        
-        self.getSollButton = QPushButton("Lese Gesamt-Sollwert")
-        self.getSollButton.clicked.connect(self.buttonGetSollwert_clicked)
-        getReglerLayout.addWidget(self.getSollButton, 1)
-        
-        # Stop Knopf
-        
-        self.closeAllButton = QPushButton("ALLE \n SCHLIESSEN")
-        self.closeAllButton.clicked.connect(self.buttonCloseAll_clicked)
-        manualControlLayout.addWidget(self.closeAllButton)
-        self.closeAllButton.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Expanding)
+        # Data
+        #~~~~~~~~~~~~~~~~~~~
         
         
         #--------------------------
@@ -342,7 +286,63 @@ class ReglerMainWidget(QWidget):
         #---------------------------
         
         self.dataTable = mtw.MessdatenTableWidget(mw.sgr.get_datamanager())
-        rightLayout.addWidget(self.dataTable)
+        self.leftLayout.addWidget(self.dataTable)
+        
+        # DataLayout 
+        
+        dataGroup = QGroupBox()
+        dataLayout = QHBoxLayout()
+        dataGroup.setLayout(dataLayout)
+        self.leftLayout.addWidget(dataGroup)  
+        
+        #------------------------------
+        # Reglerliste
+        #------------------------------
+        
+        self.reglerTable = ReglerListe_Widget(self.__mainWindow, self.__mainWindow.sgr)
+        dataLayout.addWidget(self.reglerTable)
+        
+
+                
+
+        
+
+    #=========================
+    # RIGHT Group
+    #=========================
+
+
+        rightGroup = QGroupBox()
+        rightLayout = QVBoxLayout()
+        rightGroup.setLayout(rightLayout)
+        self.mainLayout.addWidget(rightGroup)   
+        
+        rightGroup.setFixedWidth(700)
+        
+        #-------------------------------
+        # Sicherheitsmagnetschalter
+        #---------------------------------
+        if(self.__mainWindow.ENABLE_SEC_MAGNET_SWITCH):
+            self.smsWidget = SecMagnetSwitch(self.__mainWindow.sms, self.__mainWindow.sgr)
+            rightLayout.addWidget(self.smsWidget)
+            
+            
+            
+        #--------------------------------------
+        # Prüfung und Messung Group
+        #--------------------------------------
+        
+        pruefGroup = QGroupBox("")
+        pruefLayout = QVBoxLayout()
+        pruefGroup.setLayout(pruefLayout)
+        rightLayout.addWidget(pruefGroup)
+        
+        self.pruefWidget = pw.PruefWidget(self.__mainWindow.sgr, self.__mainWindow.sms, self)
+        self.pruefWidget._sig_pdfSaved.connect(self.handle_pdfExport)   
+        
+        pruefLayout.addWidget(self.pruefWidget)
+        
+
         
         #---------------------------
         # Console
@@ -350,126 +350,27 @@ class ReglerMainWidget(QWidget):
         
         self.console = cw.ConsoleWidget(self.__mainWindow.sgr.protokoll)
         rightLayout.addWidget(self.console)
+             
         
-        
-        #----------------------------
-        # Record Group
-        #---------------------------
-        
-        self.buttonStartRecord = QPushButton("Aufzeichnung starten")
-        self.buttonStartRecord.clicked.connect(self.buttonStartRecord_clicked)
-        self.buttonStopRecordAndExport = QPushButton("Stop und Export zu Excel")
-        self.buttonStopRecordAndExport.clicked.connect(self.buttonStopRecordAndExport_clicked)
-        self.buttonStopRecordAndExport.setEnabled(False)
-        
-        recordGroup = QGroupBox("Aufzeichnen")
-        recordLayout = QHBoxLayout()
-        recordGroup.setLayout(recordLayout)
-        recordLayout.addWidget(self.buttonStartRecord)
-        recordLayout.addWidget(self.buttonStopRecordAndExport)
-        
-        rightLayout.addWidget(recordGroup)
-        
-        #===============================================
-        # Prüfung und Messung Group
-        #===============================================
-        
-        pruefGroup = QGroupBox("")
-        pruefLayout = QVBoxLayout()
-        pruefGroup.setLayout(pruefLayout)
-        self.mainLayout.addWidget(pruefGroup)
-        
-        self.pruefWidget = pw.PruefWidget(self.__mainWindow.sgr, self.__mainWindow.sms, self)
-        
-        pruefLayout.addWidget(self.pruefWidget)
+    
 
-
-        #---------------------------------------------
-        # Messung Group
-        #---------------------------------------------
-        pruefLayout.addStretch(1)
-        if(self.__mainWindow.ENABLE_MANUAL_CONTROLS):
-            self.messStatWidget = MessungStatus_Widget(self.__mainWindow.sgr)
-            pruefLayout.addWidget(self.messStatWidget)
-
-
-    def buttonCloseAll_clicked(self):
-        print ("Schließe alle Regler... ")
-        if(self.__mainWindow.sgr.set_allClosed()):
-            self.__mainWindow.sgr.protokoll.append(cw.ProtokollEintrag("Gesamt-Sollwert gesetzt: " + str(0) + " g/min", typ=cw.ProtokollEintrag.TYPE_SUCCESS))
-            self.pruefWidget.set_ControlledModeEnabled(True)        
-        else:
-            self.__mainWindow.sgr.protokoll.append(cw.ProtokollEintrag("Schließen der Regler fehlgeschlagen!", typ=cw.ProtokollEintrag.TYPE_FAILURE))
-           
+            
+    def set_extendedFunctionVisibility(self, extendedVis):
         
-        
-    def buttonSetSollwert_clicked(self):
-        soll = self.sollSpin.value()
-        print ("Set ges.soll: " + str(soll))
-        
-        # Calc zentrierte Reglerauswahl
-        reglerAuswahl = self.__mainWindow.sgr.calc_reglerAuswahl(soll)
-        
-        if(self.__mainWindow.sgr.set_GesamtSollwertAbsolut(soll, reglerAuswahl=reglerAuswahl)):
-            self.__mainWindow.sgr.protokoll.append(cw.ProtokollEintrag("Gesamt-Sollwert gesetzt: " + str(soll) + " g/min", typ=cw.ProtokollEintrag.TYPE_SUCCESS))
-            if(soll == 0):
-                self.pruefWidget.set_ControlledModeEnabled(True)
-            else:
-                self.pruefWidget.set_ControlledModeEnabled(False)
-                
-        
-        else:
-            self.__mainWindow.sgr.protokoll.append(cw.ProtokollEintrag("Setzen des Gesamt-Sollwertes fehlgeschlagen! Stellwert gültig?", typ=cw.ProtokollEintrag.TYPE_FAILURE))
+        self.reglerTable.set_extendedFunctionVisibility(extendedVis)
+        self.dataTable.setVisible(extendedVis)    
+    
+    
+    
             
         
-        
-    def buttonGetSollwert_clicked(self):
-        print ("current soll: " + str(self.sollSpin.value()))
-        wert = self.__mainWindow.sgr.get_GesamtSollWert()
-        if(wert != None):
-            self.aktReglerText.setText("{:4.2f}".format(wert))
+    def handle_pdfExport(self, fName):
+        if(fName != ""):
+            self.__mainWindow.sgr.protokoll.append(cw.ProtokollEintrag("Protokoll gespeichert unter " + fName + "!", typ=cw.ProtokollEintrag.TYPE_SUCCESS))
         else:
-            print ("Lesen des Gesamt-Sollwertes fehlgeschlagen.")
-            self.__mainWindow.sgr.protokoll.append(cw.ProtokollEintrag("Lesen des Gesamt-Sollwertes fehlgeschlagen!", typ=cw.ProtokollEintrag.TYPE_FAILURE))
- 
+            self.__mainWindow.sgr.protokoll.append(cw.ProtokollEintrag("Speichern des Graph fehlgeschlagen!", typ =  cw.ProtokollEintrag.TYPE_FAILURE))
+            
         
-        
-################################################################################################
-#
-# Aufzeichnung der Messwerte
-        
-    def buttonStartRecord_clicked(self):
-        """
-        Startet die Aufzeichnung von Messdaten
-        """
-
-        self.__mainWindow.sgr.start_recordData()
-
-        self.buttonStartRecord.setText("Aufzeichnung läuft...")
-        
-        # Setze Verfügbarkeit der Aufzeichnugnsbuttons
-        self.buttonStartRecord.setEnabled(False)
-        self.buttonStopRecordAndExport.setEnabled(True)
-        
-        self.__mainWindow.sgr.protokoll.append(cw.ProtokollEintrag("Aufzeichnung der Messwerte gestartet. Pfad: " + self.__mainWindow.sgr.dm.dataRecordPath, typ=cw.ProtokollEintrag.TYPE_SUCCESS))
-       
-    
-    
-    
-    def buttonStopRecordAndExport_clicked(self):
-        """
-        Stoppt die Aufzeichnung von Messdaten
-        """
-        
-        self.buttonStartRecord.setText("Aufzeichnung starten")
-        self.buttonStartRecord.setEnabled(True)
-        self.buttonStopRecordAndExport.setEnabled(False)
-        
-        self.__mainWindow.sgr.stop_recordData()
-
-        self.__mainWindow.sgr.protokoll.append(cw.ProtokollEintrag("Aufzeichnung der Messwerte gespeichert unter: " + self.__mainWindow.sgr.dm.dataRecordPath , typ=cw.ProtokollEintrag.TYPE_SUCCESS))
-
-
 
     def display_data(self, data):
         #print (data)
@@ -483,18 +384,12 @@ class ReglerMainWidget(QWidget):
         
         
     def set_ManualModeEnabled(self, enabled):
-        self.setReglerGroup.setEnabled(enabled)
-        self.reglerTable.set_secLockOpen(enabled) 
-        self.closeAllButton.setEnabled(enabled)
-    
-        if(self.__mainWindow.ENABLE_MANUAL_CONTROLS):
-            self.messStatWidget.setEnabled(enabled)
+        self.reglerTable.set_secLockOpen(enabled)
 
-        
     
     def closeMessdatenUI(self):
         self.graphWidget.set_openedExtern(False)
-        self.mainLayout.insertWidget(0, self.graphWidget)
+        self.leftLayout.insertWidget(0, self.graphWidget)
 
 
 ############################################################################################################################
@@ -517,8 +412,9 @@ class ReglerListe_Widget(QGroupBox):
         mainLayout.setSpacing(0)
         
         self.reglerWidgets = {}
-        # Titelzeile
-        mainLayout.addWidget(ReglerOverview_Widget(self.parent))
+        # Header Zeile
+        self.headerWidget = ReglerOverview_Widget(self.parent)
+        mainLayout.addWidget(self.headerWidget)
         # Einzelen Regler
         for p in self.__setup._ports:
             row = ReglerOverview_Widget(self.parent, self.__setup._ports[p])
@@ -544,6 +440,13 @@ class ReglerListe_Widget(QGroupBox):
     def set_secLockOpen(self, open):
         for row in self.reglerWidgets:
             self.reglerWidgets[row].set_secLockOpen(open)
+            
+            
+    def set_extendedFunctionVisibility(self, extendedVis):
+        self.headerWidget.set_extendedFunctionVisibility(extendedVis)
+        for row in self.reglerWidgets:
+            self.reglerWidgets[row].set_extendedFunctionVisibility(extendedVis)
+        self.sumReglerWidget.set_extendedFunctionVisibility(extendedVis)
             
             
 
@@ -718,13 +621,22 @@ class ReglerOverview_Widget(QGroupBox):
         self.lArbeitsbereich.setText(bereich)
         self.lIstwert.setText(istwert)
         
+        
+    def set_extendedFunctionVisibility(self, extendedVis):
+
+            self.sSetSoll.setVisible(extendedVis)  
+            self.pbSetSoll.setVisible(extendedVis)      
+            self.pbClose.setVisible(extendedVis)
+            self.cbEnable.setVisible(extendedVis)
+            self.pbOpenReglerOutputLog.setVisible(extendedVis)
+        
     
     def pbSetSollClicked(self):
-        self.regler._set_Sollwert(self.sSetSoll.value())
+        self.regler.set_Sollwert(self.sSetSoll.value())
         
     
     def pbCloseClicked(self):
-        self.regler._set_Sollwert(0)
+        self.regler.set_Sollwert(0)
     
     
     def pbOpenReglerOutputLogClicked(self):
@@ -759,7 +671,8 @@ class ReglerOverview_Widget(QGroupBox):
             self.cbEnable.setEnabled(self.secLockOpen)
             
             
-            # Connection
+            
+            # Connection            
             if(self.regler.connected == False):
                 self.lActive.setPixmap(self.bildInactive)
                     
@@ -810,87 +723,7 @@ class ReglerOverview_Widget(QGroupBox):
         self.secLockOpen = open
 
 
-
-
-class MessungStatus_Widget(QGroupBox):
-    
-    def __init__(self, sgr):
-        super().__init__("Messung")
         
-        self._sgr = sgr
-        
-        messungLayout = QVBoxLayout()
-        self.setLayout(messungLayout)
-        
-        # Status
-        messStatusGroup = QGroupBox()
-        messStatusLayout = QHBoxLayout()
-        messStatusGroup.setLayout(messStatusLayout)
-        messungLayout.addWidget(messStatusGroup, 1)
-        
-        self.bildMessungActive = QPixmap("symbols/light_green.png")
-        self.bildMessungInactive = QPixmap("symbols/light_red.png")
-          
-        self.lMessungActive = QLabel("")
-        self.lMessungActive.setFixedWidth(25)
-        messStatusLayout.addWidget(self.lMessungActive, 1)
-        
-        self.lMessungActiveLabel = QLabel("Paused")
-        messStatusLayout.addWidget(self.lMessungActiveLabel, 1)
-
-        #=====================
-        # CONTROLS
-        
-        messControlGroup = QGroupBox()
-        messControlLayout = QHBoxLayout()
-        messControlGroup.setLayout(messControlLayout)
-        messungLayout.addWidget(messControlGroup)
-        
-        # Start
-        self.pbStartMessung = QPushButton("Start")
-        messControlLayout.addWidget(self.pbStartMessung, 1)
-        self.pbStartMessung.clicked.connect(self.pbStartMessung_clicked)
-        
-        # Pause
-        self.pbPauseMessung = QPushButton("Pause")
-        messControlLayout.addWidget(self.pbPauseMessung, 1)
-        self.pbPauseMessung.clicked.connect(self.pbPauseMessung_clicked)
-        
-        # Reset Messungen
-        self.pbResetMessung = QPushButton("Reset Messungen")
-        messungLayout.addWidget(self.pbResetMessung, 1)
-        self.pbResetMessung.clicked.connect(self.pbResetMessung_clicked)
-        
-        messungLayout.addSpacing(10)
-        
-        
-    def update_MessungStatus(self):
-        if(self._sgr != None):
-            if(self._sgr.is_paused()):
-                self.lMessungActive.setPixmap(self.bildMessungInactive)
-                self.lMessungActiveLabel.setText("PAUSED")
-                self.pbPauseMessung.setEnabled(False)
-                self.pbStartMessung.setEnabled(True)
-            else:
-                self.lMessungActive.setPixmap(self.bildMessungActive)
-                self.lMessungActiveLabel.setText("RUNNING")
-                self.pbPauseMessung.setEnabled(True)
-                self.pbStartMessung.setEnabled(False)
-                
-                
-    def pbStartMessung_clicked(self):
-        if(self._sgr != None):
-            self._sgr.set_paused(False)            
-            
-                            
-    def pbPauseMessung_clicked(self):
-        if(self._sgr != None):
-            self._sgr.set_paused(True) 
-        
-            
-    def pbResetMessung_clicked(self):
-        if(self._sgr != None):
-            self._sgr.reset()         
         
       
 class SecMagnetSwitch(QGroupBox):
@@ -918,8 +751,10 @@ class SecMagnetSwitch(QGroupBox):
         self.bildInactive = QPixmap("symbols/light_red.png")
           
         self.lActive = QLabel("")
-        self.lActive.setFixedWidth(25)
+        #self.lActive.setFixedWidth(25)
         connectLayout.addWidget(self.lActive)
+        
+        connectLayout.addSpacing(1)
         
         # Open Status
         self.lOpen = QLabel("----")
@@ -929,26 +764,26 @@ class SecMagnetSwitch(QGroupBox):
         # Port
         self.lPort = QLabel("COM:")
         self.lPort.setFixedWidth(60)
-        connectLayout.addWidget(self.lPort)
+        #connectLayout.addWidget(self.lPort)
         self.tPortNum = QLineEdit("11")
-        self.tPortNum.setFixedWidth(60)
-        connectLayout.addWidget(self.tPortNum)
+        #self.tPortNum.setFixedWidth(60)
+        #connectLayout.addWidget(self.tPortNum)
         
         # Connect
         self.pbConnect = QPushButton("Connect")
-        self.pbConnect.setFixedWidth(60)
+        #self.pbConnect.setFixedWidth(60)
         self.pbConnect.clicked.connect(self.buttonConnect_clicked)
-        connectLayout.addWidget(self.pbConnect)
+        #connectLayout.addWidget(self.pbConnect)
         
         # Open
-        self.pbOpen = QPushButton("Open")
-        self.pbOpen.setFixedWidth(60)
+        self.pbOpen = QPushButton("Hauptventil öffnen")
+        #self.pbOpen.setFixedWidth(160)
         self.pbOpen.clicked.connect(self.buttonOpen_clicked)
         connectLayout.addWidget(self.pbOpen)
         
         # Close
-        self.pbClose = QPushButton("Close")
-        self.pbClose.setFixedWidth(60)
+        self.pbClose = QPushButton("Hauptventil schließen")
+        #self.pbClose.setFixedWidth(160)
         self.pbClose.clicked.connect(self.buttonClose_clicked)
         connectLayout.addWidget(self.pbClose)
         
@@ -957,14 +792,14 @@ class SecMagnetSwitch(QGroupBox):
         #############################
         
         dataGroup = QGroupBox("")
-        dataLayout = QHBoxLayout()
+        dataLayout = QVBoxLayout()
         dataGroup.setLayout(dataLayout)
         mainLayout.addWidget(dataGroup)
         
-        dataLeftGroup = QGroupBox("Gas")
-        dataLeftLayout = QVBoxLayout()
-        dataLeftGroup.setLayout(dataLeftLayout)
-        dataLayout.addWidget(dataLeftGroup)
+        self.gasGroup = QGroupBox("Gas")
+        dataLeftLayout = QHBoxLayout()
+        self.gasGroup.setLayout(dataLeftLayout)
+        dataLayout.addWidget(self.gasGroup)
         
         # FP
         fpGroup = QGroupBox()
@@ -997,61 +832,21 @@ class SecMagnetSwitch(QGroupBox):
         self.lTP = QLabel("[°C]")
         self.lTP.setFixedWidth(60)
         tpLayout.addWidget(self.lTP)
-        
-        dataRightGroup = QGroupBox("Raum")
-        dataRightLayout = QVBoxLayout()
-        dataRightGroup.setLayout(dataRightLayout)
-        dataLayout.addWidget(dataRightGroup)
-        
-        # TE
-        teGroup = QGroupBox()
-        teLayout = QHBoxLayout()
-        teGroup.setLayout(teLayout)
-        dataRightLayout.addWidget(teGroup)
-        self.iTE = QLabel("Raum-Temp.")
-        self.iTE.setFixedWidth(100)
-        teLayout.addWidget(self.iTE)
-        self.tTE = QLineEdit("")
-        self.tTE.setFixedWidth(60)
-        self.tTE.setReadOnly(True)
-        teLayout.addWidget(self.tTE)
-        self.lTE = QLabel("[°C]")
-        self.lTE.setFixedWidth(60)
-        teLayout.addWidget(self.lTE)
-        
-        # HU
-        huGroup = QGroupBox()
-        huLayout = QHBoxLayout()
-        huGroup.setLayout(huLayout)
-        dataRightLayout.addWidget(huGroup) 
-        self.iHU = QLabel("Raum-Hum.")
-        self.iHU.setFixedWidth(100)
-        huLayout.addWidget(self.iHU)
-        self.tHU = QLineEdit("")
-        self.tHU.setFixedWidth(60)
-        self.tHU.setReadOnly(True)
-        huLayout.addWidget(self.tHU)
-        self.lHU = QLabel("[%]")
-        self.lHU.setFixedWidth(60)
-        huLayout.addWidget(self.lHU)
-        
-   
-        #self.pbReadFP = QPushButton("read")
-        #self.pbReadFP.setFixedWidth(60)
-        #self.pbReadFP.clicked.connect(self.buttonRead_clicked)
-        #mainLayout.addWidget(self.pbReadFP)
+
         
     
     def buttonConnect_clicked(self):
         port = "COM" + self.tPortNum.text()
-        print ("Try to connect: " + port)
-        self.sms._connect_sec(port)
+        
         
     def buttonOpen_clicked(self):
         self.sms.set_sms_open(True)
         
+        
     def buttonClose_clicked(self):
         self.sms.set_sms_open(False)
+        
+        
     
     def buttonRead_clicked(self):
         #msg = self.sms._read("TE?")
@@ -1092,7 +887,9 @@ class SecMagnetSwitch(QGroupBox):
                 
                 extFPdata = dict()
                 
-                if(type(fp) != str):
+                # print(fp)
+                
+                if(type(fp) != str and fp != 0):
                     
                     # Berechnung GasTemp:
                     tp = 987.0 / ( 6.2886 - math.log10(fp*100) ) - 273.15
@@ -1108,23 +905,9 @@ class SecMagnetSwitch(QGroupBox):
                     
                     
                 self.sgr.set_externData(extFPdata)
-            
-                if(type(te) != str):
-                    # Raum-Temperatur in String umwandeln        
-                    te = "{:4.1f}".format(te)
-                    
-                if(type(hu) != str):
-                    # Raum-Feuchtigkeit in String umwandeln
-                    hu = "{:4.1f}".format(hu)
 
-                self.tFP.setText(fp)
-                self.tTE.setText(te)
-                self.tHU.setText(hu)
-                self.tTP.setText(tp)
-
-                #self.tFP.setText(str(self.sms.data[self.sms.CMD_TABLE[1]]))
-                #self.tTE.setText(str(self.sms.data[self.sms.CMD_TABLE[2]]))
-                #self.tHU.setText(str(self.sms.data[self.sms.CMD_TABLE[3]]))
+                self.tFP.setText(str(fp))
+                self.tTP.setText(str(tp))
                 
                 
         
@@ -1135,18 +918,19 @@ class SecMagnetSwitch(QGroupBox):
 
 if __name__ == '__main__':
 
+    # IP-Adresse des WAGO Feldbuskopplers
+    wagoIP = '172.20.20.2'
+
     app = QApplication(sys.argv)
 
-
-
-    # Magnetschalter    
-    ms = wcpu.WIKA_CPU_5000("WCPU")
-    
+    # WAGO EA Ebene
+    sgEA = SimGasEA(wagoIP)
+   
     # SecSetup (Magnetschalter)
-    sms = ss.SecSetup(ms)
+    sms = ss.SecSetup(sgEA)
     
     # Regel Stellglieder
-    sgr = rs.SimGasRegler()
+    sgr = rs.SimGasRegler(sgEA)
 
     # Öffne Anzeige
     main = ReglerUI(sgr, sms)

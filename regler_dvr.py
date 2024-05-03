@@ -7,20 +7,29 @@ import serial
 import serial.tools.list_ports
 
 # PyQt5 - Bibliotheken
-from PyQt5.QtCore import QThread, pyqtSignal, QObject
+from PyQt5.QtCore import QThread, pyqtSignal, QObject, QTimer
 
 # Bronkhorst-Propar Driver
 import propar
+
 
 
 class Regler_Dvr(QObject):
     
     # DataReceived Signal
     sig_newMsgReceived = pyqtSignal(bytes)
+    sig_newIntegral = pyqtSignal()
+    
+    # Close Connection Signal
+    sig_closeConnection = pyqtSignal()
     
     ARBEITSBEREICH_PUFFER = 0.0 # Bereich in %, der von zusätzlch zur HW-Ober- und Untergrenze des Nenn-Arbeitsbereichs Abstand gehalten werden soll
+    ARBEITSBEREICH_TOLERANZ = 0.2 # Relative tolerierte Abweichung des Sollwertes zu Grenzen des Arbeitsbereiches
 
     USE_BRONKHORST_TREIBER = True
+    
+    DEFAULT_COM_TAKT = 100
+    
 
     def __init__(self, name, port, arbeitsbereich, kalibrierung):
         """
@@ -42,15 +51,37 @@ class Regler_Dvr(QObject):
         self.__TGas = 0.0
         
         
-        self.__soll = 0
-        self.__mess = 0
-        self.__zaehler = 0 
+        self.__soll = 0     # [g/min]
+        self.__wunschSoll = 0   # [g/min]
+        self.__wunschSollValInt = 0
+        self.sollIsValid = False
+        self.__mess = 0     # [g/min]
+        self.__lastMessZeit = 0  # [s]
+        self.__menge = 0    # [g] 
         
         self.__ser = None
         self.connected = False
         self.busy = False
 
         self.__enabled = True
+        
+        self.__timings = {}
+        self.__maxTiming = {'messen': 0, 'soll lesen': 0, 'soll schreiben': 0}
+        
+        
+        ##############
+        # Messschleife
+
+        self._interval = self.DEFAULT_COM_TAKT
+        
+        self._threadMessLoop = QThread()
+        self._worker = ReglerUpdateWorker(self, self._interval)
+        self._worker.moveToThread(self._threadMessLoop)
+        
+        self._threadMessLoop.started.connect(self._worker._start_worker)
+        self._worker._sig_finished.connect(self._threadMessLoop.quit)
+        self._worker._sig_finished.connect(self._worker.deleteLater)
+        self._threadMessLoop.finished.connect(self._threadMessLoop.deleteLater)
 
 
     def _connect(self):
@@ -59,13 +90,9 @@ class Regler_Dvr(QObject):
         
             try:
                 if(self.__instrument == None or self.connected == False): 
-                    print (str(self.__port) + ": Starte Verbindungsaufbau-Versuch!")
+                    # print (str(self.__port) + ": Starte Verbindungsaufbau-Versuch!")
                                     
-                    print (self.__port)
-                    self.__instrument = propar.instrument(self.__port)
-                    # print (self.__instrument.address)
-                    # print (self.__instrument.measure)
-                    # print ("connection test ...")            
+                    self.__instrument = propar.instrument(self.__port)      
                     
                     # Test: Lesen des Messwertes.
                     if(self._read_Messwert() == None):
@@ -75,7 +102,7 @@ class Regler_Dvr(QObject):
                     self.connected = True      
                     return True
         
-                else:   # Verbindung zum Port steht schon und wird überprüft                
+                else:   # Verbindung zum Port steht schon              
                     return True
                 
                                 
@@ -88,49 +115,14 @@ class Regler_Dvr(QObject):
                 self.connected = False
             
                 return False  
-        else:
-            return self._connect_()
         
-
-    def _connect_(self):
-        try:
-            if(self.__ser == None or self.connected == False): 
-                print (str(self.__port) + ": Starte Verbindungsaufbau-Versuch!")
-                                
-                self.__ser = serial.Serial(
-                    port=self.__port, 
-                    baudrate = 38400, 
-                    parity=serial.PARITY_NONE, 
-                    stopbits=serial.STOPBITS_ONE, 
-                    bytesize=serial.EIGHTBITS, 
-                    timeout=1
-                )
-                
-                # print ("connection test ...")            
-                
-                # Test: Lesen des Messwertes.
-                if(self._read_Messwert() == None):
-                    raise Exception()
-                
-                print (str(self.__port) + ": Verbindung zum Port hergestellt!")      
-                self.connected = True      
-                return True
-    
-            else:   # Verbindung zum Port steht schon und wird überprüft                
-                return True
+        
+        
+    def _start_MessSchleife(self):
+        self._threadMessLoop.start()
+        
+        
             
-                            
-        except:
-            print ("Verbindung zum Port " + str(self.__port) + " konnte nicht hergestellt werden!")
-
-            if(self.__ser != None):
-                self.__ser.close()
-            self.__ser = None
-            self.connected = False
-        
-            return False  
-                
-    
     def load_Kalibrierung(self, kalibrierung):
         if (type(kalibrierung) == list):
             if (len(kalibrierung) == 4):
@@ -145,27 +137,68 @@ class Regler_Dvr(QObject):
     
  
     def _close(self):
+
+        # Update Thread beenden    
+        self.sig_closeConnection.emit()
+        #self._worker._stop_worker()
+        
         if(self.USE_BRONKHORST_TREIBER):
             if(self.__instrument != None):
                 self.__instrument.setpoint = 0
                 self.connected = False
                 print(self.__port + " closed")
                 return True
+
             return False
-        else:
-            return self._close_()
         
 
-    def _close_(self):
-        if(self.__ser != None):
-            if(self.__ser.is_open):
-                if(not self._set_Sollwert(0)):
-                    print("Unable to close " + self.__port + "!")
-                    return False
-                self.__ser.close() 
-                self.connected = False
-                print(self.__port + " closed")
+
+
+    def set_Sollwert(self, sollwert):
+        """Setzt den Sollwert, der beim entsprechenden COM-Takt geschrieben wird
+
+        Args:
+            sollwert (_type_): [g/min]
+        """
+
+        self.__wunschSoll = sollwert
+        self.__wunschSollValInt = int(self.__wunschSoll / self.__arbeitsbereich[1] * 32000)
+        # TODO: Überprüfung, Ob sollwert erfolgreich gesetzt
         return True
+        
+        
+    def _set_SollwertValid(self, valid):
+        self.sollIsValid = valid
+
+
+
+# GESAMTDURCHFLUSSMASSE INTEGRATION
+
+    def start_Integration(self):
+        self.__lastMessZeit = time.time()
+        self.__menge = 0.0
+        
+
+    def _integrate_Messwert(self, newMesswert):
+        
+        # print("integrate!")
+        
+        if(self.__lastMessZeit != 0):
+            newMessZeit = time.time()
+            dt = newMessZeit - self.__lastMessZeit
+            self.__menge += (newMesswert + self.__mess) / 2.0 * (dt/60.0)
+            self.__lastMessZeit = newMessZeit
+            
+            #if(self.__name == "R1"):
+            #    print("integrierte Menge: " + str(self.__menge))
+                
+        self.sig_newIntegral.emit()
+        
+            
+    def get_integrierteMenge(self):
+        return self.__menge
+    
+    
 
 # ABFRAGEN
 
@@ -180,59 +213,55 @@ class Regler_Dvr(QObject):
             if(self.__instrument == None):
                 print(str(self.__port) + ": Fehler beim Lesen des Messwertes! Messwert kann nicht gelesen werden! Port ist nicht verbunden!")
                 return None
-            
-            #print (str(self.__port) + ": busy = " + str(self.busy))
-            
+                        
             if(not self.busy):
                 self.busy = True
             
                 if(self.__instrument != None):
-                    # print (str(self.__port) + ": lese Messwert...")
-                    #print (str(self.__port) + " is open!")
+
                     ok = False
                     cnt = 0
-                    while (ok == False and cnt < 3):
+                    while (ok == False and cnt < 1):
                         valPer = None
                         try:
-                            valInt = self.__instrument.measure
-                            # print(str(self.__port) + ": Read (int): " + str(valInt))
-                            # Umrechnung des Messwertes in Prozent
-                            # valPer = valInt/32000.0
-                            valPer  = valInt / 32000.0 if valInt <= 41942 else (valInt - 65536) / 32000.0
+                            startTimer = time.time()
+                            valInt = self.__instrument.measure # Dauert im Test max. 64ms
+                            dauer = time.time() - startTimer
+                            self.__timings["messen"] = dauer
+                            if(dauer > self.__maxTiming["messen"]):
+                                self.__maxTiming["messen"] = dauer
                             
-                            #print (valPer)
+                            
+                            # Umrechnung des Messwertes in Prozent
+                            valPer  = valInt / 32000.0 if valInt <= 41942 else (valInt - 65536) / 32000.0
+                        
                             ok = True
                         except Exception as e:
                             print (e)
                             print(str(self.__port) + ": Fehler beim Lesen des Messwertes durch Verbindungsfehler!")
                             self.connected = False
                         
-                        
                         cnt = cnt + 1
-                        # print ("ok? " + str(ok))
                             
-                
-                #else:
-                    # __ser == None oder not __ser. is_open!
-                    #print (str(self.__port) + " is closed!")
                 
                 # Umrechnung von Prozent in g/min        
                 val = None
                 if(valPer != None):
                     val = valPer * self.__arbeitsbereich[1]
-                    # print(self.__arbeitsbereich[1])
                     # Anwendung der Kalibrierung
                     if(self.__useKalibrierung):
-                        #print ("Kalibrierung ...")
-                        #alt = val
                         val = self.apply_Kalibrierung(val, self.__pVordruck, self.__TGas)
-                        #print (str(alt) + " -> " + str(val))
-                        
                 
+                
+                # Integration (Muss vor self.__mess = val stehen, weil alter Messwert noch benötigt wird)
+                if(val != None):
+                    # self.connected = True   # Wenn gültiger Messwert ankommt connected auf True setzen
+                    self._integrate_Messwert(val)                
+                
+                # print(val)
                 self.__mess = val
-                self.busy = False
                 
-                #print ("=========================================^")
+                self.busy = False
                 
                 return val
             
@@ -243,111 +272,9 @@ class Regler_Dvr(QObject):
                 
             
             self.busy = False
-            #print ("=========================================^")
+
             return None        
-        
-        else:
-            return self._read_Messwert_()
-            
-    
-    def _read_Messwert_(self):
-        #print ("=========================================v")
-        
-        # Überprüfung, ob Verbindung zum Regler aufgebaut wurde
-        if(self.__ser == None or not self.__ser.is_open):
-            print(str(self.__port) + ": Fehler beim Lesen des Messwertes! Messwert kann nicht gelesen werden! Port ist nicht verbunden!")
-            return None
-        
-        #print (str(self.__port) + ": busy = " + str(self.busy))
-        
-        if(not self.busy):
-            self.busy = True
-        
-            if(self.__ser != None and self.__ser.is_open):
-                # print (str(self.__port) + ": lese Messwert...")
-                #print (str(self.__port) + " is open!")
-                ok = False
-                cnt = 0
-                while (ok == False and cnt < 3):
-                    valPer = None
-                    try:
-                        # print ("init read ...")
-                        # print (self.__ser)
-                        self.__ser.write(b':06030401210120\r\n') # Befehl zum Auslesen des Messwertes
-                        time.sleep(0.01)
-                        # print ("read ...")
-                        msg = self.__ser.readline()
-                        self.sig_newMsgReceived.emit(msg)
-                        # Auslesen des Messwertes von Nachricht (letzte 2 Bytes vor \r\n)
-                        # print (msg)
-                        valStr = msg[11:15]
-                        # print (valStr)
-                        valInt = self.twos_complement(valStr, 16)
-                        #print(valInt)
-                        # Umrechnung des Messwertes in Prozent
-                        valPer = valInt/32000.0
-                        
-                        if(valPer >= 1.0): 
-                            print(str(self.__port) + ": Fehler beim Lesen des Messwertes: Ungültiger Messwert")
-                            print(str(self.__port) + ": Antwort auf Messwertabfrage: " + str(msg))
-                            self.busy = False
-                            return None
-                        
-                        #print (valPer)
-                        ok = True
-                    except Exception as e:
-                        print (e)
-                        print(str(self.__port) + ": Fehler beim Lesen des Messwertes durch Verbindungsfehler!")
-                        if(self.__ser != None):
-                            self.__ser.close()
-                        self.__ser = None
-                        self.connected = False
-                    
-                    
-                    cnt = cnt + 1
-                    # print ("ok? " + str(ok))
-                        
-            
-            #else:
-                # __ser == None oder not __ser. is_open!
-                #print (str(self.__port) + " is closed!")
-            
-            # Umrechnung von Prozent in g/min        
-            val = None
-            if(valPer != None):
-                val = valPer * self.__arbeitsbereich[1]
-                # print(self.__arbeitsbereich[1])
-                # Anwendung der Kalibrierung
-                if(self.__useKalibrierung):
-                    #print ("Kalibrierung ...")
-                    #alt = val
-                    val = self.apply_Kalibrierung(val, self.__pVordruck, self.__TGas)
-                    #print (str(alt) + " -> " + str(val))
-                    
-            
-            self.__mess = val
-            self.busy = False
-            
-            #print ("=========================================^")
-            
-            return val
-        
-        else:
-            # busy-Flag noch auf True!
-            print (str(self.__port) + ": war busy! Konnte Messwert nicht lesen")
-            return "BUSY"        
-            
-        
-        self.busy = False
-        #print ("=========================================^")
-        return None
-    
-    
-    def twos_complement(self, hexstr, bits):
-        value = int(hexstr, bits)
-        if (value & (1 << (bits - 1))):
-            value -= 1 << bits
-        return value
+
         
 
     def set_current_pVordruck(self, pVordruck):
@@ -361,6 +288,7 @@ class Regler_Dvr(QObject):
 
     def apply_Kalibrierung(self, val, pVordruck, TGas):
         return self.__kalibrierung[0] + (self.__kalibrierung[1] * val) + (self.__kalibrierung[2] * pVordruck) + (self.__kalibrierung[3] * TGas)       
+
 
 
     def _read_Sollwert(self):
@@ -379,8 +307,13 @@ class Regler_Dvr(QObject):
             
             try:
                 self.busy = True
-                valPer = self.__instrument.readParameter(9) / 32000.0
-                # print(str(self.__port) + ": Read Sollwert:" + str(valPer))
+                startTimer = time.time()
+                valInt = self.__instrument.readParameter(9)   # Dauert im Test max. 64ms
+                dauer = time.time() - startTimer
+                self.__timings["soll lesen"] = dauer
+                if(dauer > self.__maxTiming["soll lesen"]):
+                    self.__maxTiming["soll lesen"] = dauer
+                valPer = valInt / 32000.0
                 
             except Exception as e:
                 print (e)
@@ -391,83 +324,45 @@ class Regler_Dvr(QObject):
             val = None
             if(valPer != None):
                 val = valPer * self.__arbeitsbereich[1]
+                # Neuen bestätigten Sollwert speichern
+                self.__soll = val
+            
+            # Überprüfen, ob Sollwert korrekt gesetz wurde
+            # print ("Soll-Abgleich: " + str(valInt) + " : " + str(self.__wunschSollValInt))
+            self.sollIsValid = valInt == self.__wunschSollValInt
             
             self.busy = False
-            return val
-        
-        else :
-            return self._read_Sollwert_()
-        
-
-    def _read_Sollwert_(self):
-        """
-        Gibt den Stellwert in [g / min] zurück
-        """   
-        valPer = None
-        
-        # Überprüfung, ob Verbindung zum Regler aufgebaut wurde
-        if(self.__ser == None or not self.__ser.is_open):
-            print(str(self.__port) + ": Fehler beim Lesen des Sollwertes! Sollwert kann nicht gelesen werden! Port ist nicht verbunden!")
-            return None
-        
-        try:
-            self.busy = True
-            self.__ser.write(b':06030401210121\r\n') # Befehl zum Auslesen des Sollwertes
-            time.sleep(0.01)
-            msg = self.__ser.readline()
-            self.sig_newMsgReceived.emit(msg)
-            # Auslesen des Sollwertes von Nachricht (letzte 2 Bytes vor \r\n)
-            #print (msg)
-            valStr = msg[11:15]
-            valInt = int(valStr, 16)
-            #print(valInt)
-            # Umrechnung des Sollwertes in Prozent
-            valPer = valInt/32000.0
-            #print (valPer)
-        except Exception as e:
-            print (e)
-            print(str(self.__port) + ": Fehler beim Lesen des Sollwertes!")
-            if(self.__ser != None):
-                self.__ser.close()
-            self.__ser = None
-            self.connected = False
             
-        # Umrechnung von Prozent in g/min
-        val = None
-        if(valPer != None):
-            val = valPer * self.__arbeitsbereich[1]
+                    
+        # Ausgabe von Timings
+        #print("Letzte Timings:")
+        #print(self.__timings)
+        #print("Schlechteste:")
+        #print(self.__maxTiming)
         
-        self.busy = False
-        return val
+            
         
         
 ###########################################################################################################
 #
 # BEFEHLE
 
-    def _set_Sollwert(self, soll):
+    def _write_Sollwert(self):
         """
-        Inklusive Rücklesen des Sollwertes
         @param: soll (float): stellwert in [g/min]
         """
         
         if(self.USE_BRONKHORST_TREIBER):
-        
-            # print ("set...")
-            
-            ###################
-            # Ist nur zum Debuggen der Stellwert-Aufteilungsfunktion da !!!
-            
-            # self.__soll = soll
-            ###################
-            
+                    
             # Überprüfung, ob Verbindung zum Regler aufgebaut wurde
             if(self.__instrument == None):
                 print(str(self.__port) + ": Fehler beim Setzen des Sollwertes! Sollwert kann nicht geschrieben werden! Port ist nicht verbunden!")
                 return False
             
+            soll = self.__wunschSoll
+            
             # Überprüfung auf Grenzen des Sollwertes auf Arbeitsbereich
-            if((soll < self.__arbeitsbereich[0] or soll > self.__arbeitsbereich[1]) and soll != 0):
+            if((soll < self.__arbeitsbereich[0] - self.__arbeitsbereich[0] * self.ARBEITSBEREICH_TOLERANZ or soll > self.__arbeitsbereich[1] + self.__arbeitsbereich[1] * self.ARBEITSBEREICH_TOLERANZ ) and soll != 0):
                 print(str(self.__port) + ": Fehler beim Setzen des Sollwertes! Sollwert + " + str(soll) + " liegt nicht im Arbeitsbereich " + str(self.__arbeitsbereich) + " des Reglers!")
                 return False
             
@@ -477,128 +372,39 @@ class Regler_Dvr(QObject):
             
             try:
                 valInt = int(sollPer * 32000)
-                
-                #print (valInt)
-                self.__instrument.setpoint = valInt
-                  
+                                    
                 ok = False
                 cnt = 0
-                # print (self.busy)
-                while(not ok and cnt < 3):
+                while(not ok and cnt < 1):
                     
                     if(not self.busy):
                         self.busy = True
-                        readSoll = round(self._read_Sollwert() / self.__arbeitsbereich[1] * 32000)
-                        # print (str(readSoll) + "<->" + str(valInt))
-                        
-                        if(readSoll == valInt):
-                            ok = True
+                        startTimer = time.time()
+                        if(self.__instrument.writeParameter(9, valInt)):        # Dauert im Test max. 64ms
+                            ok = True    
                         else:
                             cnt += 1
-                        
-                if(not ok):
-                    raise Exception()
+                        dauer = time.time() - startTimer
+                        self.__timings["soll schreiben"] = dauer
+                        if(dauer > self.__maxTiming["soll schreiben"]):
+                            self.__maxTiming["soll schreiben"] = dauer
+                            
+                    if(not ok):
+                        raise Exception("Maximale Anzahl Versuche den Sollwert zu schreiben erreicht.")
                             
             except Exception as e:
                 print (e)
-                print(str(self.__port) + ": Fehler beim Schreiben des Sollwertes!")
+                print(str(self.__port) + ": Fehler beim Schreiben des Sollwertes! ! !")
                 self.connected = False
                 self.busy = False
                 return False
             
             self.__soll = soll
             self.busy = False
+            self.connected = True
             return True
     
-        else:
-            return self._set_Sollwert_(soll)
-            
-            
-
-    def _set_Sollwert_(self, soll):
-        """
-        Inklusive Rücklesen des Sollwertes
-        @param: soll (float): stellwert in [g/min]
-        """
         
-        # print ("set...")
-        
-        ###################
-        # Ist nur zum Debuggen der Stellwert-Aufteilungsfunktion da !!!
-        
-        # self.__soll = soll
-        ###################
-        
-        # Überprüfung, ob Verbindung zum Regler aufgebaut wurde
-        if(self.__ser == None or not self.__ser.is_open):
-            print(str(self.__port) + ": Fehler beim Setzen des Sollwertes! Sollwert kann nicht geschrieben werden! Port ist nicht verbunden!")
-            return False
-        
-        # Überprüfung auf Grenzen des Sollwertes auf Arbeitsbereich
-        if((soll < self.__arbeitsbereich[0] or soll > self.__arbeitsbereich[1]) and soll != 0):
-            print(str(self.__port) + ": Fehler beim Setzen des Sollwertes! Sollwert + " + str(soll) + " liegt nicht im Arbeitsbereich " + str(self.__arbeitsbereich) + " des Reglers!")
-            return False
-        
-        
-        # Umrechnung von g/min in Prozent des Arbeitsbereiches
-        sollPer = soll / self.__arbeitsbereich[1]
-        
-        try:
-            valInt = int(sollPer * 32000)
-            valHex = hex(valInt)[2:]
-            
-            # Fülle mit 0en auf
-            valHexStr = str(valHex)
-            for i in range (4-len(valHexStr)):
-                valHexStr = "0" + valHexStr
-
-            sendStr = ':0603010121' + str(valHexStr.upper()) + '\r\n'
-            print (sendStr)
-            sendBytes = sendStr.encode('UTF-8')
-            #print (sendBytes)
-                
-            ok = False
-            cnt = 0
-            while(not ok and cnt < 10):
-                
-                if(not self.busy):
-                    self.busy = True
-                    # print ("send...")
-                    self.__ser.write(sendBytes)
-                    time.sleep(0.01)
-                    # print ("read...")
-                    result = self.__ser.readline()
-                    self.sig_newMsgReceived.emit(result)
-                    print ("R: " + str(result)) # sollte b':0403000005\r\n' sein
-                    time.sleep(0.01)
-                    self.busy = False
-                    # print ("read soll ...")
-                    # Überprüfe auf korrekte Übertragung
-                    readSoll = round(self._read_Sollwert() / self.__arbeitsbereich[1] * 32000)
-                    # print (str(readSoll) + "<->" + str(valInt))
-                    # print ("soll: " + str(readSoll))
-                    if(readSoll == valInt):
-                        ok = True
-                    else:
-                        cnt += 1
-                    
-            if(not ok):
-                raise Exception()
-                        
-        except Exception as e:
-            print (e)
-            print(str(self.__port) + ": Fehler beim Schreiben des Sollwertes!")
-            if(self.__ser != None):
-                self.__ser.close()
-            self.__ser = None
-            self.connected = False
-            self.busy = False
-            return False
-        
-        self.__soll = soll
-        self.busy = False
-        return True
-    
 # Setter
 
     def set_enabled(self, enabled):
@@ -648,6 +454,10 @@ class Regler_Dvr(QObject):
         return self.__soll / self.__arbeitsbereich[1] * 100
     
     
+    def get_soll_vorgabe(self):
+        return self.__wunschSoll
+    
+    
     def get_ist(self):
         return self.__mess
     
@@ -660,12 +470,81 @@ class Regler_Dvr(QObject):
         return self.__kalibrierung
 
 
+
+
+class ReglerUpdateWorker(QObject):
+    """
+    Enthält den Haupttask zum Update der Messungen
+    """
+    _sig_finished = pyqtSignal()
+    _sig_progress = pyqtSignal(int)
+    
+    def __init__(self, regler, interval):
+        super(ReglerUpdateWorker, self).__init__()
+        self._regler = regler
+        self._interval = interval
+        self._readingData = False
+        self._timer = QTimer()
+        
+        self._paused = False
+        
+        self._currentComTakt = -1
+        
+        regler.sig_closeConnection.connect(self._stop_worker)
+        
+        
+    def _start_worker(self):
+        self._start_timer()
+        
+
+    def _stop_worker(self):
+        self._timer.stop()
+        self._sig_finished.emit()
+        
+        
+    def _set_interval(self, interval):
+        self._timer.disconnect()
+        self._interval = interval
+        
+        
+    def _start_timer(self):
+        self._timer = QTimer()
+        self._timer.setInterval(self._interval)
+        self._timer.timeout.connect(self._executeComTakt)
+        self._timer.start()
+        
+    def _set_paused(self, paused):
+        self._paused = int(paused)
+
+
+    def _executeComTakt(self):
+
+        self._currentComTakt = (self._currentComTakt + 1) % 3
+
+        if(self._currentComTakt == 0):
+        # Messwert lesen
+            self._regler._read_Messwert()
+                
+       
+        elif(self._currentComTakt == 1):
+        # Sollwert schreiben
+            self._regler._write_Sollwert()
+            
+            
+            
+        elif(self._currentComTakt == 2):
+        # Sollwert lesen (wird in __soll geschrieben, kann per get_AkzeptiertenSollwert() ausgelesen werden)
+            self._regler._read_Sollwert()
+            
+            
+        else:
+            print("Achtung !!! Unbekannter COM-Takt!!!")
+
+
+
+
 if __name__ == "__main__":
     
-    
-    with open("hexTest.txt", "w") as f:
-        for i in range (0, 65536, 1):
-            h = hex(i)
-            f.write(str(i) + " -> " + str(h) + " -> " +  str(Regler_Dvr.twos_complement(None, h, 16)) + "\n")
+    pass
 
         
