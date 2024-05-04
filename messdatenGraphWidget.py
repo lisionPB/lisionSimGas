@@ -7,8 +7,9 @@ Created on Mon Sep 12 19:15:31 2022
 v2.3 (Verwende Label statt Namen aus Datamanager)
 """
 
+
 from PyQt5 import QtCore
-from PyQt5.QtWidgets import QGroupBox, QVBoxLayout, QHBoxLayout, QPushButton, QDoubleSpinBox, QLabel, QCheckBox
+from PyQt5.QtWidgets import QWidget, QGroupBox, QVBoxLayout, QHBoxLayout, QPushButton, QDoubleSpinBox, QLabel, QCheckBox
 
 import pyqtgraph as pg
 import pyqtgraph.exporters as pyexp
@@ -38,12 +39,18 @@ class MessdatenGraphWidget(QGroupBox):
         self.parent = parent
         self.openedExtern = False
         
+        ##########
+        # Main Layout
         self.mainLayout = QVBoxLayout()
         self.setLayout(self.mainLayout)
+    
+        # Graph Layout
     
         self.graphWidget = MessdatenGraphPlot(dataMan)
         self.mainLayout.addWidget(self.graphWidget)
         
+        ##########
+        # Bottom Layout
         self.bottomGroup = QGroupBox()
         self.bottomLayout = QVBoxLayout()
         self.bottomGroup.setLayout(self.bottomLayout)
@@ -87,7 +94,7 @@ class MessdatenGraphWidget(QGroupBox):
         self.controlLayout.addWidget(self.refLineLabel, 1)
         self.controlLayout.addWidget(self.referenzSpinner, 1)
              
-            
+        
               
     def update_MessGraphWidget(self, visibilities=None, sampletime=1000):
         self.graphWidget.update_MessGraphPlot(visibilities, sampletime)
@@ -162,8 +169,22 @@ class MessdatenGraphPlot(pg.PlotWidget):
         DataManager: Datamanager, von dem sich das Widget die Daten holt.
     """
     
+    DEFAULT_CURVE_PENS = [
+        pg.mkPen(220,0,220, width=1),       #   lila
+        pg.mkPen(250,100,250, width=1),     #   rosa  
+        pg.mkPen(0,220,220, width=1),       #  blaugrün
+        pg.mkPen(100,220,220, width=1),     #   hellblaugrün
+        pg.mkPen(0,220,0, width=1),   #   grün
+        pg.mkPen(100,220,100, width=1),     #   hellgrün     
+        pg.mkPen(0,0,200, width=1),     #   blau
+        pg.mkPen(255,0,0, width=1),     #   rot
+        pg.mkPen(255,150,0, width=1),     #   orange
+    ]
+    
     def __init__(self, dataMan):	       
         super().__init__(axisItems={'bottom': FmtXAxisItem(orientation='bottom')})
+
+
 
         self.__update = True
 
@@ -183,10 +204,26 @@ class MessdatenGraphPlot(pg.PlotWidget):
         xInit = []        
         yInit = []
         
+        ########
+        # Axen
+        
         self.getPlotItem().getAxis("left").setWidth(40)
+        self.getPlotItem().getAxis("left").setPen(pg.mkPen(50,50,50))
+        self.getPlotItem().getAxis("left").setTextPen(pg.mkPen(50,50,50))
+        
         self.getPlotItem().getAxis("bottom").setHeight(40)
+        self.getPlotItem().getAxis("bottom").setPen(pg.mkPen(50,50,50))
+        self.getPlotItem().getAxis("bottom").setTextPen(pg.mkPen(50,50,50))
 
+        ###########
+        # Legende
         self.addLegend()
+        self.getPlotItem().legend.setColumnCount(10)
+        anchorx = 0
+        anchory = 0
+        anchor = (anchorx, anchory)
+        self.getPlotItem().legend.anchor(itemPos=anchor, parentPos=anchor, offset=[0,0])
+        self.getPlotItem().legend.setLabelTextColor(50,50,50)
          
         ########
         # Plots
@@ -218,14 +255,17 @@ class MessdatenGraphPlot(pg.PlotWidget):
         
         
         # Daten 
-        for k in self.__dataMan.get_channelNames():
+        for i,k in enumerate(self.__dataMan.get_channelNames()):
             self.plotVis[k] = True                
-            self.curves[k]  = self.plot(xInit, yInit, name=self.__dataMan.get_channelLabels()[k], pen=pg.mkPen((random.randint(30, 250),random.randint(30, 250),random.randint(30, 250)), width=1))                
+            self.curves[k]  = self.plot(xInit, yInit, name=self.__dataMan.get_channelLabels()[k], pen=self.DEFAULT_CURVE_PENS[i])                
         
         
         self.showGrid(x=True,y=True)
         
         self.getPlotItem().getViewBox().setDefaultPadding(0.05)
+                        
+        
+        self.setBackground((255,255,255))              
                         
         self.resetFokus()
         
@@ -340,12 +380,15 @@ class MessdatenGraphPlot(pg.PlotWidget):
                         
                 
                 
+    def setCurveVisibility(self, visibilities):
+        for c in visibilities:
+            if(c in self.curves):
+                self.curves[c].setVisible(bool(visibilities[c]))            
+                
             
     def toggle_plotVisibility(self, channel):
         self.plotVis[channel] = not self.plotVis[channel]
-        
-        
-        
+    
         
     def set_plotVisibility_global(self, visibility):
         for k in self.plotVis.keys():
@@ -355,10 +398,15 @@ class MessdatenGraphPlot(pg.PlotWidget):
         
     def set_referenzLinie(self, pos):
         self.refLinie.setPos(pos)
+        
+        
+    def get_graphdata(self):
+        return self.__dataMan.get_DataDict()
     
     
     
     def resetFokus(self):	
+                    
         self.__timeRange = self.__timeRangeOnFokus # Setze Datenfenster auf timeRangeOnFokus Sekunden
         self.getPlotItem().getViewBox().enableAutoRange(x=False, y=True)
         self.__showLast = True
@@ -410,4 +458,3 @@ class FmtXAxisItem(pg.AxisItem):
             tickStrings.append("%.2d:%.2d:%.2d:%.2d" % (d, h, m, s))	
         
         return tickStrings
-    

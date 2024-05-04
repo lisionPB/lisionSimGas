@@ -30,9 +30,9 @@ class SimGasEA(object):
         self.__client = None
         self.connect()
         
-        self._sensorsNames = ["F1, F2, F3, F4"]
-        self._sensorAdressen = {self._sensorsNames[0]: [0,0]}
-        self._sensors = {self._sensorsNames[0]: [100, 200]}
+        self._sensors = {}
+        
+
         
     def connect(self):
         try:
@@ -46,7 +46,7 @@ class SimGasEA(object):
             # Setze alle Ausgangsinformationen auf einen initialen Wert gemaess der Config-Datei
             self.MAGVENT(0)
             
-            print("Verbindung zu SimGasEA hergestellt")
+            print("Verbindung zu SimGasEA hergestellt\n")
             
             return True
 
@@ -56,7 +56,10 @@ class SimGasEA(object):
         
         return False
         
-        
+    
+    def setSensorBereiche(self, sensors):
+        self._sensors = sensors
+    
 
     def __readDigitalInput(self):
         """
@@ -117,7 +120,7 @@ class SimGasEA(object):
             ans = self.__client.read_input_registers(0)
             val = ans.getRegister(0)
             # 0 - 16 bar Messbereich
-            fac = fac = 16 / 2047
+            fac = 16 / 2047
             # Vorzeichen ermitteln
             sig = 1 if (val & 32768) == 0 else -1
             # Vorzeichen entfernen
@@ -137,10 +140,10 @@ class SimGasEA(object):
         """
         if(self.__client):
             # Lesen des Wertes von der Analogkarte
-            ans = self.__client.read_input_registers(self._sensorAdressen[idstr][0])
+            ans = self.__client.read_input_registers(int(self._sensors[idstr]["addr"][0]))
             val = ans.getRegister(0)
-            # 0 - 16 bar Messbereich
-            fac = fac = 16 / 2047
+            # 0 - max bar Messbereich
+            fac = (float(self._sensors[idstr]["max"]) - float(self._sensors[idstr]["min"])) / 2047
             # Vorzeichen ermitteln
             sig = 1 if (val & 32768) == 0 else -1
             # Vorzeichen entfernen
@@ -148,7 +151,7 @@ class SimGasEA(object):
             # Liegt ein Fehler vor?
             err = False if (val & 3) == 0 else True
             # Zahl ermitteln
-            val = (val >> 4) * fac * sig
+            val = ((val >> 4) * fac + float(self._sensors[idstr]["min"]) ) * sig
             # Rückgabe eines Messwertfehlers. err=False => Wert ist gültig!
             return  err, val
         return None        

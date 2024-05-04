@@ -105,7 +105,7 @@ class HWSetup(QObject):
         #print ("---------------------------------------------v")
         if(not self._testmode):
             # Versuche Verbindung neu aufzubauen, wenn Fehler vorliegt:
-            print("hw108: ConnectStatus: " + str(self._hwConnectStatus))
+            # print("hw108: ConnectStatus: " + str(self._hwConnectStatus))
             if(self._hwConnectStatus != self.HW_CONNECT_STATUS_OK):
                 self._connect_Ports()
         

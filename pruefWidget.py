@@ -9,7 +9,7 @@ import pyqtgraph as pg
 import pyqtgraph.exporters as pyexp
 
 import random
-
+import json
 import time
 from datetime import datetime
 
@@ -17,6 +17,8 @@ from reportlab.pdfgen import canvas
 from reportlab.lib import utils
 from reportlab.lib.units import cm
 from reportlab.platypus import Frame, Image
+
+import matplotlib.pyplot as plt
 
 #from PIL import Image 
 
@@ -32,6 +34,8 @@ class PruefWidget(QGroupBox):
     DEFAULT_MASSE_G = 8
     DEFAULT_RAMPENZEIT_S = 5
     
+    FILE_CONFIG_DEFAULTS = "config_pruefung.json"
+    
     _sig_pdfSaved = pyqtSignal(str) # "" wenn fehler, sonst Filename
     
     def __init__(self, rs, sms, mw):
@@ -45,6 +49,8 @@ class PruefWidget(QGroupBox):
         self.sgr = rs
         self.sms = sms
         self.mw = mw
+        
+        self._load_pruefConfig()
         
         self.mainLayout = QVBoxLayout()
         self.setLayout(self.mainLayout)
@@ -67,6 +73,47 @@ class PruefWidget(QGroupBox):
         self.timer_endPruefung = QTimer()
         self.timer_endPruefung.setSingleShot(True)
         self.timer_endPruefung.timeout.connect(self.endPruefung)
+        
+    
+    
+    def _load_pruefConfig(self):
+        """
+        Liest Default Pruef-Konfiguration aus json-File
+        """
+        # TODO: Ausnahmebehandlung, wenn Config File nicht gefunden wurde oder File ungültiges Format hat!
+        
+        f = open(self.FILE_CONFIG_DEFAULTS)
+        conf = json.load(f)
+        
+        self.DEFAULT_MASSE_G = conf["DEFAULT_MASSE_G"]
+        self.DEFAULT_RAMPENZEIT_S = conf["DEFAULT_RAMPENZEIT_S"]
+        self.DEFAULT_ZEIT_MIN = conf["DEFAULT_ZEIT_MIN"]        
+               
+        self.mw.graphWidget.graphWidget.setCurveVisibility(conf["visibility"])
+        
+        f.close()
+
+
+    def save_pruefConfig(self):  
+        conf = {}
+        conf["DEFAULT_MASSE_G"] =  self.sMengeSpinner.value()
+        conf["DEFAULT_RAMPENZEIT_S"] = self.sStartzeitSpinner.value()
+        conf["DEFAULT_ZEIT_MIN"] = self.sZeitSpinner.value()
+        
+        
+        visibility = {}
+        for c in self.mw.graphWidget.graphWidget.curves:
+            visibility[c] = self.mw.graphWidget.graphWidget.curves[c].isVisible()
+        conf["visibility"] = visibility
+                
+        
+        with open(self.FILE_CONFIG_DEFAULTS, "w") as outfile:
+            json.dump(conf, outfile, indent=4)
+        
+
+        print ("Default-Einstellungen gespeichert.")
+        
+        
         
     
     
@@ -424,11 +471,15 @@ class PruefWidget(QGroupBox):
                     exporter = pyexp.ImageExporter(self.mw.graphWidget.graphWidget.plotItem)
                     # imgName = QtCore.QFileInfo(fn).baseName() + ".png"
                     imgName = QtCore.QFileInfo(fn).absoluteFilePath() + QtCore.QFileInfo(fn).baseName() + ".png"
-                    exporter.parameters()["invertValue"] = True
+                    # exporter.parameters()["invertValue"] = True
                     exporter.export(imgName)
-                    c.drawImage(imgName, offsetX , 0, width = 17 * cm, preserveAspectRatio=True)
+                    c.drawImage(imgName, offsetX , -200, width = 17 * cm, preserveAspectRatio=True)
                     os.remove(imgName)
                     
+                    
+                    #graphData = self.mw.graphWidget.get_graphdata()
+                    #plt.plot(graphData)
+                    #plt.savefig('foo.png')
 
                     # Speichern
                     c.showPage()
@@ -488,4 +539,3 @@ class PruefWidget(QGroupBox):
             
             
             return ("%.2d:%.2d:%.2d:%.2d" % (d, h, m, s))	
-        

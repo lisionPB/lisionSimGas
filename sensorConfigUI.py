@@ -8,6 +8,8 @@ class SensorConfigUI(QDialog):
     def __init__(self, sms):
         super().__init__()
   
+        self.sms = sms
+  
         layout = QVBoxLayout()
         self.setLayout(layout)
   
@@ -36,11 +38,12 @@ class SensorConfigUI(QDialog):
         
     
     def saveConfig(self):
-        config = self.reglerConfigGroup.getConfig()    
+        config = self.sensorConfigGroup.getConfig()    
         # TODO: Plausi Check?
         
         for s in config:
-            self.sms._sgEA._sensors[s] = config[s]
+            self.sms._sgEA._sensors[s]["min"] = config[s][0]
+            self.sms._sgEA._sensors[s]["max"] = config[s][1]
   
         self.close()
   
@@ -56,14 +59,14 @@ class SensorConfigGroup(QGroupBox):
         self.scrs = {}
         for s in sms._sgEA._sensors:
             scr = SensorConfigRow(s, sms._sgEA._sensors[s])
-            self.scrs[r] = scr
+            self.scrs[s] = scr
             layout.addWidget(scr)
             
             
     def getConfig(self):
         conf = {}
         for s in self.scrs:
-            conf[s] = [self.scrs[s].sMin.value(), self.rcrs[r].sMax.value()]
+            conf[s] = [self.scrs[s].sMin.value(), self.scrs[s].sMax.value()]
             
         return conf
             
@@ -85,26 +88,25 @@ class SensorConfigRow(QGroupBox):
         lName = QLabel(name)
         layout.addWidget(lName)
         
-        # Arbeitsbereich MIN und MAX
+        # Arbeitsbereich MIN
         lMin = QLabel("Wert 4mA")
         layout.addWidget(lMin)
-        
         self.sMin = QDoubleSpinBox()
         self.sMin.setMinimum(0.00)
         self.sMin.setMaximum(10000.00)
         self.sMin.setSingleStep(0.01)
-        self.sMin.setValue(self.s [0])
+        self.sMin.setValue(self.s["min"])
         self.sMin.setEnabled(True)
         layout.addWidget(self.sMin)
         
+        # Arbeitsbereich MAX
         lMax = QLabel("Wert 20mA")
         layout.addWidget(lMax)
-        
         self.sMax = QDoubleSpinBox()
         self.sMax.setMinimum(0.00)
         self.sMax.setMaximum(10000.00)
         self.sMax.setSingleStep(0.01)
-        self.sMax.setValue(self.s [1])
+        self.sMax.setValue(self.s["max"])
         self.sMax.setEnabled(True)
         layout.addWidget(self.sMax)
         

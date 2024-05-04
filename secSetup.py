@@ -12,7 +12,8 @@ v 2.2.1 (Max Counter for close all)
 from PyQt5.QtCore import QObject, QThread, pyqtSignal, QTimer
 
 import time
-
+import math
+import json
 
 class SecSetup(QObject):
     """
@@ -30,6 +31,8 @@ class SecSetup(QObject):
        
     CMD_TABLE = ["MOx","FP?","TE?","HU?"]
     
+    CONFIG_FILE_SENSOREN = "config_sensors.json"
+    
     _sig_NewSecData = pyqtSignal(dict)
     _sig_SEC_SetupConnect = pyqtSignal()
     sig_SEC_ConnectFinished = pyqtSignal(int)
@@ -43,12 +46,15 @@ class SecSetup(QObject):
         
         self.cmdSwitch = 0
         self.cmdOpen = 0
-        self.data = {"FP?":0, "TE?":0, "HU?":0}
+        self.data = {"FP?":0}
+        
+        # Übergeben der Sensormessbereiche
+        self._sgEA.setSensorBereiche(self._load_sensorConfig(self.CONFIG_FILE_SENSOREN))
         
         # Init Flaschendruck Data
-        self.dataVordruck = {}
-        for f in self._sgEA._sensorsNames:
-            self.dataVordruck[f] = 0
+        self.dataGas = {}
+        for f in self._sgEA._sensors:
+            self.dataGas[f] = {"FP" : None, "TP" : None}
 
         
         ##############
@@ -81,6 +87,29 @@ class SecSetup(QObject):
         
         self.terminated = False
 
+
+    def _load_sensorConfig(self, confFileURL):
+        """
+        Liest Sensor-Konfiguration aus json-File
+        """
+        # TODO: Ausnahmebehandlung, wenn Config File nicht gefunden wurde oder File ungültiges Format hat!
+        
+        f = open(confFileURL)
+        conf = json.load(f)
+        
+        # Auslesen der Messbereiche der Sensoren
+        sensors = conf           
+        f.close()
+        
+        return sensors
+
+
+    def save_sensorConfig(self):       
+        with open(self.CONFIG_FILE_SENSOREN, "w") as outfile:
+            json.dump(self._sgEA._sensors, outfile, indent=4)
+            
+        print ("Sensor-Konfiguration gespeichert.")
+
             
     def _start_MessSchleife(self):
         if(self._secConnectStatus == self.SEC_CONNECT_STATUS_OK):
@@ -107,19 +136,25 @@ class SecSetup(QObject):
             try:
                 err, msg = self._sgEA.VORDRUCK()
                 
+                                
+                ###
+                for f in self.dataGas:
+                    err2, fp = self._sgEA.VORDRUCK_ID(f)
+                    self.dataGas[f]["FP"] = fp
+                    
+                    # Berechnung GasTemp:
+                    if(type(fp) != None and fp != 0):
+                        self.dataGas[f]["TP"] = 987.0 / ( 6.2886 - math.log10(fp*100) ) - 273.15
+                ###
                 
-                # TO BE TESTED
-                for f in self.dataVordruck:
-                    err2, msg2 = self._sgEA.VORDRUCK_ID(f)
-                    
-                ####
-                    
-                    
+                
+                
                 if(err):
                     raise Exception("Fehler beim Auslesen des Vordrucks")
                 
-            except:
+            except Exception as e:
                 # Fehler beim Auslesen des Messwertes
+                print (e)
                 print ("SEC: Fehler beim Auslesen des Messwertes!")
                 self._secConnectStatus = self.SEC_CONNECT_STATUS_NONE
             

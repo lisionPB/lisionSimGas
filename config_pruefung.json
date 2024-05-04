@@ -1,0 +1,16 @@
+{
+    "DEFAULT_MASSE_G": 8.0,
+    "DEFAULT_RAMPENZEIT_S": 5.0,
+    "DEFAULT_ZEIT_MIN": 1.0,
+    "visibility": {
+        "COM1": false,
+        "COM1_SOLL": false,
+        "COM2": false,
+        "COM2_SOLL": false,
+        "COM3": false,
+        "COM3_SOLL": false,
+        "GES_IST": true,
+        "GES_SOLL": true,
+        "FP": true
+    }
+}

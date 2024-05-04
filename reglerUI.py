@@ -35,7 +35,7 @@ import reglerReadOutputLog as rrol
 class ReglerUI(QMainWindow):
     
     TITEL = "SimGas Regler GUI - CORI"
-    VERSION = "0.11.2"
+    VERSION = "0.11.3"
     YEAR = "2024"
     
     _sig_close = pyqtSignal()
@@ -70,7 +70,7 @@ class ReglerUI(QMainWindow):
         self.setCentralWidget(self.rmw)  
         
         # Hide Extended Functions
-        self.rmw.set_extendedFunctionVisibility(self.SHOW_EXTENDED_FUNCTIONS)  
+        self.rmw.set_extendedFunctionVisibility(self.SHOW_EXTENDED_FUNCTIONS) 
                 
         self.setWindowTitle(self.TITEL)
         self.setWindowIcon(QIcon("symbols/lision.ico"))
@@ -185,6 +185,13 @@ class ReglerUI(QMainWindow):
             
             # Save ReglerConfig
             self.sgr.save_reglerConfig()
+            
+            # Save SensorConfig
+            self.sms.save_sensorConfig()
+            
+            # Save PruefConfig
+            self.rmw.pruefWidget.save_pruefConfig()
+            
             
             print ("Regler UI closed")
         else:
@@ -358,7 +365,8 @@ class ReglerMainWidget(QWidget):
     def set_extendedFunctionVisibility(self, extendedVis):
         
         self.reglerTable.set_extendedFunctionVisibility(extendedVis)
-        self.dataTable.setVisible(extendedVis)    
+        self.dataTable.setVisible(extendedVis)
+        self.smsWidget.set_extendedFunctionVisibility(extendedVis)
     
     
     
@@ -791,47 +799,25 @@ class SecMagnetSwitch(QGroupBox):
         # Data
         #############################
         
-        dataGroup = QGroupBox("")
+        dataGroup = QGroupBox("Gas-Sensoren")
         dataLayout = QVBoxLayout()
         dataGroup.setLayout(dataLayout)
         mainLayout.addWidget(dataGroup)
         
-        self.gasGroup = QGroupBox("Gas")
-        dataLeftLayout = QHBoxLayout()
-        self.gasGroup.setLayout(dataLeftLayout)
-        dataLayout.addWidget(self.gasGroup)
+        self.gasGroups = {}
         
-        # FP
-        fpGroup = QGroupBox()
-        fpLayout = QHBoxLayout()
-        fpGroup.setLayout(fpLayout)
-        dataLeftLayout.addWidget(fpGroup)
-        self.iFP = QLabel("Gas-Druck")
-        self.iFP.setFixedWidth(100)
-        fpLayout.addWidget(self.iFP)
-        self.tFP = QLineEdit("")
-        self.tFP.setFixedWidth(60)
-        self.tFP.setReadOnly(True)
-        fpLayout.addWidget(self.tFP)
-        self.lFP = QLabel("[bar]")
-        self.lFP.setFixedWidth(60)
-        fpLayout.addWidget(self.lFP)
-        
-        # TP
-        tpGroup = QGroupBox()
-        tpLayout = QHBoxLayout()
-        tpGroup.setLayout(tpLayout)
-        dataLeftLayout.addWidget(tpGroup)
-        self.iTP = QLabel("Gas-Temp.")
-        self.iTP.setFixedWidth(100)
-        tpLayout.addWidget(self.iTP)
-        self.tTP = QLineEdit("")
-        self.tTP.setFixedWidth(60)
-        self.tTP.setReadOnly(True)
-        tpLayout.addWidget(self.tTP)
-        self.lTP = QLabel("[°C]")
-        self.lTP.setFixedWidth(60)
-        tpLayout.addWidget(self.lTP)
+        for i, s in enumerate(self.sms._sgEA._sensors):
+            self.gasGroups[s] = GasData_Widget(s)
+            dataLayout.addWidget(self.gasGroups[s])
+    
+    
+    
+    def set_extendedFunctionVisibility(self, extendedVis):
+
+        for i, s in enumerate(self.sms._sgEA._sensors):            
+            # Andere Gasflaschen außer 1. ausblenden
+            if(i != 0):
+                self.gasGroups[s].setVisible(extendedVis)
 
         
     
@@ -877,12 +863,12 @@ class SecMagnetSwitch(QGroupBox):
                 else:
                     self.lOpen.setText("OPEN")     
                     
+                    
+                    
                 # Messwerte
                 
                 fp = self.sms.data[self.sms.CMD_TABLE[1]]
                 tp = "---"
-                te = self.sms.data[self.sms.CMD_TABLE[2]]
-                hu = self.sms.data[self.sms.CMD_TABLE[3]]
                 
                 
                 extFPdata = dict()
@@ -903,16 +889,67 @@ class SecMagnetSwitch(QGroupBox):
                     fp = "{:4.1f}".format(fp)
                     tp = "{:4.1f}".format(tp)
                     
-                    
                 self.sgr.set_externData(extFPdata)
 
-                self.tFP.setText(str(fp))
-                self.tTP.setText(str(tp))
+
+                # Gasflaschen-Array-Daten verarbeiten
+                
+                for s in self.gasGroups:
+                    self.gasGroups[s].update_GasData(self.sms.dataGas[s]["FP"], self.sms.dataGas[s]["TP"])
+
                 
                 
-        
+                
+                
+class GasData_Widget(QGroupBox):
     
-          
+    def __init__(self, name):
+        super().__init__(name)
+        dataLeftLayout = QHBoxLayout()
+        self.setLayout(dataLeftLayout)
+        
+        # FP
+        fpGroup = QGroupBox()
+        fpLayout = QHBoxLayout()
+        fpGroup.setLayout(fpLayout)
+        dataLeftLayout.addWidget(fpGroup)
+        self.iFP = QLabel("Gas-Druck")
+        self.iFP.setFixedWidth(100)
+        fpLayout.addWidget(self.iFP)
+        self.tFP = QLineEdit("")
+        self.tFP.setFixedWidth(60)
+        self.tFP.setReadOnly(True)
+        fpLayout.addWidget(self.tFP)
+        self.lFP = QLabel("[bar]")
+        self.lFP.setFixedWidth(60)
+        fpLayout.addWidget(self.lFP)
+        
+        # TP
+        tpGroup = QGroupBox()
+        tpLayout = QHBoxLayout()
+        tpGroup.setLayout(tpLayout)
+        dataLeftLayout.addWidget(tpGroup)
+        self.iTP = QLabel("Gas-Temp.")
+        self.iTP.setFixedWidth(100)
+        tpLayout.addWidget(self.iTP)
+        self.tTP = QLineEdit("")
+        self.tTP.setFixedWidth(60)
+        self.tTP.setReadOnly(True)
+        tpLayout.addWidget(self.tTP)
+        self.lTP = QLabel("[°C]")
+        self.lTP.setFixedWidth(60)
+        tpLayout.addWidget(self.lTP)
+    
+    
+    def update_GasData(self, fp, tp):
+ 
+        if(type(fp) == float):
+            fp = "{:4.1f}".format(fp)
+            self.tFP.setText(fp)
+        if(type(tp) == float):
+            tp = "{:4.1f}".format(tp)
+            self.tTP.setText(tp)        
+    
           
             
 
