@@ -38,6 +38,11 @@ class HWSetup(QObject):
     _sig_HWSetupConnect = pyqtSignal()
     sig_HWConnectFinished = pyqtSignal(int)
     
+    sig_pauseMessLoop = pyqtSignal(int)
+    sig_continueMessLoop = pyqtSignal()
+
+    sig_closeConnection = pyqtSignal()
+    
     def __init__(self, sgEA):
         super().__init__()
         
@@ -69,6 +74,12 @@ class HWSetup(QObject):
         self._worker._sig_finished.connect(self._threadMessLoop.quit)
         self._worker._sig_finished.connect(self._worker.deleteLater)
         self._threadMessLoop.finished.connect(self._threadMessLoop.deleteLater)
+        
+        self.sig_closeConnection.connect(self._worker._stop_worker)
+        
+        self.sig_pauseMessLoop.connect(self._worker._pause_worker)
+        self.sig_continueMessLoop.connect(self._worker._continue_worker)
+        
         
         ####
         
@@ -172,10 +183,9 @@ class HWSetup(QObject):
                 
     
     
-    def _read_Sollwerte(self):
+    def _check_GasFlussAktiv(self):
         gasFlow = False
         for p in self._ports:
-            self._ports[p]._read_Sollwert()
             if(self._ports[p].get_soll() > 0):
                 gasFlow = True
             
@@ -212,10 +222,11 @@ class HWSetup(QObject):
             time.sleep(0.1)
             
         # Update Thread beenden    
-        self._worker._stop_worker()
+        self.sig_closeConnection.emit()
         
         self.terminated = True
         print("HW-Setup closed")
+        
             
             
     
@@ -269,6 +280,8 @@ class HWUpdateWorker(QObject):
     _sig_finished = pyqtSignal()
     _sig_progress = pyqtSignal(int)
     
+    sig_paused_for = pyqtSignal(int)
+    
     def __init__(self, hwSetup, interval):
         super(HWUpdateWorker, self).__init__()
         self._hwSetup = hwSetup
@@ -283,6 +296,18 @@ class HWUpdateWorker(QObject):
         
     def _start_worker(self):
         self._start_timer()
+        
+
+    def _pause_worker(self, forID=0):
+        self._timer.stop()
+        self._set_paused(True)
+        
+        self.sig_paused_for.emit(forID)
+        
+        
+    def _continue_worker(self):
+        self._start_timer()
+        self._set_paused(False)
         
 
     def _stop_worker(self):
@@ -301,12 +326,14 @@ class HWUpdateWorker(QObject):
         self._timer.timeout.connect(self._executeComTakt)
         self._timer.start()
         
+        
     def _set_paused(self, paused):
         self._paused = int(paused)
 
 
     def _executeComTakt(self):
         self._dataUpdate()
+        self._hwSetup._check_GasFlussAktiv()
                 
 
     def _dataUpdate(self):
@@ -347,10 +374,7 @@ class HW_ConnectThread(QThread):
         QThread.__init__(self)
         self.hws = hwSetup
         
-        
     def run(self):
-                
-        print("connect ...")
                 
         lastStatus = self.hws._hwConnectStatus
                 

@@ -1,3 +1,7 @@
+"""
+GUI-Klasse zum Nullabgleich der Regelstellglieder
+"""
+
 from PyQt5.QtWidgets import QDialog, QLabel, QVBoxLayout, QHBoxLayout, QGroupBox, QDoubleSpinBox, QPushButton, QProgressBar
 
 import PyQt5.QtCore
@@ -21,17 +25,19 @@ class ReglerConfigNullUI(QDialog):
         self.setWindowTitle("Nullpunktabgleich")
 
         # Konfig
+        # Gruppe aller Regelstellglieder
         self.reglerConfigGroup = ReglerConfigGroup(sgr)
         layout.addWidget(self.reglerConfigGroup)
 
-        # Schließen
         closeGroup = QGroupBox()
         closeLayout = QHBoxLayout()
         closeGroup.setLayout(closeLayout)
         layout.addWidget(closeGroup)
         
+        # Layout 
         closeLayout.addStretch(1) 
         
+        # Fenster Schließen
         self.pbCancelConfig = QPushButton("Schließen")
         self.pbCancelConfig.clicked.connect(self.close)
         closeLayout.addWidget(self.pbCancelConfig)
@@ -118,8 +124,7 @@ class AbgleichDialog(QDialog):
     def __init__(self, _r):
         super().__init__()
         
-        self.__r = _r # Regler
-        self.__na = na.NullAbgleich()
+        self.__na = na.NullAbgleich(_r)
         
         
         # Fenster Titelleiste
@@ -128,6 +133,9 @@ class AbgleichDialog(QDialog):
         
         # Deaktiviere Help-Button des Fensters
         self.setWindowFlag(Qt.WindowContextHelpButtonHint, False)
+        
+        # Ausblenden des Schließbuttons
+        self.setWindowFlags(PyQt5.QtCore.Qt.FramelessWindowHint)
         
         
         layout = QVBoxLayout()        
@@ -139,7 +147,7 @@ class AbgleichDialog(QDialog):
         layout.addWidget(titel)
         
         # Text
-        message = QLabel("Bitte Ventile vor und hinter Regler schließen, dann Nullabgleich starten!")
+        message = QLabel("Bitte Ventile vor und hinter Regler schließen, dann Nullabgleich starten! \n\n Der Nullabgleich kann mehrere Minuten dauern. Andere Funktionen werden solange blockiert.")
         layout.addWidget(message)
         
         
@@ -157,9 +165,9 @@ class AbgleichDialog(QDialog):
         layout.addWidget(self.pbDurchfuehren)
         
         
-        # Processbar 
-        self.barProcess = QProgressBar()
-        layout.addWidget(self.barProcess)
+        # Fortschritt Status
+        self.statusLabel = QLabel("")
+        layout.addWidget(self.statusLabel)
         
         
         # Button Schließen
@@ -170,23 +178,45 @@ class AbgleichDialog(QDialog):
         
         # Aktualisierung
         self.updateTimer = QTimer()
-        self.updateTimer.setInterval(10)
-        self.updateTimer.timeout.connect(self.update_processbar)
+        self.updateTimer.setInterval(100)
+        self.updateTimer.timeout.connect(self.update)
         self.updateTimer.start()
         
             
     def start_abgleich(self):
         self.__na.start()
-        self.pbDurchfuehren.setEnabled(False)
-        self.pbClose.setText("Abbrechen")
+        self.set_functionsLocked(lock=False)
     
         
-    def update_processbar(self):
-        val = self.__na.update_and_get_process()
-        self.barProcess.setValue((int)(val * 100))
-        if(self.__na.state == na.STATE_DONE):
-            self.pbClose.setText("Schließen")
-            self.pbDurchfuehren.setEnabled(True)
+    def set_functionsLocked(self, lock):
+        """
+        setzt entsprechende Flags, um die Funktionalitäten während eines Abgleichs einzuschränken, um 
+        Ablauf des Abgleichs nicht zu stören.
+
+        Args:
+            lock (bool): True setzen, um Funktionen zu disablen
+        """
+        self.pbClose.setEnabled(not lock)
+        self.pbDurchfuehren.setEnabled(not lock)
+            
+        
+    def update(self):
+        state = self.__na.updateCalibration()
+        
+        if(state != (na.STATE_RUNNING or na.STATE_INIT or na.STATE_READY)):
+            self.set_functionsLocked(lock=False)
+
+            if(state == na.STATE_DONE):
+                self.statusLabel.setText("Nullabgleich abgeschlossen.")
+            elif(state == na.STATE_ERROR):
+                self.statusLabel.setText("Nullabgleich fehlgeschlagen!")
+            elif(state == na.STATE_IDLE):
+                self.statusLabel.setText("Bereit.")
+                
+        else:
+            self.set_functionsLocked(lock=True)
+            self.statusLabel.setText("Nullabgleich läuft. Bitte warten ...")
+            
         
     
     def closeEvent(self, event):

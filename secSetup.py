@@ -37,6 +37,9 @@ class SecSetup(QObject):
     _sig_SEC_SetupConnect = pyqtSignal()
     sig_SEC_ConnectFinished = pyqtSignal(int)
     
+    sig_closeConnection = pyqtSignal()
+    
+    
     def __init__(self, sgEA):
         super().__init__()
                 
@@ -76,6 +79,7 @@ class SecSetup(QObject):
         self._worker._sig_finished.connect(self._worker.deleteLater)
         self._threadMessLoop.finished.connect(self._threadMessLoop.deleteLater)
         
+        self.sig_closeConnection.connect(self._worker._stop_worker)
                         
         ####
         
@@ -85,7 +89,7 @@ class SecSetup(QObject):
         
         ####
         
-        self.terminated = False
+        self.closing = False
 
 
     def _load_sensorConfig(self, confFileURL):
@@ -110,6 +114,7 @@ class SecSetup(QObject):
             
         print ("Sensor-Konfiguration gespeichert.")
 
+        
             
     def _start_MessSchleife(self):
         if(self._secConnectStatus == self.SEC_CONNECT_STATUS_OK):
@@ -190,10 +195,12 @@ class SecSetup(QObject):
 
     def _close_secSetup(self):
     
+        self.closing = True
+    
         self.set_sms_open(False)
     
         # Update Thread beenden    
-        self._worker._stop_worker()
+        self.sig_closeConnection.emit()
         
         self.terminated = True
         print("SEC-Setup closed")
@@ -289,5 +296,5 @@ class SEC_ConnectThread(QThread):
                 self.hws.sig_SEC_ConnectFinished.emit(self.hws._secConnectStatus)
                 
             # Neuen Verbindungsversuch starten, wenn vorheriger fehlschlägt
-            if(self.hws._secConnectStatus != SecSetup.SEC_CONNECT_STATUS_OK):
+            if(self.hws._secConnectStatus != SecSetup.SEC_CONNECT_STATUS_OK and not self.hws.closing):
                 self.hws._sig_SEC_SetupConnect.emit()

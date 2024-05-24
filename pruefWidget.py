@@ -26,6 +26,9 @@ from datamanager import DataManager
 from pruefung import Pruefung
 import consoleWidget as cw
 
+import parametrierung
+from parametrierungUI import ParametrierungUI
+
 
 
 class PruefWidget(QGroupBox):
@@ -148,6 +151,8 @@ class PruefWidget(QGroupBox):
         self.sZeitSpinner.setMaximum(10000)
         self.sZeitSpinner.setFixedWidth(150)
         self.sZeitSpinner.valueChanged.connect(self.calc_initFluss)
+        
+        layoutZeit.addStretch(1)
             
         
         # GesamtGasMenge
@@ -170,6 +175,8 @@ class PruefWidget(QGroupBox):
         self.sMengeSpinner.setFixedWidth(150)
         self.sMengeSpinner.valueChanged.connect(self.calc_initFluss)
         
+        layoutMenge.addStretch(1)
+        
         
         # Zeit für Rampe
         groupStartzeit = QGroupBox("")
@@ -189,7 +196,8 @@ class PruefWidget(QGroupBox):
         self.sStartzeitSpinner.setMaximum(300)
         self.sStartzeitSpinner.setFixedWidth(150)
         
-        
+        layoutStartzeit.addStretch(1)
+                
         
         # Ermittelter Intialfluss
         groupInitFluss = QGroupBox("")
@@ -203,10 +211,17 @@ class PruefWidget(QGroupBox):
         
         self.lInitFlussLabel = QLabel()
         layoutInitFluss.addWidget(self.lInitFlussLabel)
-        self.lInitFlussLabel.setText(str(self.sMengeSpinner.value() / self.sZeitSpinner.value()))
-        self.lInitFlussLabel.setFixedWidth(150)
+        # self.lInitFlussLabel.setText('{0:.2f}'.format(self.sMengeSpinner.value() / self.sZeitSpinner.value()))
+        self.lInitFlussLabel.setFixedWidth(350)
+        
            
 
+    ######################################################
+    # Reglerparameter
+    ###########
+
+        self.groupParametrierung = ParametrierungUI(self.sgr)
+        self.mainLayout.addWidget(self.groupParametrierung)
         
     ####################################################
     # DURCHFÜHRUNG
@@ -230,7 +245,7 @@ class PruefWidget(QGroupBox):
         self.lRunZeitValue = QLabel()
         layoutRunZeit.addWidget(self.lRunZeitValue)
         self.lRunZeitValue.setText("--:--:--")
-        self.lRunZeitValue.setFixedWidth(150)    
+        self.lRunZeitValue.setFixedWidth(350)   
         
         # Ermittelter Gesamtfluss
         groupRunMenge = QGroupBox("")
@@ -245,7 +260,7 @@ class PruefWidget(QGroupBox):
         self.lRunMengeValue = QLabel()
         layoutRunMenge.addWidget(self.lRunMengeValue)
         self.lRunMengeValue.setText("----.--")        
-        self.lRunMengeValue.setFixedWidth(150)   
+        self.lRunMengeValue.setFixedWidth(350)   
         
         
         #####################################################
@@ -279,6 +294,12 @@ class PruefWidget(QGroupBox):
         layoutPruefControls.addWidget(self.buttonSavePDF)
         
         
+        ###############
+        # Berechne Initialwerte
+        
+        self.calc_initFluss()
+        
+        
     
     def buttonSavePDF_clicked(self):
         self.exportPruefPDF()
@@ -286,17 +307,55 @@ class PruefWidget(QGroupBox):
     
     
     def calc_initFluss(self):
-        fluss = self.sMengeSpinner.value() / self.sZeitSpinner.value()
-        self.lInitFlussLabel.setText(str(fluss))
-        # TODO: Reglerauswahl visualisieren ???
         
+        # Bestimme regelmäßigen Fluss, um Menge über Zeit zu erreichen
+        fluss = self.sMengeSpinner.value() / self.sZeitSpinner.value()
+        
+        # Bestimme ReglerAuswahl
+        reglerAuswahl = self.sgr.calc_reglerAuswahl(fluss)
+        
+        ####
+        # Bestimme thoretische Flüsse pro Regler
+        abSum = 0
+        for r in reglerAuswahl:
+            abSum += reglerAuswahl[r]
+        
+        # Anteil Stellwert an Gesamtarbeitsbereich
+        anteil = 0
+        if(abSum > 0):
+            anteil = fluss / abSum
+            
+        # Theoretische Flüsse je Regelstellglied
+        theoFlows = {}
+        stringFlows = ""
+        for r in reglerAuswahl:
+            theoFlows[r] = reglerAuswahl[r] * anteil
+            stringFlows += self.sgr._ports[r].get_name() + ": " + '{0:.3f}'.format(theoFlows[r]) + " "
+            
+        self.lInitFlussLabel.setText('{0:.2f}'.format(fluss) + "    (" + stringFlows + ")")
+
+        # Berechne neu Parameter und zeige sie an
+        params = parametrierung.calc_parameter(theoretischeFluesse=theoFlows)
+        # print (params)
+        self.groupParametrierung.update_Params(params)
+
         
         
     def start_pruefungClicked(self):
+
+        # Check: Übertragung der PIDs        
+        if(not self.groupParametrierung.send_Params()):
+            self.sgr.protokoll.append(cw.ProtokollEintrag("Prüfung konnte nicht gestartet werden! Regler-PID-Werte konnten nicht übertragen werden! Kommunikationsverbindung zu Regelstellgliedern prüfen!", typ=cw.ProtokollEintrag.TYPE_FAILURE))
+            return False
+
         
         # Check: Stellglieder auf 0?
-        if(self.sgr.safetyCheck_allConnectedAndZero()):
-            self.evt_startPruefung()
+        if( not self.sgr.safetyCheck_allConnectedAndZero()):
+            self.sgr.protokoll.append(cw.ProtokollEintrag("Prüfung konnte nicht gestartet werden! Vor Prüfungsstart müssen alle Regelstellglieder in der 0-Position sein!", typ=cw.ProtokollEintrag.TYPE_FAILURE))
+            return False
+        
+        # Go
+        if(self.evt_startPruefung()):
             # Graph Update aktivieren
             self.mw.graphWidget.set_update(True)
             self.pruefung._sig_pruefCanceled.connect(self.mw.graphWidget.stop_update)
@@ -306,13 +365,11 @@ class PruefWidget(QGroupBox):
             self.pruefung._sig_pruefCanceled.connect(self.mw.graphWidget.stop_update)
             self.pruefung._sig_pruefEnded.connect(self.mw.graphWidget.stop_update)
             self.pruefung._sig_pruefEnded.connect(self.reportPruefung)
-        else: # SafetyCheck Connect And Zero Failed
-            self.sgr.protokoll.append(cw.ProtokollEintrag("Prüfung konnte nicht gestartet werden!", typ=cw.ProtokollEintrag.TYPE_FAILURE))
 
         
     def cancel_pruefungClicked(self):     
         self.evt_cancelPruefung()
-        
+         
     
     def evt_startPruefung(self):
         self.cmd_init_pruefung()
@@ -320,11 +377,10 @@ class PruefWidget(QGroupBox):
 
     def cmd_init_pruefung(self):
         
-        self.buttonSavePDF.setEnabled(False)
-        
         self.pruefung = Pruefung(self.sgr, self.sms, self.sZeitSpinner.value(), self.sMengeSpinner.value(), self.sStartzeitSpinner.value())
         
         if(self.pruefung.prepare_pruefung()):
+            self.buttonSavePDF.setEnabled(False)
             # Neue Prüfung starten
             self.sgr.reset()
             # Starten einer neuen Prüfung nach Start verhindern: Startknopf ausblenden
@@ -522,7 +578,9 @@ class PruefWidget(QGroupBox):
                 self.lRunMengeValue.setText(("%.2f" % (menge)) + "  (" +  ("%.2f" % (mengeAnteil * 100))  +"%)")
     
     
-    
+    def set_extendedFunctionVisibility(self, extendedVis):
+        self.groupParametrierung.setVisible(extendedVis)
+        
     
     def set_ControlledModeEnabled(self, enabled):
         self.pbStartPruefung.setEnabled(enabled)    

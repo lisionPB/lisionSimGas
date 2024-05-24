@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """
+Main Klasse der SimGas Steuerungssoftware
 
 @author: paulb
 """
@@ -35,7 +36,7 @@ import reglerReadOutputLog as rrol
 class ReglerUI(QMainWindow):
     
     TITEL = "SimGas Regler GUI - CORI"
-    VERSION = "0.11.3"
+    VERSION = "0.12"
     YEAR = "2024"
     
     _sig_close = pyqtSignal()
@@ -48,6 +49,9 @@ class ReglerUI(QMainWindow):
     
     # Manuelle Messung Controls
     ENABLE_MANUAL_CONTROLS = True
+    
+    # Menü zum Nullabgleich verfügbar machen
+    ENABLE_FUNCTION_NULLABGLEICH = True
     
     # Sicherheitsmagnetschalter # NICHT ANPASSEN, WENN MAN NICHT WEIß, WAS MAN TUT!
     ENABLE_SEC_MAGNET_SWITCH = True
@@ -94,20 +98,28 @@ class ReglerUI(QMainWindow):
         
         # Konfiguration öffnen
         configMenu = menuBar.addMenu('&Einstellungen')
-        configAct = QAction('&Reglerkonfiguration', self)
-        configAct.setStatusTip('Reglerkonfiguration')
-        configAct.triggered.connect(self.open_config)
-        configMenu.addAction(configAct)
         
-        configSensorAct = QAction('&Sensorkonfiguration', self)
-        configSensorAct.setStatusTip('Sensorkonfiguration')
-        configSensorAct.triggered.connect(self.open_config_sensors)
-        configMenu.addAction(configSensorAct)
+        self.configAct = QAction('&Reglerkonfiguration', self)
+        self.configAct.setStatusTip('Reglerkonfiguration')
+        self.configAct.triggered.connect(self.open_config)
+        configMenu.addAction(self.configAct)
         
-        #configNullAct = QAction('&Nullpunktabgleich', self)
-        #configNullAct.setStatusTip('Nullpunktabgleich')
-        #configNullAct.triggered.connect(self.open_configNull)
-        #configMenu.addAction(configNullAct)
+        self.configSensorAct = QAction('&Sensorkonfiguration', self)
+        self.configSensorAct.setStatusTip('Sensorkonfiguration')
+        self.configSensorAct.triggered.connect(self.open_config_sensors)
+        configMenu.addAction(self.configSensorAct)
+        
+        self.configNullAct = QAction('&Nullpunktabgleich', self)
+        self.configNullAct.setStatusTip('Nullpunktabgleich')
+        self.configNullAct.triggered.connect(self.open_configNull)
+        if(self.ENABLE_FUNCTION_NULLABGLEICH):
+            configMenu.addAction(self.configNullAct)
+        
+        self.configExpertModeAct = QAction('&Expertenmodus', configMenu, checkable=True)    
+        configMenu.addAction(self.configExpertModeAct)
+        self.configExpertModeAct.triggered.connect(self.switch_expertMode)
+        
+        
         
         #########################
         
@@ -159,7 +171,6 @@ class ReglerUI(QMainWindow):
 
     def closeEvent(self, event):
         
-        #self.timer_updateUI.disconnect()
         
         
         closeOK = True
@@ -183,6 +194,9 @@ class ReglerUI(QMainWindow):
         if(closeOK):
             self._sig_close.emit()
             
+            #self.timer_updateUI.disconnect()
+            #self.timer_updateUI.stop()
+            
             # Save ReglerConfig
             self.sgr.save_reglerConfig()
             
@@ -192,12 +206,17 @@ class ReglerUI(QMainWindow):
             # Save PruefConfig
             self.rmw.pruefWidget.save_pruefConfig()
             
-            
             print ("Regler UI closed")
         else:
             event.ignore()
             
             
+            
+            
+    def switch_expertMode(self, checked):
+        # print (checked)
+        self.rmw.set_extendedFunctionVisibility(checked) 
+        
             
     
     def print_ConnectTryMessage(self, check):
@@ -235,7 +254,7 @@ class ReglerUI(QMainWindow):
         
         
     def updateUI(self):
-        #print ("update UI")
+        # print ("update UI")
         self.rmw.console.update_Console()
         self.rmw.reglerTable.update_ReglerListWidget()
         
@@ -367,6 +386,7 @@ class ReglerMainWidget(QWidget):
         self.reglerTable.set_extendedFunctionVisibility(extendedVis)
         self.dataTable.setVisible(extendedVis)
         self.smsWidget.set_extendedFunctionVisibility(extendedVis)
+        self.pruefWidget.set_extendedFunctionVisibility(extendedVis)
     
     
     
@@ -393,6 +413,10 @@ class ReglerMainWidget(QWidget):
         
     def set_ManualModeEnabled(self, enabled):
         self.reglerTable.set_secLockOpen(enabled)
+        # Menüsteuerung
+        self.__mainWindow.configAct.setEnabled(enabled)
+        self.__mainWindow.configNullAct.setEnabled(enabled)
+        self.__mainWindow.configSensorAct.setEnabled(enabled)
 
     
     def closeMessdatenUI(self):
@@ -832,13 +856,6 @@ class SecMagnetSwitch(QGroupBox):
     def buttonClose_clicked(self):
         self.sms.set_sms_open(False)
         
-        
-    
-    def buttonRead_clicked(self):
-        #msg = self.sms._read("TE?")
-        #val = float(msg)
-        #self.tFP.setText(str(val))
-        pass 
     
     
     def update_SecMagnetSwitch(self):
@@ -919,6 +936,7 @@ class GasData_Widget(QGroupBox):
         self.tFP = QLineEdit("")
         self.tFP.setFixedWidth(60)
         self.tFP.setReadOnly(True)
+        self.tFP.setAlignment(QtCore.Qt.AlignCenter)
         fpLayout.addWidget(self.tFP)
         self.lFP = QLabel("[bar]")
         self.lFP.setFixedWidth(60)
@@ -935,6 +953,7 @@ class GasData_Widget(QGroupBox):
         self.tTP = QLineEdit("")
         self.tTP.setFixedWidth(60)
         self.tTP.setReadOnly(True)
+        self.tTP.setAlignment(QtCore.Qt.AlignCenter)
         tpLayout.addWidget(self.tTP)
         self.lTP = QLabel("[°C]")
         self.lTP.setFixedWidth(60)
@@ -979,5 +998,3 @@ if __name__ == '__main__':
     else:   
         sgr._close_hwSetup()
         print ("Programm abgestürzt!")
-        
-    sys.exit(ec)

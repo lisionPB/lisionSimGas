@@ -165,7 +165,7 @@ class Pruefung(QObject):
         # self._rs.set_paused(True)
         
         print ("Prüfung beendet.")
-        self._rs.protokoll.append(cw.ProtokollEintrag("Prüfung abgeschlossen! Gesamtfluss: " + str(self._gsr.totalFlowSum), typ=cw.ProtokollEintrag.TYPE_SUCCESS))    
+        self._rs.protokoll.append(cw.ProtokollEintrag("Prüfung abgeschlossen! Gesamtfluss: " + str(round(self._gsr.totalFlowSum, 2)) + "g", typ=cw.ProtokollEintrag.TYPE_SUCCESS))    
         
         self._sig_pruefFinalized.emit()
         

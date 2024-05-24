@@ -28,7 +28,7 @@ class GesamtSollwertRegler:
         self.finalFlowSum = finalFlowSum    # Gasmasse, die nach finalTime geflossen sein muss [g].
         self.initZeit = rampenzeit          # RampenZeit für Reglerwert [s]
         self.initFlow = calc_theoreticalStaticFlow(mass=finalFlowSum, time=self.finalTime)
-        print(self.initFlow)
+        # print(self.initFlow)
         self.initDone = False
         
         self.lastUpdate_SystemTime = 0

@@ -62,7 +62,7 @@ class DataManager(QObject):
         for n in self.__channelNames:
             l = list()
             self.__data[n] = l
-        
+    
     
     def get_currentTime(self):
         """Generiere Zeitstempel

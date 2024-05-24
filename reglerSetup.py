@@ -42,6 +42,8 @@ class SimGasRegler(hws.HWSetup):
         super().__init__(sgEA)
         
         self.protokoll = []
+        
+        self.currentWarnings = {}
 
         # Laden der Reglerkonfiguration und setzen zugehörigen Ports
         self._load_reglerConfig(self.CONFIG_FILE) # -> self._ports wird gefüllt.
@@ -376,6 +378,8 @@ class SimGasRegler(hws.HWSetup):
         
         # print ("anteil: " + str(anteil))
         
+        anteilOK = True
+        
         if(anteil < self.REGLER_ARBEITSBEREICH_UNTERGRENZE):
             if(not pruefung and not self.ALLOW_IGNORE_PUFFER):
                 # Stellwert zu klein
@@ -384,9 +388,17 @@ class SimGasRegler(hws.HWSetup):
                 return False
             else:
                 # Setze Sollwert auf Minimum (0.02)                
-                self.protokoll.append(cw.ProtokollEintrag("Warnung! Sollwert unterschreitet minimalen Stellwert! Stellwert auf untere Grenze gesetzt.", typ=cw.ProtokollEintrag.TYPE_WARNING))
-                print ("Warnung! Sollwert unterschreitet minimalen Stellwert! Stellwert auf untere Grenze gesetzt.")
                 anteil = self.REGLER_ARBEITSBEREICH_UNTERGRENZE
+                anteilOK = False
+                # Warnung ausgeben
+                if("WARNING_SOLL_MIN_LIMIT" in self.currentWarnings):
+                    if(not self.currentWarnings["WARNING_SOLL_MIN_LIMIT"]):
+                        self.currentWarnings["WARNING_SOLL_MIN_LIMIT"] = True
+                        self.protokoll.append(cw.ProtokollEintrag("Warnung! Sollwert unterschreitet minimalen Stellwert! Stellwert auf untere Grenze gesetzt.", typ=cw.ProtokollEintrag.TYPE_WARNING))
+                        print ("Warnung! Sollwert unterschreitet minimalen Stellwert! Stellwert auf untere Grenze gesetzt.")
+                else:
+                    self.currentWarnings["WARNING_SOLL_MIN_LIMIT"] = True
+                    
         
         if(anteil > 1.0):
             if (not pruefung and not self.ALLOW_IGNORE_PUFFER):
@@ -396,9 +408,23 @@ class SimGasRegler(hws.HWSetup):
                 return False
             else:
                 # Setze Sollwert auf Maximum (1.0)                
-                self.protokoll.append(cw.ProtokollEintrag("Warnung! Sollwert überschreitet maximalen Stellwert! Stellwert auf obere Grenze gesetzt.", typ=cw.ProtokollEintrag.TYPE_WARNING))
-                print ("Warnung! Sollwert überschreitet maximalen Stellwert! Stellwert auf obere Grenze gesetzt.")
                 anteil = 1.0
+                anteilOK = False
+                # Warnung ausgeben
+                if("WARNING_SOLL_MAX_LIMIT" in self.currentWarnings):
+                    if(not self.currentWarnings["WARNING_SOLL_MAX_LIMIT"]):
+                        self.currentWarnings["WARNING_SOLL_MAX_LIMIT"] = True
+                        self.protokoll.append(cw.ProtokollEintrag("Warnung! Sollwert überschreitet maximalen Stellwert! Stellwert auf obere Grenze gesetzt.", typ=cw.ProtokollEintrag.TYPE_WARNING))
+                        print ("Warnung! Sollwert überschreitet maximalen Stellwert! Stellwert auf obere Grenze gesetzt.")
+                else:
+                    self.currentWarnings["WARNING_SOLL_MAX_LIMIT"] = True
+                        
+                        
+        # Zurücksetzen der Sollwert-Warnungen, wenn AnteilOK
+        if(anteilOK):
+            self.currentWarnings["WARNING_SOLL_MIN_LIMIT"] = False
+            self.currentWarnings["WARNING_SOLL_MAX_LIMIT"] = False
+
         
     
         # Setze Stellglieder gleichmäßig Anteil an Gesamtarbeitsbereich

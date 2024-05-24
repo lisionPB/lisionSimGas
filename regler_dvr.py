@@ -275,7 +275,28 @@ class Regler_Dvr(QObject):
 
             return None        
 
-        
+    
+    def writeParameter(self, dde_nr, value):
+        """Sendet Parameter mit DDE_NR an Regler
+
+        Args:
+            dde_nr (int): DDE_NR
+            value : Wert. Typ abhängig von Parameter Nummer
+
+        Returns: True, wenn Schreibvorgang erfolgreich. Sonst False.
+        """
+        if(self.__instrument != None):
+            return self.__instrument.writeParameter(dde_nr, value)
+        return False
+    
+
+
+    def readParameter(self, dde_nr):
+        if(self.__instrument != None):
+            return self.__instrument.readParameter(dde_nr)
+        return False
+    
+    
 
     def set_current_pVordruck(self, pVordruck):
         self.__pVordruck = pVordruck
@@ -529,8 +550,7 @@ class ReglerUpdateWorker(QObject):
         elif(self._currentComTakt == 1):
         # Sollwert schreiben
             self._regler._write_Sollwert()
-            
-            
+
             
         elif(self._currentComTakt == 2):
         # Sollwert lesen (wird in __soll geschrieben, kann per get_AkzeptiertenSollwert() ausgelesen werden)
