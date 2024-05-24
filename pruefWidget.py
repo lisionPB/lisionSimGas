@@ -473,7 +473,7 @@ class PruefWidget(QGroupBox):
     
     def endPruefung(self):
         if(self.pruefung != None):
-            print("Prüfung endet ...")
+            print("Prüfung beendet.")
             self.pruefung.end_pruefung()
             self.resetPruefButtons()
         
