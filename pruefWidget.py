@@ -211,8 +211,9 @@ class PruefWidget(QGroupBox):
         
         self.lInitFlussLabel = QLabel()
         layoutInitFluss.addWidget(self.lInitFlussLabel)
-        # self.lInitFlussLabel.setText('{0:.2f}'.format(self.sMengeSpinner.value() / self.sZeitSpinner.value()))
         self.lInitFlussLabel.setFixedWidth(350)
+
+        layoutInitFluss.addStretch(1)
         
            
 
@@ -245,7 +246,9 @@ class PruefWidget(QGroupBox):
         self.lRunZeitValue = QLabel()
         layoutRunZeit.addWidget(self.lRunZeitValue)
         self.lRunZeitValue.setText("--:--:--")
-        self.lRunZeitValue.setFixedWidth(350)   
+        self.lRunZeitValue.setFixedWidth(350)
+        
+        layoutRunZeit.addStretch(1)
         
         # Ermittelter Gesamtfluss
         groupRunMenge = QGroupBox("")
@@ -262,6 +265,7 @@ class PruefWidget(QGroupBox):
         self.lRunMengeValue.setText("----.--")        
         self.lRunMengeValue.setFixedWidth(350)   
         
+        layoutRunMenge.addStretch(1)
         
         #####################################################
         # CONTROLS
