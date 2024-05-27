@@ -82,10 +82,9 @@ class Pruefung(QObject):
             self._rs._ports[p].start_Integration()
         self._gsr.start_Regler(self._reglerAuswahl, log=False)
         anteil = self._gsr.calc_stellwert(0, True) / self._reglerAuswahlArbeitsBereichMax
-        
-        # print (anteil)           
-        
+
         if (anteil > 0):
+            
             # Prüfung kann gestartet werden
             
             # Messungen starten
@@ -175,6 +174,7 @@ class Pruefung(QObject):
         """
         Abschließende Vorgänge
         """
+        
         self._state = self.PRUEF_STATE_DONE
         self._sig_pruefEnded.emit()
         

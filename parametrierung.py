@@ -9,7 +9,7 @@ def calc_parameter(theoretischeFluesse):
     
     # Initial-Parametersatz
     
-    Regler1_Kp = 30.0
+    Regler1_Kp = 10.0
     Regler1_Ti = 0.1       
     Regler2_Kp = 50.0
     Regler2_Ti = 0.3
@@ -21,25 +21,37 @@ def calc_parameter(theoretischeFluesse):
     
     # Regler 1
     
-    if((R1_startSollwert >= 1.5) and (R1_startSollwert < 10.0)):
-        Regler1_Kp = 30.0
-        Regler1_Ti = 0.1
+    if((R1_startSollwert >= 0.0) and (R1_startSollwert < 5.0)):
+        Regler1_Kp = 160.0
+        Regler1_Ti = 0.025
+        
+    elif ((R1_startSollwert >= 5.0) and (R1_startSollwert < 10.0)):
+        Regler1_Kp = 50
+        Regler1_Ti = 0.05
         
     elif ((R1_startSollwert >= 10.0) and (R1_startSollwert < 20.0)):
-        Regler1_Kp = 30
-        Regler1_Ti = 0.1
-        
-    elif ((R1_startSollwert >= 20.0) and (R1_startSollwert < 30.0)):
-        Regler1_Kp = 30
-        Regler1_Ti = 0.1
+        Regler1_Kp = 15
+        Regler1_Ti = 0.05
 
-    elif ((R1_startSollwert >= 30.0) and (R1_startSollwert < 40.0)):
-        Regler1_Kp = 30
+    elif ((R1_startSollwert >= 20.0) and (R1_startSollwert < 50.0)):
+        Regler1_Kp = 15
+        Regler1_Ti = 0.05
+        
+    elif ((R1_startSollwert >= 50.0) and (R1_startSollwert < 70.0)):
+        Regler1_Kp = 15
         Regler1_Ti = 0.1
         
-    elif ((R1_startSollwert >= 40.0)):
-        Regler1_Kp = 30
+    elif ((R1_startSollwert >= 70.0) and (R1_startSollwert < 80.0)):
+        Regler1_Kp = 12
         Regler1_Ti = 0.1
+        
+    elif ((R1_startSollwert >= 80.0) and (R1_startSollwert < 90.0)):
+        Regler1_Kp = 10
+        Regler1_Ti = 0.1
+        
+    elif ((R1_startSollwert >= 90.0)):
+        Regler1_Kp = 8
+        Regler1_Ti = 0.2
         
         
     # Regler 2

@@ -1,6 +1,6 @@
 {
-    "DEFAULT_MASSE_G": 6.0,
-    "DEFAULT_RAMPENZEIT_S": 5.0,
+    "DEFAULT_MASSE_G": 1.5,
+    "DEFAULT_RAMPENZEIT_S": 2.0,
     "DEFAULT_ZEIT_MIN": 1.0,
     "visibility": {
         "COM1": false,

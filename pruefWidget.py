@@ -347,26 +347,25 @@ class PruefWidget(QGroupBox):
         if(not self.groupParametrierung.send_Params()):
             self.sgr.protokoll.append(cw.ProtokollEintrag("Prüfung konnte nicht gestartet werden! Regler-PID-Werte konnten nicht übertragen werden! Kommunikationsverbindung zu Regelstellgliedern prüfen!", typ=cw.ProtokollEintrag.TYPE_FAILURE))
             return False
-
         
         # Check: Stellglieder auf 0?
-        if( not self.sgr.safetyCheck_allConnectedAndZero()):
+        if(not self.sgr.safetyCheck_allConnectedAndZero()):
             self.sgr.protokoll.append(cw.ProtokollEintrag("Prüfung konnte nicht gestartet werden! Vor Prüfungsstart müssen alle Regelstellglieder in der 0-Position sein!", typ=cw.ProtokollEintrag.TYPE_FAILURE))
             return False
         
         # Go
-        if(self.evt_startPruefung()):
-            # Graph Update aktivieren
-            self.mw.graphWidget.set_update(True)
-            self.pruefung._sig_pruefCanceled.connect(self.mw.graphWidget.stop_update)
-            # Buttons resetten, wenn Prüfung fertig.
-            self.pruefung._sig_pruefCanceled.connect(self.resetPruefButtons)
-            # Graph Aktualisierung aussetzen wenn Prüfung nicht mehr läuft.
-            self.pruefung._sig_pruefCanceled.connect(self.mw.graphWidget.stop_update)
-            self.pruefung._sig_pruefEnded.connect(self.mw.graphWidget.stop_update)
-            self.pruefung._sig_pruefEnded.connect(self.reportPruefung)
-
-        
+        self.evt_startPruefung()
+        # Graph Update aktivieren
+        self.mw.graphWidget.set_update(True)
+        self.pruefung._sig_pruefCanceled.connect(self.mw.graphWidget.stop_update)
+        # Buttons resetten, wenn Prüfung fertig.
+        self.pruefung._sig_pruefCanceled.connect(self.resetPruefButtons)
+        # Graph Aktualisierung aussetzen wenn Prüfung nicht mehr läuft.
+        self.pruefung._sig_pruefCanceled.connect(self.mw.graphWidget.stop_update)
+        self.pruefung._sig_pruefEnded.connect(self.mw.graphWidget.stop_update)
+        self.pruefung._sig_pruefEnded.connect(self.reportPruefung)
+            
+    
     def cancel_pruefungClicked(self):     
         self.evt_cancelPruefung()
          
@@ -480,6 +479,7 @@ class PruefWidget(QGroupBox):
             
     
     def reportPruefung(self):
+
         if(self.pruefung._state == self.pruefung.PRUEF_STATE_DONE):
             self.buttonSavePDF.setEnabled(True)
             self.exportPruefPDF("protokolle/")
