@@ -78,6 +78,14 @@ class SimGasRegler(hws.HWSetup):
         # Sicherungseigenschaften
         # self.__safety_setZero = self.safetyCheck_allConnectedAndZero()
         
+        
+    def _set_initPosition(self):
+        # Setze alle Regler auf 0
+        if (not self.set_allClosed()):
+            self._hwConnectStatus = self.HW_CONNECT_STATUS_FAILURE
+            self.protokoll.append(cw.ProtokollEintrag("Warnung! Setzen der Regelstellglieder in 0-Position fehlgeschlangen! Verbindung zur Hardware überprüfen!", typ=cw.ProtokollEintrag.TYPE_FAILURE))
+        else:
+            self.protokoll.append(cw.ProtokollEintrag("Alle Regelstellgleider in 0-Position gesetzt. Initialisierung abgeschlossen.", typ=cw.ProtokollEintrag.TYPE_SUCCESS))
 
          
     
@@ -158,6 +166,7 @@ class SimGasRegler(hws.HWSetup):
                 soll = self._ports[p].get_soll()
                 # print ("Check Soll: " + str(soll))
                 if(soll != 0 or soll == None):       
+                    print(soll)
                     self.protokoll.append(cw.ProtokollEintrag("SAFETY-CHECK: Verbindung und 0-Position: FEHLGESCHLAGEN!", typ=cw.ProtokollEintrag.TYPE_FAILURE))
                     return False
                 

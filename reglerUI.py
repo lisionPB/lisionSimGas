@@ -147,6 +147,8 @@ class ReglerUI(QMainWindow):
 
         # Verbinde Hardware
         self.sgr.sig_HWConnectFinished.connect(self.print_ConnectTryMessage)
+        # Setze alles in 0-Position
+        self.sgr.sig_HWConnectFinished.connect(self.sgr._set_initPosition)
         # Starten der Messschleife, sobald Verbindung hergestellt
         self.sgr.sig_HWConnectFinished.connect(self.sgr._start_MessSchleife)
         

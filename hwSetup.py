@@ -100,6 +100,12 @@ class HWSetup(QObject):
             self._sig_HWSetupConnect.emit()
         
 
+    def _set_initPosition(self):
+        """ 
+        Setze alle Aktoren in Ausgangsposition
+        """
+        pass
+
             
     def _start_MessSchleife(self):
         if(self._hwConnectStatus == self.HW_CONNECT_STATUS_OK):
