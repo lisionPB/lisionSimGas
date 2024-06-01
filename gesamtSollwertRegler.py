@@ -129,14 +129,15 @@ class GesamtSollwertRegler:
             timeLeft = self.endTime - timeStamp
             massLeft = self.finalFlowSum - self.totalFlowSum
             
-            #TODO: if (timeLeft > self.SCHLUSS_SOLLWERT_FIXIERDAUER):
+            # Einfrieren des Sollwertes in letzten Sekunde der Prüfung, um Extremreaktionen des Reglers durch Teilen durch 0 zu verhindern.
+            if (timeLeft > self.SCHLUSS_SOLLWERT_FIXIERDAUER):
             
-            # Berechne theoretischen Fluss
-            self.lastTheoFlow = calc_theoreticalStaticFlow(timeLeft, massLeft)
+                # Berechne theoretischen Fluss
+                self.lastTheoFlow = calc_theoreticalStaticFlow(timeLeft, massLeft)
 
-            # Faktor zur Reduktion von Sollwertspitzen am Ende der Prüfung.
-            # Wenn im allerletzten Moment nur eine minimale Menge fehlt, würde der Sollwert unendlich hoch werden, die die Zeit gegen 0 geht (soll = m_rest / t_rest)
-            self.lastTheoFlow = self.lastTheoFlow * self.KORREKTUR_FAKTOR_SOLLWERTSPITZE
+                # Faktor zur Reduktion von Sollwertspitzen am Ende der Prüfung.
+                # Wenn im allerletzten Moment nur eine minimale Menge fehlt, würde der Sollwert unendlich hoch werden, die die Zeit gegen 0 geht (soll = m_rest / t_rest)
+                self.lastTheoFlow = self.lastTheoFlow * self.KORREKTUR_FAKTOR_SOLLWERTSPITZE
             
             
         return self.lastTheoFlow
