@@ -58,6 +58,7 @@ class Regler_Dvr(QObject):
         self.__mess = 0     # [g/min]
         self.__lastMessZeit = 0  # [s]
         self.__menge = 0    # [g] 
+        self.__counter = 0  # [g] aus Regler ausgelesen - noch nicht einsatzbereit!
         
         self.__ser = None
         self.connected = False
@@ -227,7 +228,15 @@ class Regler_Dvr(QObject):
                         valPer = None
                         try:
                             startTimer = time.time()
+                            
+                            # Read Messwert
                             valInt = self.__instrument.measure # Dauert im Test max. 64ms
+                            
+                            # TODO: Counter auslesen in eigenen COM Slot!
+                            # Read 
+                            self.__counter = self.readParameter(122)
+                                                        
+                            
                             dauer = time.time() - startTimer
                             self.__timings["messen"] = dauer
                             if(dauer > self.__maxTiming["messen"]):
@@ -483,6 +492,10 @@ class Regler_Dvr(QObject):
     
     def get_ist(self):
         return self.__mess
+    
+    
+    def get_cnt(self):
+        return self.__counter
     
     
     def is_enabled(self):

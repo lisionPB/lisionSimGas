@@ -70,15 +70,21 @@ class ParametrierungUI(QGroupBox):
         for p in self.sgr._ports:
             
             # Enable Param Tuning
-            (self.sgr._ports[p].writeParameter(7, 64))
-            (self.sgr._ports[p].writeParameter(12, 6))
-            (self.sgr._ports[p].writeParameter(79, 5))
+            (self.sgr._ports[p].writeParameter(7, 64)) 
+            (self.sgr._ports[p].writeParameter(12, 6))   
+            (self.sgr._ports[p].writeParameter(79, 5))   
             # Send Params
             (self.sgr._ports[p].writeParameter(167, float(self.rows[p].tKp.text())))
             (self.sgr._ports[p].writeParameter(168, float(self.rows[p].tTi.text())))
+            # Parameter für Counter: Unit und Zurücksetzen
+            (self.sgr._ports[p].writeParameter(114,1))     # Reset Counter
+            (self.sgr._ports[p].writeParameter(130,1))     # Enable Counter
+            # print(self.sgr._ports[p].writeParameter(128, ['m','g','','']))  
             # Back To Normal Operation
             (self.sgr._ports[p].writeParameter(12, 0))
             (self.sgr._ports[p].writeParameter(7, 82))
+        
+            
         
         # Rücklesen
         self.read_Params()

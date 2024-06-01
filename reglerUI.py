@@ -466,9 +466,9 @@ class ReglerListe_Widget(QGroupBox):
         for row in self.reglerWidgets:
             self.reglerWidgets[row].update_ReglerWidget()
         if (self.parent.rmw.pruefWidget.pruefung != None and self.parent.rmw.pruefWidget.pruefung._state == self.parent.rmw.pruefWidget.pruefung.PRUEF_STATE_RUNNING):
-            self.sumReglerWidget.update_ReglerWidget(totalSet=self.__setup.get_GesamtSollWert(), totalIst=self.parent.rmw.pruefWidget.pruefung.get_pruefCurrentFlowSum(), hwStatus=self.__setup._hwConnectStatus)             
+            self.sumReglerWidget.update_ReglerWidget(totalSet=self.__setup.get_GesamtSollWert(), totalIst=self.parent.rmw.pruefWidget.pruefung.get_pruefCurrentFlowSum(), hwStatus=self.__setup._hwConnectStatus, zaehlSum=self.parent.rmw.pruefWidget.pruefung.get_pruefCurrentMassSum())             
         else:
-            self.sumReglerWidget.update_ReglerWidget(totalSet=self.__setup.get_GesamtSollWert(), totalIst=self.__setup.get_GesamtIstWert(), hwStatus=self.__setup._hwConnectStatus)     
+            self.sumReglerWidget.update_ReglerWidget(totalSet=self.__setup.get_GesamtSollWert(), totalIst=self.__setup.get_GesamtIstWert(), hwStatus=self.__setup._hwConnectStatus, zaehlSum=self.__setup.get_GesamtZaehlMenge())     
 
 
     def set_secLockOpen(self, open):
@@ -491,10 +491,12 @@ class ReglerOverview_Widget(QGroupBox):
     WIDTH_ARBEITSBEREICH = 120
     # WIDTH_PROGRESS = 200 # Bleibt frei
     WIDTH_IST = 120
+    WIDTH_CNT = 120
     WIDTH_SETSPIN = 70
     WIDTH_SETPB = 50
     WIDTH_CLOSE = 50
     WIDTH_ENABLE = 50
+    WIDTH_LOG = 100
 
     
     def __init__(self, parent, regler=None, sum=False, totalSet=0, totalIst=0, gesBereich=[]):
@@ -534,16 +536,20 @@ class ReglerOverview_Widget(QGroupBox):
         self.lIstwert = QLabel()
         self.lIstwert.setAlignment(Qt.AlignCenter)
         
+        self.lCounter = QLabel()
+        self.lCounter.setAlignment(Qt.AlignCenter)
+        
         self.pbOpenReglerOutputLog = QLabel("")
         
         self.pbSetSoll = QPushButton("Set")
             
         # Inhalte anpassen
 
+        # Header
         name = "" if (not sum) else "\u03A3"
         bereich = "Bereich [g/min]" 
-        istwert = "Istwert [g/min]"
-        
+        istwert = "Durchfluss Ist"
+        counter = "Menge Ist"
         
         
         
@@ -565,6 +571,9 @@ class ReglerOverview_Widget(QGroupBox):
             # Istwert
             istwert = str(regler.get_ist())
             self.lIstwert.setStyleSheet("background-color: white; border: 1px solid black;")
+            # Counter
+            counter = str(regler.get_cnt())
+            self.lCounter.setStyleSheet("background-color: white; border: 1px solid black;")
             # Set Soll
             self.sSetSoll = QDoubleSpinBox()
             self.sSetSoll.setMinimum(regler.get_arbeitsBereich()[0])
@@ -584,6 +593,7 @@ class ReglerOverview_Widget(QGroupBox):
             
         else:
             # Widget ist keinem Einzelnen Regler zugordnet
+            
             if(not sum):
                 # HEADER
                 self.lArbeitsbereich.setFont(LisionStyle.LABEL_FONT_BOLD)
@@ -601,14 +611,15 @@ class ReglerOverview_Widget(QGroupBox):
                 
             else:
                 # SUMME (Untere Zeile)
+                
                 bereich = str(gesBereich)
                 
                 
             self.pStellwert = QLabel("Sollwert")
             self.pStellwert.setAlignment(Qt.AlignCenter)
-            
             self.pStellwert.setFont(LisionStyle.LABEL_FONT_BOLD)  
             self.lIstwert.setFont(LisionStyle.LABEL_FONT_BOLD)  
+            self.lCounter.setFont(LisionStyle.LABEL_FONT_BOLD)
             
             
             if(sum):
@@ -626,24 +637,35 @@ class ReglerOverview_Widget(QGroupBox):
                 self.cbEnable = QLabel("")
                 
                 istwert = str(totalIst)
+                
 
         # Breiten
         self.lActive.setFixedWidth(self.WIDTH_ACTIVE)
         self.lName.setFixedWidth(self.WIDTH_NAME)
         self.lArbeitsbereich.setFixedWidth(self.WIDTH_ARBEITSBEREICH)
         self.lIstwert.setFixedWidth(self.WIDTH_IST)
+        self.lCounter.setFixedWidth(self.WIDTH_CNT)
         self.sSetSoll.setFixedWidth(self.WIDTH_SETSPIN)
         self.pbSetSoll.setFixedWidth(self.WIDTH_SETPB)
         self.pbClose.setFixedWidth(self.WIDTH_CLOSE)
         self.cbEnable.setFixedWidth(self.WIDTH_ENABLE)
+        self.pbOpenReglerOutputLog.setFixedWidth(self.WIDTH_LOG)
             
 
         # Füge Widgets zur GUI hinzu
         mainLayout.addWidget(self.lActive)
         mainLayout.addWidget(self.lName)
         mainLayout.addWidget(self.lArbeitsbereich) 
+        
+        # Zentriere Stellwert-Label
+        if(regler == None):
+            mainLayout.addStretch(1)
         mainLayout.addWidget(self.pStellwert)
+        if(regler == None):
+            mainLayout.addStretch(1)
+            
         mainLayout.addWidget(self.lIstwert)
+        mainLayout.addWidget(self.lCounter)
         mainLayout.addWidget(self.sSetSoll)
         mainLayout.addWidget(self.pbSetSoll)
         mainLayout.addWidget(self.pbClose)
@@ -654,6 +676,7 @@ class ReglerOverview_Widget(QGroupBox):
         self.lName.setText(name)
         self.lArbeitsbereich.setText(bereich)
         self.lIstwert.setText(istwert)
+        self.lCounter.setText(counter)
         
         
     def set_extendedFunctionVisibility(self, extendedVis):
@@ -663,6 +686,7 @@ class ReglerOverview_Widget(QGroupBox):
             self.pbClose.setVisible(extendedVis)
             self.cbEnable.setVisible(extendedVis)
             self.pbOpenReglerOutputLog.setVisible(extendedVis)
+            self.lCounter.setVisible(extendedVis)
         
     
     def pbSetSollClicked(self):
@@ -685,7 +709,7 @@ class ReglerOverview_Widget(QGroupBox):
         self.regler.set_enabled(self.cbEnable.isChecked())
     
         
-    def update_ReglerWidget(self, totalSet=0, totalIst=0, hwStatus=-1):
+    def update_ReglerWidget(self, totalSet=0, totalIst=0, hwStatus=-1, zaehlSum=0):
         
         if(self.regler != None):
             
@@ -693,6 +717,7 @@ class ReglerOverview_Widget(QGroupBox):
             self.lArbeitsbereich.setEnabled(self.cbEnable.isChecked())
             self.pStellwert.setEnabled(self.cbEnable.isChecked())
             self.lIstwert.setEnabled(self.cbEnable.isChecked())
+            self.lCounter.setEnabled(self.cbEnable.isChecked())
             self.sSetSoll.setEnabled(self.cbEnable.isChecked())
             self.pbSetSoll.setEnabled(self.cbEnable.isChecked())
             self.pbClose.setEnabled(self.cbEnable.isChecked())
@@ -713,6 +738,7 @@ class ReglerOverview_Widget(QGroupBox):
                 self.lArbeitsbereich.setEnabled(False)
                 self.pStellwert.setEnabled(False)
                 self.lIstwert.setEnabled(False)
+                self.lCounter.setEnabled(False)
                 self.sSetSoll.setEnabled(False)
                 self.pbSetSoll.setEnabled(False)
                 self.pbClose.setEnabled(False)
@@ -721,6 +747,8 @@ class ReglerOverview_Widget(QGroupBox):
             else:
                 self.lActive.setPixmap(self.bildActive)
                 self.lIstwert.setText("{:4.2f}".format(self.regler.get_ist()))
+                self.lCounter.setText("{:4.2f}".format(self.regler.get_cnt()))
+                
 
             # Disable unimplemented Functions
             # self.sSetSoll.setEnabled(False)
@@ -737,7 +765,8 @@ class ReglerOverview_Widget(QGroupBox):
             # Kein Regler zugewiesn sondern HEader oder SUm
             
             self.pStellwert.setText("{:4.2f}".format(totalSet) + " g/min")
-            self.lIstwert.setText("{:4.2f}".format(totalIst))
+            self.lIstwert.setText("{:4.2f}".format(totalIst) + " g/min")
+            self.lCounter.setText("{:4.2f}".format(zaehlSum) + " g")
             
             # Statusanzeige HW-Connection
             if(hwStatus == hs.HWSetup.HW_CONNECT_STATUS_NONE):
@@ -751,6 +780,8 @@ class ReglerOverview_Widget(QGroupBox):
             self.pbClose.setEnabled(False)
             self.pbSetSoll.setEnabled(False)
             self.sSetSoll.setEnabled(False)
+        
+        
         
     
     def set_secLockOpen(self, open):

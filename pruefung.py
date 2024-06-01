@@ -155,10 +155,12 @@ class Pruefung(QObject):
             self._rs.protokoll.append(cw.ProtokollEintrag("ACHTUNG! Automatisches Schließen der Regler fehlgeschlagen!", typ=cw.ProtokollEintrag.TYPE_FAILURE))            
 
         gasmengen = {}
+        zaehlerSum = {}
         for p in self._rs._ports:
             gasmengen[p] = self._rs._ports[p].get_integrierteMenge()  
+            zaehlerSum[p] = self._rs._ports[p].get_cnt()
 
-        self._gsr.finalize_Regler(gasmengen)
+        self._gsr.finalize_Regler(gasmengen, zaehlerSum)
         
         # Messungen pausieren
         # self._rs.set_paused(True)
@@ -193,15 +195,17 @@ class Pruefung(QObject):
                 # extrahiere Regler-Messwerte     
                 busy = False
                 gasmengen = {}
+                zahlerwerte = {}
                 for p in self._rs._ports:
-                    gasmengen[p] = self._rs._ports[p].get_integrierteMenge()  
+                    gasmengen[p] = self._rs._ports[p].get_integrierteMenge()
+                    zahlerwerte[p] = self._rs._ports[p].get_cnt()
 
                 # print(time.time())
                 # print(gasmengen)
             
                 anteil = -1
                 if(not busy):
-                    anteil = self._gsr.update_Regler(gasmengen) / self._reglerAuswahlArbeitsBereichMax
+                    anteil = self._gsr.update_Regler(gasmengen, zahlerwerte) / self._reglerAuswahlArbeitsBereichMax
                   
                 if(anteil >= 0):
                     # Reglerstellwerte müssen aktualisiert werden.
@@ -248,5 +252,16 @@ class Pruefung(QObject):
     def get_pruefLaufMenge(self):
         return self._gsr.totalFlowSum
     
+    
     def get_pruefCurrentFlowSum(self):
+        """
+        Summierte Intgrale über Flüsse der in der Prüfung aktiven Regler
+        """
         return self._gsr.lastFlow
+    
+    
+    def get_pruefCurrentMassSum(self):
+        """
+        Summierte Zaehlerwerte der in der Prüfung aktiven Regler
+        """
+        return self._gsr.lastMassSum

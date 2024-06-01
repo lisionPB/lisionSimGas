@@ -81,7 +81,7 @@ class SimGasRegler(hws.HWSetup):
         
     def _set_initPosition(self):
         # Setze alle Regler auf 0
-        if (not self.set_allClosed()):
+        if (not self.set_allClosed() and self._hwConnectStatus == self.HW_CONNECT_STATUS_OK):
             self._hwConnectStatus = self.HW_CONNECT_STATUS_FAILURE
             self.protokoll.append(cw.ProtokollEintrag("Warnung! Setzen der Regelstellglieder in 0-Position fehlgeschlangen! Verbindung zur Hardware überprüfen!", typ=cw.ProtokollEintrag.TYPE_FAILURE))
         else:
@@ -539,6 +539,18 @@ class SimGasRegler(hws.HWSetup):
         for p in self._ports:
             if(p != None):
                 ist = self._ports[p].get_ist()
+                sum += ist if ist != None else 0
+        return sum
+    
+    
+    def get_GesamtZaehlMenge(self):
+        """
+        Summiert die Zählerwerte aller Regler
+        """
+        sum = 0
+        for p in self._ports:
+            if(p != None):
+                ist = self._ports[p].get_cnt()
                 sum += ist if ist != None else 0
         return sum
     

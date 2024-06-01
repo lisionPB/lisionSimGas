@@ -31,6 +31,7 @@ class GesamtSollwertRegler:
         # print(self.initFlow)
         self.initDone = False
         
+        self.lastMassSum = 0            #   Über Zähler der Regler bestimmten Durchfluss [g]
         self.lastUpdate_SystemTime = 0
                 
         
@@ -70,7 +71,7 @@ class GesamtSollwertRegler:
 #
 # Interner Regler zum Nachführen des Gesamtsollwertes
 
-    def update_Regler(self, gasmengen) -> float:
+    def update_Regler(self, gasmengen, zaehlerwerte) -> float:
         """
         Aktualisiert den internen Regler zum Nachführen des Gesamtsollwertes
 
@@ -84,7 +85,7 @@ class GesamtSollwertRegler:
         """
         
         # Aktualisiere bisher erreichte Gasmenge von aktiven Reglern
-        self.update_totalFlowSum(gasmengen)
+        self.update_totalFlowSum(gasmengen, zaehlerwerte)
 
         # Bestimme TimeStamp
         self.lastUpdate_SystemTime = time.time()
@@ -98,8 +99,8 @@ class GesamtSollwertRegler:
         
         
         
-    def finalize_Regler(self, gasmengen):
-        self.update_totalFlowSum(gasmengen)
+    def finalize_Regler(self, gasmengen, zaehlerwerte):
+        self.update_totalFlowSum(gasmengen, zaehlerwerte)
         
         
     def calc_stellwert(self, timeStamp, ignoreInit:bool = False):
@@ -142,8 +143,8 @@ class GesamtSollwertRegler:
     
     
     
-    def update_totalFlowSum(self, gasmengen):
-        self.totalFlowSum = self.calc_dataSum(gasmengen)
+    def update_totalFlowSum(self, gasmengen, zaehlerwerte):
+        self.totalFlowSum, self.lastMassSum = self.calc_dataSum(gasmengen, zaehlerwerte)
             
     
     
@@ -209,7 +210,7 @@ class GesamtSollwertRegler:
         
                 
             
-    def calc_dataSum(self, gasmengen) -> float:
+    def calc_dataSum(self, gasmengen, zaehlerwerte) -> float:
         """Summiert den Fluss aller aktiven Regel-Stellglieder auf
 
         Args:
@@ -219,16 +220,18 @@ class GesamtSollwertRegler:
             float: Summe der Flüsse aller Regel-Stellglieder [g/min]
         """
         messSum = 0
-        
-        # print (gasmengen)
+        zaehlSum = 0
         
         for p in gasmengen:
             if  p in self._reglerAuswahl:
                 messSum += gasmengen[p]
                 
-        # print (messSum)
+        for p in zaehlerwerte:
+            if  p in self._reglerAuswahl:
+                zaehlSum += zaehlerwerte[p]
         
-        return messSum        
+        
+        return messSum, zaehlSum        
 
 
     
