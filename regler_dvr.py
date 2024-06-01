@@ -82,6 +82,8 @@ class Regler_Dvr(QObject):
         self._worker._sig_finished.connect(self._threadMessLoop.quit)
         self._worker._sig_finished.connect(self._worker.deleteLater)
         self._threadMessLoop.finished.connect(self._threadMessLoop.deleteLater)
+        
+        self.sig_closeConnection.connect(self._worker._stop_worker)
 
 
     def _connect(self):
@@ -510,8 +512,6 @@ class ReglerUpdateWorker(QObject):
         self._paused = False
         
         self._currentComTakt = -1
-        
-        regler.sig_closeConnection.connect(self._stop_worker)
         
         
     def _start_worker(self):
