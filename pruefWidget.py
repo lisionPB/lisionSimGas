@@ -499,7 +499,7 @@ class PruefWidget(QGroupBox):
             try:
 
                 fn, _ = QtWidgets.QFileDialog.getSaveFileName(
-                    self, "Export PDF", parentDir, "PDF files (.pdf);;All Files()"
+                    self, "Export PDF", parentDir
                 )
                 
                 if fn:

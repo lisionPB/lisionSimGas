@@ -602,7 +602,7 @@ class ReglerOverview_Widget(QGroupBox):
                 bereich = str(gesBereich)
                 
                 
-            self.pStellwert = QLabel("Stellwert")
+            self.pStellwert = QLabel("Sollwert")
             self.pStellwert.setAlignment(Qt.AlignCenter)
             
             self.pStellwert.setFont(LisionStyle.LABEL_FONT_BOLD)  

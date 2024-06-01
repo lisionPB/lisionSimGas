@@ -12,6 +12,7 @@ class GesamtSollwertRegler:
     
     ENABLE_LOG = True
     KORREKTUR_FAKTOR_SOLLWERTSPITZE = 1.002
+    SCHLUSS_SOLLWERT_FIXIERDAUER = 10 # [s]     Zeit vor Ende der Prüfung, ab der keine Anpassung des Sollwertes mehr vorgenommen wird.
 
 
     def __init__(self, finalTime, finalFlowSum, rampenzeit):
@@ -128,12 +129,15 @@ class GesamtSollwertRegler:
             timeLeft = self.endTime - timeStamp
             massLeft = self.finalFlowSum - self.totalFlowSum
             
+            #TODO: if (timeLeft > self.SCHLUSS_SOLLWERT_FIXIERDAUER):
+            
             # Berechne theoretischen Fluss
             self.lastTheoFlow = calc_theoreticalStaticFlow(timeLeft, massLeft)
 
             # Faktor zur Reduktion von Sollwertspitzen am Ende der Prüfung.
             # Wenn im allerletzten Moment nur eine minimale Menge fehlt, würde der Sollwert unendlich hoch werden, die die Zeit gegen 0 geht (soll = m_rest / t_rest)
             self.lastTheoFlow = self.lastTheoFlow * self.KORREKTUR_FAKTOR_SOLLWERTSPITZE
+            
             
         return self.lastTheoFlow
     
