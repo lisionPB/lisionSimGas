@@ -36,7 +36,7 @@ import reglerReadOutputLog as rrol
 class ReglerUI(QMainWindow):
     
     TITEL = "SimGas Regler GUI - CORI"
-    VERSION = "0.12"
+    VERSION = "0.13"
     YEAR = "2024"
     
     _sig_close = pyqtSignal()
@@ -147,8 +147,10 @@ class ReglerUI(QMainWindow):
 
         # Verbinde Hardware
         self.sgr.sig_HWConnectFinished.connect(self.print_ConnectTryMessage)
+        
         # Setze alles in 0-Position
         self.sgr.sig_HWConnectFinished.connect(self.sgr._set_initPosition)
+        
         # Starten der Messschleife, sobald Verbindung hergestellt
         self.sgr.sig_HWConnectFinished.connect(self.sgr._start_MessSchleife)
         
