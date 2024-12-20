@@ -1,7 +1,7 @@
 import os
 
 from PyQt5 import QtCore, QtGui, QtWidgets, QtPrintSupport
-from PyQt5.QtWidgets import QGroupBox, QVBoxLayout, QHBoxLayout, QPushButton, QDoubleSpinBox, QLabel
+from PyQt5.QtWidgets import QGroupBox, QVBoxLayout, QHBoxLayout, QPushButton, QDoubleSpinBox, QLabel, QWidget
 from PyQt5.QtCore import QTimer, pyqtSignal
 
 
@@ -47,7 +47,7 @@ class PruefWidget(QGroupBox):
             rs (ReglerSetup): zugrundliegendes reglerSetup 
         """
         
-        super().__init__()
+        super().__init__("Prüfung")
         
         self.sgr = rs
         self.sms = sms
@@ -57,8 +57,6 @@ class PruefWidget(QGroupBox):
         
         self.mainLayout = QVBoxLayout()
         self.setLayout(self.mainLayout)
-        
-        self.setTitle("Prüfung")
         
         self.init_UI()
         
@@ -131,9 +129,10 @@ class PruefWidget(QGroupBox):
         self.groupConfig.setLayout(self.layoutConfig)
         self.mainLayout.addWidget(self.groupConfig)
         
+        # self.layoutConfig.setContentsMargins(0,0,0,0)
         
         # Gesamtzeit
-        groupZeit = QGroupBox("")
+        groupZeit = QWidget()
         layoutZeit = QHBoxLayout()
         groupZeit.setLayout(layoutZeit)
         self.layoutConfig.addWidget(groupZeit)
@@ -153,10 +152,11 @@ class PruefWidget(QGroupBox):
         self.sZeitSpinner.valueChanged.connect(self.calc_initFluss)
         
         layoutZeit.addStretch(1)
+        layoutZeit.setContentsMargins(0,0,0,0)
             
         
         # GesamtGasMenge
-        groupMenge = QGroupBox("")
+        groupMenge = QWidget()
         layoutMenge = QHBoxLayout()
         groupMenge.setLayout(layoutMenge)
         self.layoutConfig.addWidget(groupMenge)
@@ -175,11 +175,14 @@ class PruefWidget(QGroupBox):
         self.sMengeSpinner.setFixedWidth(150)
         self.sMengeSpinner.valueChanged.connect(self.calc_initFluss)
         
+        groupMenge.setContentsMargins(0,0,0,0)
+        
         layoutMenge.addStretch(1)
+        layoutMenge.setContentsMargins(0,0,0,0)
         
         
         # Zeit für Rampe
-        groupStartzeit = QGroupBox("")
+        groupStartzeit = QWidget()
         layoutStartzeit = QHBoxLayout()
         groupStartzeit.setLayout(layoutStartzeit)
         self.layoutConfig.addWidget(groupStartzeit)
@@ -197,10 +200,11 @@ class PruefWidget(QGroupBox):
         self.sStartzeitSpinner.setFixedWidth(150)
         
         layoutStartzeit.addStretch(1)
+        layoutStartzeit.setContentsMargins(0,0,0,0)
                 
         
         # Ermittelter Intialfluss
-        groupInitFluss = QGroupBox("")
+        groupInitFluss = QWidget()
         layoutInitFluss = QHBoxLayout()
         groupInitFluss.setLayout(layoutInitFluss)
         self.layoutConfig.addWidget(groupInitFluss)
@@ -214,6 +218,7 @@ class PruefWidget(QGroupBox):
         self.lInitFlussLabel.setFixedWidth(350)
 
         layoutInitFluss.addStretch(1)
+        layoutInitFluss.setContentsMargins(0,0,0,0)
         
            
 

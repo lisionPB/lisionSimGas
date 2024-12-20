@@ -23,6 +23,7 @@ import hwSetup as hs
 import reglerSetup as rs
 import messdatenGraphWidget as mgw
 import messdatenTableWidget as mtw
+import gasSensorWidget as gsw
 import pruefWidget as pw
 import consoleWidget as cw
 import helpDialog as hd
@@ -36,7 +37,7 @@ import reglerReadOutputLog as rrol
 class ReglerUI(QMainWindow):
     
     TITEL = "SimGas Regler GUI - CORI"
-    VERSION = "0.13"
+    VERSION = "0.14"
     YEAR = "2024"
     
     _sig_close = pyqtSignal()
@@ -288,6 +289,8 @@ class ReglerMainWidget(QWidget):
         leftGroup.setLayout(self.leftLayout)
         self.mainLayout.addWidget(leftGroup)     
         
+        self.leftLayout.setContentsMargins(0,0,0,0)
+        
         #~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # Graph
         #~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -347,32 +350,34 @@ class ReglerMainWidget(QWidget):
         rightGroup.setLayout(rightLayout)
         self.mainLayout.addWidget(rightGroup)   
         
+        rightLayout.setContentsMargins(0,0,0,0)
+        
         rightGroup.setFixedWidth(700)
         
         #-------------------------------
-        # Sicherheitsmagnetschalter
+        # Gaszufuhr
         #---------------------------------
         if(self.__mainWindow.ENABLE_SEC_MAGNET_SWITCH):
             self.smsWidget = SecMagnetSwitch(self.__mainWindow.sms, self.__mainWindow.sgr)
             rightLayout.addWidget(self.smsWidget)
             
-            
+        
+        #-------------------------------
+        # Gassensoren
+        #---------------------------------
+        
+        self.gsWidget = gsw.GasSensorWidget(self.__mainWindow.sgr, self.__mainWindow.sms, self)
+        rightLayout.addWidget(self.gsWidget)
+        
             
         #--------------------------------------
         # Prüfung und Messung Group
         #--------------------------------------
         
-        pruefGroup = QGroupBox("")
-        pruefLayout = QVBoxLayout()
-        pruefGroup.setLayout(pruefLayout)
-        rightLayout.addWidget(pruefGroup)
-        
         self.pruefWidget = pw.PruefWidget(self.__mainWindow.sgr, self.__mainWindow.sms, self)
         self.pruefWidget._sig_pdfSaved.connect(self.handle_pdfExport)   
+        rightLayout.addWidget(self.pruefWidget)
         
-        pruefLayout.addWidget(self.pruefWidget)
-        
-
         
         #---------------------------
         # Console
@@ -796,7 +801,7 @@ class ReglerOverview_Widget(QGroupBox):
 class SecMagnetSwitch(QGroupBox):
     
     def __init__(self, sms, sgr):
-        super().__init__("Sicherheitsmagnetschalter")
+        super().__init__("Gas-Zufuhr")
         mainLayout = QVBoxLayout()
         self.setLayout(mainLayout)
         
@@ -807,7 +812,7 @@ class SecMagnetSwitch(QGroupBox):
         # Connection
         ##########################
         
-        self.connectionGroup = QGroupBox ("")
+        self.connectionGroup = QGroupBox ("Sicherheitsmagnetschalter")
         connectLayout = QHBoxLayout()
         self.connectionGroup.setLayout(connectLayout)
         mainLayout.addWidget(self.connectionGroup)
@@ -858,7 +863,7 @@ class SecMagnetSwitch(QGroupBox):
         # Data
         #############################
         
-        dataGroup = QGroupBox("Gas-Sensoren")
+        dataGroup = QGroupBox("Gas-Flaschen")
         dataLayout = QVBoxLayout()
         dataGroup.setLayout(dataLayout)
         mainLayout.addWidget(dataGroup)
@@ -948,9 +953,6 @@ class SecMagnetSwitch(QGroupBox):
                 
                 for s in self.gasGroups:
                     self.gasGroups[s].update_GasData(self.sms.dataGas[s]["FP"], self.sms.dataGas[s]["TP"])
-
-                
-                
                 
                 
 class GasData_Widget(QGroupBox):
@@ -959,10 +961,15 @@ class GasData_Widget(QGroupBox):
         super().__init__(name)
         dataLeftLayout = QHBoxLayout()
         self.setLayout(dataLeftLayout)
+        dataLeftLayout.setContentsMargins(5,5,5,5)
+        
+        self.cbActive = QCheckBox()
+        dataLeftLayout.addWidget(self.cbActive)
         
         # FP
         fpGroup = QGroupBox()
         fpLayout = QHBoxLayout()
+        fpLayout.setContentsMargins(0,0,0,0)
         fpGroup.setLayout(fpLayout)
         dataLeftLayout.addWidget(fpGroup)
         self.iFP = QLabel("Gas-Druck")
@@ -980,6 +987,7 @@ class GasData_Widget(QGroupBox):
         # TP
         tpGroup = QGroupBox()
         tpLayout = QHBoxLayout()
+        tpLayout.setContentsMargins(0,0,0,0)
         tpGroup.setLayout(tpLayout)
         dataLeftLayout.addWidget(tpGroup)
         self.iTP = QLabel("Gas-Temp.")
