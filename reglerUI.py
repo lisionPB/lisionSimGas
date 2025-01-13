@@ -1062,7 +1062,7 @@ if __name__ == '__main__':
     
     # GasGard Sensorik
     ggEA = GasGardEA(gasgardIP)
-    ggs = gg.GasGardSetup(ggEA)
+    ggs = gs.GasGardSetup(ggEA)
 
 
     # Öffne Anzeige

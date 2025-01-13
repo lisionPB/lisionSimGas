@@ -123,7 +123,7 @@ class GasGardSetup(QObject):
             try:
                 
                 ###
-                vals = self._ggEA.readDigitalInput()
+                vals = self._ggEA.readAll()
                 print("ggs: read GG: " + str(vals))
                 
                 for f in self.dataGas:
@@ -161,6 +161,7 @@ class GasGardSetup(QObject):
     
         # Update Thread beenden    
         self.sig_closeConnection.emit()
+        self._ggEA.close()
         
         self.terminated = True
         print("Verbindung zu GasGard getrennt.")
@@ -238,7 +239,7 @@ class GG_ConnectThread(QThread):
                 
         lastStatus = self.ggs._ggConnectStatus
                 
-        if(not self.ggs._update_ggSetupInProcess):
+        if(not self.ggs._update_GGSetupInProgress):
         
             print ("Verbinde GasGard Setup ...")
     
