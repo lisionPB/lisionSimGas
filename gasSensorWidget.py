@@ -35,16 +35,16 @@ class GasSensorWidget(QGroupBox):
     
     _sig_pdfSaved = pyqtSignal(str) # "" wenn fehler, sonst Filename
     
-    def __init__(self, rs, sms, mw):
+    def __init__(self, rs, ggs, mw):
         """
         Arguments:
             rs (ReglerSetup): zugrundliegendes reglerSetup 
         """
         
-        super().__init__("Gas-Sensorik")
+        super().__init__("Gas Sensorik")
         
-        self.sgr = rs
-        self.sms = sms
+        # self.sgr = rs
+        self.ggs = ggs
         self.mw = mw
         
         self.mainLayout = QVBoxLayout()
@@ -88,7 +88,7 @@ class GasSensorWidget(QGroupBox):
         
         self.gasGroups = {}
         
-        for i, s in enumerate(self.sms._sgEA._sensors):
+        for i, s in enumerate(self.ggs._ggEA._sensors):
             self.gasGroups[s] = GasData_Widget(s)
             dataLayout.addWidget(self.gasGroups[s])
     

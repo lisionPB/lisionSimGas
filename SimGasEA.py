@@ -74,7 +74,6 @@ class SimGasEA(object):
         return None
 
 
-
     def MAGVENT(self, __state=None):
         """
         Hauptventil für den Gasfluss (Digitaler Ausgang)

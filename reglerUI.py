@@ -18,6 +18,7 @@ from PyQt5.QtCore import Qt, QTimer, pyqtSignal
 from lisionStyle import LisionStyle
 
 from SimGasEA import SimGasEA
+from gasGardEA import GasGardEA
 
 import hwSetup as hs
 import reglerSetup as rs
@@ -32,13 +33,14 @@ import sensorConfigUI as sc
 import reglerConfigNullUI as rcn
 import secSetup as ss
 import reglerReadOutputLog as rrol
+import gasGardSetup as gs
 
 
 class ReglerUI(QMainWindow):
     
     TITEL = "SimGas Regler GUI - CORI"
     VERSION = "0.14"
-    YEAR = "2024"
+    YEAR = "2025"
     
     _sig_close = pyqtSignal()
     
@@ -56,20 +58,23 @@ class ReglerUI(QMainWindow):
     
     # Sicherheitsmagnetschalter # NICHT ANPASSEN, WENN MAN NICHT WEIß, WAS MAN TUT!
     ENABLE_SEC_MAGNET_SWITCH = True
-    DEFAULT_SEC_IP = "172.20.20.2"
+    
+    # GasGard Verbindung
+    ENABLE_GASGARD_SENSORS = True
     
     # Entwickleransicht
     SHOW_EXTENDED_FUNCTIONS = False
     
     ###################################
     
-    def __init__(self, sgr, sms):
+    def __init__(self, sgr, sms, ggs):
         super().__init__()
     
         # lade HW-Setup
     
         self.sgr = sgr
         self.sms = sms
+        self.ggs = ggs
             
         self.rmw = ReglerMainWidget(self)     
         self.setCentralWidget(self.rmw)  
@@ -130,8 +135,9 @@ class ReglerUI(QMainWindow):
         
         # Verbinde Datenankunft mit Darstellung
         self.sgr.get_datamanager().sig_newDataReceived.connect(self.rmw.display_data)
-               
-            
+         
+        ###      
+        # Sicherheitsmagnetschalter  
         # Verbinde Sec Setup
         if(self.ENABLE_SEC_MAGNET_SWITCH):
             # Message bei Verbindungsversuch
@@ -145,7 +151,25 @@ class ReglerUI(QMainWindow):
             # Verbindung herstellen
             self.sms._connect_sec()
             
+        ###
+        # GasGard  
+        # Verbinde GasGard Setup
+        if(self.ENABLE_GASGARD_SENSORS):
+            # Message bei Verbindungsversuch
+            self.ggs.sig_GG_ConnectFinished.connect(self.print_ConnectTryMessage_GasGard)
+            # Starten der SEC-Messschleife, sobald Verbindung hergestellt
+            self.ggs.sig_GG_ConnectFinished.connect(self.ggs._start_MessSchleife)            
 
+            # Trenne Verbindung bei Schließen der Anwendung
+            self._sig_close.connect(self.ggs._close_ggSetup)
+
+            # Verbindung herstellen
+            self.ggs._connect_gg()
+           
+            
+        ###
+        # Gas Durchfluss Regler
+        
         # Verbinde Hardware
         self.sgr.sig_HWConnectFinished.connect(self.print_ConnectTryMessage)
         
@@ -156,7 +180,6 @@ class ReglerUI(QMainWindow):
         self.sgr.sig_HWConnectFinished.connect(self.sgr._start_MessSchleife)
         
         self.sgr._connect_Ports()
-                  
                   
                   
                   
@@ -175,8 +198,6 @@ class ReglerUI(QMainWindow):
                 
 
     def closeEvent(self, event):
-        
-        
         
         closeOK = True
         
@@ -236,6 +257,14 @@ class ReglerUI(QMainWindow):
             self.sgr.protokoll.append(cw.ProtokollEintrag("Verbindung zur SEC-Hardware hergestellt", typ=cw.ProtokollEintrag.TYPE_SUCCESS))
         elif(check == -1):     
             self.sgr.protokoll.append(cw.ProtokollEintrag("Fehler beim Verbinden der SEC-Hardware!", typ=cw.ProtokollEintrag.TYPE_FAILURE))
+    
+    
+    def print_ConnectTryMessage_GasGard(self, check):
+        if(check == 1): 
+            self.sgr.protokoll.append(cw.ProtokollEintrag("Verbindung zur GasGard-Hardware hergestellt!", typ=cw.ProtokollEintrag.TYPE_SUCCESS))
+        elif(check == -1):     
+            self.sgr.protokoll.append(cw.ProtokollEintrag("Fehler beim Verbinden der GasGard-Hardware!", typ=cw.ProtokollEintrag.TYPE_FAILURE))
+    
     
     
     
@@ -328,6 +357,7 @@ class ReglerMainWidget(QWidget):
         dataGroup.setLayout(dataLayout)
         self.leftLayout.addWidget(dataGroup)  
         
+        
         #------------------------------
         # Reglerliste
         #------------------------------
@@ -355,7 +385,7 @@ class ReglerMainWidget(QWidget):
         rightGroup.setFixedWidth(700)
         
         #-------------------------------
-        # Gaszufuhr
+        # Gaszufuhr: Flaschen, Magnetschalter
         #---------------------------------
         if(self.__mainWindow.ENABLE_SEC_MAGNET_SWITCH):
             self.smsWidget = SecMagnetSwitch(self.__mainWindow.sms, self.__mainWindow.sgr)
@@ -363,10 +393,10 @@ class ReglerMainWidget(QWidget):
             
         
         #-------------------------------
-        # Gassensoren
+        # Gassensoren: GasGard Sensoren
         #---------------------------------
         
-        self.gsWidget = gsw.GasSensorWidget(self.__mainWindow.sgr, self.__mainWindow.sms, self)
+        self.gsWidget = gsw.GasSensorWidget(self.__mainWindow.sgr, self.__mainWindow.ggs, self)
         rightLayout.addWidget(self.gsWidget)
         
             
@@ -1019,20 +1049,24 @@ if __name__ == '__main__':
 
     # IP-Adresse des WAGO Feldbuskopplers
     wagoIP = '172.20.20.2'
+    gasgardIP = '172.20.20.3'
 
     app = QApplication(sys.argv)
-
-    # WAGO EA Ebene
-    sgEA = SimGasEA(wagoIP)
    
     # SecSetup (Magnetschalter)
+    sgEA = SimGasEA(wagoIP) 
     sms = ss.SecSetup(sgEA)
     
     # Regel Stellglieder
     sgr = rs.SimGasRegler(sgEA)
+    
+    # GasGard Sensorik
+    ggEA = GasGardEA(gasgardIP)
+    ggs = gg.GasGardSetup(ggEA)
+
 
     # Öffne Anzeige
-    main = ReglerUI(sgr, sms)
+    main = ReglerUI(sgr, sms, ggs)
 
     ec = app.exec_()
     
