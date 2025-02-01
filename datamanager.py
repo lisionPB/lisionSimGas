@@ -64,6 +64,15 @@ class DataManager(QObject):
             self.__data[n] = l
     
     
+    def addChannels(self, chNames):
+        
+        self.__channelNames.extend(chNames)
+        for c in chNames:
+            self.__channelLabels[c] = c
+        
+        self.__init_Structure__()
+    
+    
     def get_currentTime(self):
         """Generiere Zeitstempel
         """
@@ -79,8 +88,6 @@ class DataManager(QObject):
             - data: dict mit ChannelNames als keys
         """
         
-        # print(data)
-        
         # Hole für jeden Kanal die Daten aus data
         for cn in self.__channelNames:
             if(not cn in data or data[cn] == "BUSY"):
@@ -88,12 +95,13 @@ class DataManager(QObject):
                 data[cn] = self.replace_incompleteData(cn)
                 
             self.__data.get(cn).append(data[cn])
+            
                     
         # Generiere Zeitstempel des Dateneingangs		
         t = self.get_currentTime()
         self.__data.get(self.TIME_LABEL).append(t) 
-                            
-                            
+
+               
         # Füge für spätere Verwendung den Zeitstempel zum Datensatz hinzu.
         data[self.TIME_LABEL] = t
         self.counter += 1
@@ -126,11 +134,12 @@ class DataManager(QObject):
     def replace_incompleteData(self, cn):
         val = 0
         if(len(self.__data[cn]) > 0):
-            val = self.get_LastData()[cn]
+            lastData = self.get_LastData()
+            if(lastData != None):
+                val = lastData[cn]
+            
         return val
 
-  
-  
   
     def get_channelNames(self):
         return self.__channelNames
@@ -154,16 +163,21 @@ class DataManager(QObject):
  
     def get_LastData(self):
         last = dict()
+        
+        # print(self.__data)
+        
         for k in self.__data:
             if(len(self.__data[k]) > 0):
                 last[k] = self.__data[k][-1]
             else:
-                print(k)
+                # print(k)
+                pass
                 
         if(len(last) == len(self.__data)):
             return last		
         
         return None
+ 
  
     def get_LastTime(self):
         last = self.get_LastData()

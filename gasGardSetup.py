@@ -18,14 +18,15 @@ class GasGardSetup(QObject):
     Verwende _start_MessSchleife(self) um Messschleife zu starten
     """
     
-    DEFAULT_SCAN_INTERVAL = 250
+    DEFAULT_SCAN_INTERVAL = 500
        
     CONFIG_FILE_SENSOREN = "config_gasgard.json"
     
     GG_CONNECT_STATUS_NONE = -1     # Verbindung zu keinem COM-Port aufgebaut
     GG_CONNECT_STATUS_OK = 1        # Verbindungen zu allen Ports hergestellt.
     
-    _sig_NewSecData = pyqtSignal(dict)
+    sig_NewGGStatus = pyqtSignal(dict, dict)
+    sig_NewGGData = pyqtSignal(dict)
     _sig_GG_SetupConnect = pyqtSignal()
     sig_GG_ConnectFinished = pyqtSignal(int)
     
@@ -99,6 +100,7 @@ class GasGardSetup(QObject):
             
     def _start_MessSchleife(self):
         if(self._ggConnectStatus == self.GG_CONNECT_STATUS_OK):
+            # print("Start GasGard Messschleife")
             self._threadMessLoop.start()
         else:
             print ("Warte auf Verbindung zur GasGard Harware...")    
@@ -108,45 +110,35 @@ class GasGardSetup(QObject):
         if(not self._update_GGSetupInProgress):
             self._sig_GG_SetupConnect.emit()
             
-                
         
     def _read_Messwerte(self):
         
         # Versuche Verbindung neu aufzubauen, wenn Fehler vorliegt:
         if(self._ggConnectStatus != self.GG_CONNECT_STATUS_OK):
             self._connect_gg()
+
                 
         # Wenn Verbindung OK: Lesen der Sensoren
         if(self._ggConnectStatus == self.GG_CONNECT_STATUS_OK):
-            # Vordruck
             
             try:
                 
-                ###
-                vals = self._ggEA.readAll()
-                print("ggs: read GG: " + str(vals))
+                dev_status, sens_status, sens_vals = self._ggEA.readAll()
+                # print("ggs: read GG: " + str(sens_vals))
                 
+                self.sig_NewGGStatus.emit(dev_status, sens_status)
+                self.sig_NewGGData.emit(sens_vals)
+                
+                """
                 for f in self.dataGas:
                     self.dataGas[f]["value"] = vals
-                
-                if(err):
-                    raise Exception("Fehler beim Auslesen der GasGard Sensoren!")
-                
+                """ 
                 
             except Exception as e:
                 # Fehler beim Auslesen des Messwertes
                 print (e)
-                print ("GG: Fehler beim Auslesen des Messwertes!")
-                self._ggConnectStatus = self.GG_CONNECT_STATUS_NONE
-            
-            val = "---"
-            try:
-                val = float(msg)
-            except:
-                pass
-            self.data = val
-            
-            return self.data              
+                print ("GG: Fehler beim Auslesen der Messwertes!")
+                self._ggConnectStatus = self.GG_CONNECT_STATUS_NONE          
     
            
 

@@ -1,10 +1,13 @@
 
 import ctypes
 
+from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtGui import QIcon, QPixmap
 from PyQt5.QtWidgets import QMainWindow
 
 class MessdatenUI(QMainWindow):
+    
+    sig_close = pyqtSignal()
     
     def __init__(self, parent, mdgw):
         super().__init__(parent)
@@ -25,5 +28,5 @@ class MessdatenUI(QMainWindow):
         
     
    
-    def closeEvent(self, event):        
-        self._parent.closeMessdatenUI()
+    def closeEvent(self, event):       
+        self.sig_close.emit()

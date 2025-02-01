@@ -30,10 +30,11 @@ class MessdatenGraphWidget(QGroupBox):
     Beinhaltet einen Graph zur Anzeige von Messdaten inklusive Control-Buttons zum Handling des Graphen
     """
     
+    sig_closeExternal = pyqtSignal()    # wenn externe Ansicht geschlossen wird
     _sig_pdfSaved = pyqtSignal(str) # "" wenn fehler, sonst Filename
     
     
-    def __init__(self, parent, dataMan):
+    def __init__(self, parent, dataMan, chNames=None):
         super().__init__()
         
         self.parent = parent
@@ -46,7 +47,7 @@ class MessdatenGraphWidget(QGroupBox):
     
         # Graph Layout
     
-        self.graphWidget = MessdatenGraphPlot(dataMan)
+        self.graphWidget = MessdatenGraphPlot(dataMan, chNames)
         self.mainLayout.addWidget(self.graphWidget)
         
         ##########
@@ -132,12 +133,22 @@ class MessdatenGraphWidget(QGroupBox):
     def buttonOpenExtern_clicked(self):
         if(not self.openedExtern):
             mdui = MessdatenUI(self.parent, self)
+            mdui.sig_close.connect(self.close_External)
             self.set_openedExtern(True)
-        
+            
+    
+    def close_External(self):
+        self.sig_closeExternal.emit()
+        self.set_openedExtern(False)
+    
         
     def set_openedExtern(self, enabled):
         self.buttonOpenExtern.setEnabled(not enabled)
         self.openedExtern = enabled
+        
+    
+    def set_selectedChannelNames(self, chNames):
+        self.graphWidget.set_selectedChannelNames(chNames)
         
         
     def set_curveNames(self, names):
@@ -179,9 +190,19 @@ class MessdatenGraphPlot(pg.PlotWidget):
         pg.mkPen(0,0,200, width=1),     #   blau
         pg.mkPen(255,0,0, width=1),     #   rot
         pg.mkPen(255,150,0, width=1),     #   orange
+        
+        pg.mkPen(120,0,120, width=1),       #   lila
+        pg.mkPen(150,50,150, width=1),     #   rosa  
+        pg.mkPen(0,120,120, width=1),       #  blaugrün
+        pg.mkPen(50,120,120, width=1),     #   hellblaugrün
+        pg.mkPen(0,120,0, width=1),   #   grün
+        pg.mkPen(50,120,50, width=1),     #   hellgrün     
+        pg.mkPen(0,0,100, width=1),     #   blau
+        pg.mkPen(105,0,0, width=1),     #   rot
+        pg.mkPen(105,75,0, width=1),     #   orange
     ]
     
-    def __init__(self, dataMan):	       
+    def __init__(self, dataMan, chNames=None):	       
         super().__init__(axisItems={'bottom': FmtXAxisItem(orientation='bottom')})
 
 
@@ -189,6 +210,7 @@ class MessdatenGraphPlot(pg.PlotWidget):
         self.__update = True
 
         self.__dataMan = dataMan
+        self.__chNames = chNames if chNames != None else dataMan.get_channelNames()
         self.__timeRangeOnFokus = 60
         self.__timeRange = 60 # [s] -> 86400 = zeige die Messungen des letzten Tages an
         self.__sampleTime = 1
@@ -200,10 +222,7 @@ class MessdatenGraphPlot(pg.PlotWidget):
         
         self.__floatingWindow = True
         self.__show_only_data_in_range = False        
-        
-        xInit = []        
-        yInit = []
-        
+
         ########
         # Axen
         
@@ -228,9 +247,7 @@ class MessdatenGraphPlot(pg.PlotWidget):
         ########
         # Plots
         
-        self.plotVis = dict()
-        self.curves = dict()
-        
+
         # Referenzlinie
         self.refLinie = pg.InfiniteLine()
         self.refLinie.setAngle(0)
@@ -253,22 +270,29 @@ class MessdatenGraphPlot(pg.PlotWidget):
         self.plotItem.vb.sigResized.connect(self.updateViews)
         """
         
+        self.init_curves()
+        
+        self.showGrid(x=True,y=True)
+        self.getPlotItem().getViewBox().setDefaultPadding(0.05)
+        self.setBackground((255,255,255))                      
+        self.resetFokus()
+        
+    
+    def init_curves(self):
+                
+        xInit = []        
+        yInit = []
+        
+        self.clear()
+        
+        self.plotVis = dict()
+        self.curves = dict()
         
         # Daten 
         for i,k in enumerate(self.__dataMan.get_channelNames()):
-            self.plotVis[k] = True                
-            self.curves[k]  = self.plot(xInit, yInit, name=self.__dataMan.get_channelLabels()[k], pen=self.DEFAULT_CURVE_PENS[i])                
-        
-        
-        self.showGrid(x=True,y=True)
-        
-        self.getPlotItem().getViewBox().setDefaultPadding(0.05)
-                        
-        
-        self.setBackground((255,255,255))              
-                        
-        self.resetFokus()
-        
+            if(k in self.__chNames):
+                self.plotVis[k] = True                
+                self.curves[k]  = self.plot(xInit, yInit, name=self.__dataMan.get_channelLabels()[k], pen=self.DEFAULT_CURVE_PENS[i])   
     
     
     def set_rightAxisLabels(self, labels):
@@ -295,9 +319,14 @@ class MessdatenGraphPlot(pg.PlotWidget):
         self.__floatingWindow = enabled
 
 
-    def set_curveNames(self, curveNames):
-        self.__curveNames = curveNames
+    def set_selectedChannelNames(self, chNames):
+        self.__chNames = chNames
+        self.init_curves()
+    
 
+    def set_curveNames(self, curveNames):
+        # self.__curveNames = curveNames
+        pass
 
     def set_update(self, update):
         self.__update = update
@@ -330,42 +359,38 @@ class MessdatenGraphPlot(pg.PlotWidget):
         
             self.__sampleTime = sampletime
             if(visibilities != None):
-                #TODO: Check auf richtige Länge von visibilities
                 self.plotVis = visibilities
             
             t = time.time()
             update = t - self.__lastUpdateTime > self.__maxUpdateRate
-            #print (update)
             if(update):
                 # Interne Updaterate
             
                 self.__lastUpdateTime = t
-                #print ("timerange: " + str(self.__timeRange))
                 
                 datarange = int(self.__timeRange / (sampletime / 1000))
-                #print ("datarange: " + str(datarange))
                 
                 for k in self.curves.keys():
-                    if(self.plotVis[k] == True):
-                        x = []
-                        y = []
-                        if(self.__show_only_data_in_range):
-                            x = self.__dataMan.get_Data(DataManager.TIME_LABEL)[-datarange:]
-                            y = self.__dataMan.get_Data(k)[-datarange:]
-                        else:
-                            x = self.__dataMan.get_Data(DataManager.TIME_LABEL)
-                            y = self.__dataMan.get_Data(k)
-                        
-                        if(len(x) == len(y)):
-                            self.curves.get(k).setData(x,y)
+                    if(k in self.__chNames):
+                        if(self.plotVis[k] == True):
+                            x = []
+                            y = []
+                            if(self.__show_only_data_in_range):
+                                x = self.__dataMan.get_Data(DataManager.TIME_LABEL)[-datarange:]
+                                y = self.__dataMan.get_Data(k)[-datarange:]
+                            else:
+                                x = self.__dataMan.get_Data(DataManager.TIME_LABEL)
+                                y = self.__dataMan.get_Data(k)
+                            
+                            if(len(x) == len(y)):
+                                self.curves.get(k).setData(x,y)
+                                
+                            else:
+                                print ("GRAPH FRAME SKIPPED !!! ")
+                                print (k)
                             
                         else:
-                            print ("GRAPH FRAME SKIPPED !!! ")
-                            print (k)
-                        
-                        
-                    else:
-                        self.curves.get(k).clear()		
+                            self.curves.get(k).clear()		
                         
                 # setze View auf letzten Datensatz
                     if(self.__showLast):

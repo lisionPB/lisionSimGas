@@ -4,13 +4,13 @@
     "DEFAULT_ZEIT_MIN": 1.0,
     "visibility": {
         "COM1": false,
-        "COM1_SOLL": false,
+        "COM1_SOLL": true,
         "COM2": false,
-        "COM2_SOLL": false,
+        "COM2_SOLL": true,
         "COM3": false,
-        "COM3_SOLL": false,
+        "COM3_SOLL": true,
         "GES_IST": true,
         "GES_SOLL": true,
-        "FP": false
+        "FP": true
     }
 }

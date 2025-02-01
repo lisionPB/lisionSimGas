@@ -29,6 +29,7 @@ import consoleWidget as cw
 import parametrierung
 from parametrierungUI import ParametrierungUI
 
+import gasGardEA
 
 
 class GasSensorWidget(QGroupBox):
@@ -52,7 +53,9 @@ class GasSensorWidget(QGroupBox):
         
         self.init_UI()
         
-        
+        # Set Sensor Names when ready
+        self.ggs._ggEA.sig_sensorNamesReceived.connect(self.set_SensorNames)
+        # self.set_SensorNames()
         
         
     def init_UI(self):
@@ -67,9 +70,7 @@ class GasSensorWidget(QGroupBox):
         self.mainLayout.addWidget(self.connectionGroup)
         
         # Connect Status
-        self.bildActive = QPixmap("symbols/light_green.png")
-        self.bildWarning = QPixmap("symbols/light_yellow.png")
-        self.bildInactive = QPixmap("symbols/light_red.png")
+        # self.bildActive = QPixmap("symbols/light_green.png")
           
         self.lActive = QLabel("")
         connectLayout.addWidget(self.lActive)
@@ -93,16 +94,52 @@ class GasSensorWidget(QGroupBox):
             dataLayout.addWidget(self.gasGroups[s])
     
     
+    def set_SensorNames(self):
+        for s in self.gasGroups:
+            self.gasGroups[s].set_GasSensorName(self.ggs._ggEA._sensors[s]["type"])
+        
+            
+    def update_GasSensorStatus(self, device_status, sensors_status):
+        for s in list(self.gasGroups.keys()):
+            if(s in sensors_status):
+                self.gasGroups[s].update_GasSensorStatus(sensors_status[s])
+            else:
+                self.gasGroups[s].update_GasSensorStatus(None)
+           
+            
+    def update_GasSensorValues(self, sensors_values):
+        
+        for s in list(self.gasGroups.keys()):
+            if(s in sensors_values):
+                self.gasGroups[s].update_GasSensorValue(sensors_values[s])
+            else:
+                self.gasGroups[s].update_GasSensorValue(None)
+                
+    
+    
                 
                 
 class GasData_Widget(QGroupBox):
     
     def __init__(self, name):
+        
         super().__init__(name)
+        
+        self.name = name
+        self.nameSet = False
+        
+        self.bildAlarm1 = QPixmap("symbols/light_yellow.png")
+        self.bildAlarm1_Off = QPixmap("symbols/light_yellow_off.png")
+        self.bildAlarm2 = QPixmap("symbols/light_red.png")
+        self.bildAlarm2_Off = QPixmap("symbols/light_red_off.png")
+        
+        self.maxValue = 0
+        
         layout = QHBoxLayout()
         self.setLayout(layout)
-        layout.setContentsMargins(5,5,5,5)
+        layout.setContentsMargins(5,0,5,5)
         
+        # Messwert
         self.lCurrentValue = QLabel("Messwert: ")
         self.lCurrentValue.setFixedWidth(100)
         layout.addWidget(self.lCurrentValue)
@@ -111,11 +148,12 @@ class GasData_Widget(QGroupBox):
         self.leCurrentValue.setReadOnly(True)
         self.leCurrentValue.setAlignment(QtCore.Qt.AlignRight)
         layout.addWidget(self.leCurrentValue)
-        self.lCurrentValueUnit = QLabel("[g/m³]")
+        self.lCurrentValueUnit = QLabel("%")
         self.lCurrentValueUnit.setFixedWidth(60)
         layout.addWidget(self.lCurrentValueUnit)
         
-        self.lCurrentValueMax = QLabel("max: ")
+        # Max Value
+        self.lCurrentValueMax = QLabel("Maximalwert: ")
         self.lCurrentValueMax.setFixedWidth(100)
         layout.addWidget(self.lCurrentValueMax)
         self.leCurrentValueMax = QLineEdit("")
@@ -123,14 +161,67 @@ class GasData_Widget(QGroupBox):
         self.leCurrentValueMax.setReadOnly(True)
         self.leCurrentValueMax.setAlignment(QtCore.Qt.AlignRight)
         layout.addWidget(self.leCurrentValueMax)
-        self.lCurrentValueMaxUnit = QLabel("[g/m³]")
+        self.lCurrentValueMaxUnit = QLabel("%")
         self.lCurrentValueMaxUnit.setFixedWidth(60)
         layout.addWidget(self.lCurrentValueMaxUnit)
         
-        self.pbResetMax = QPushButton("reset")
+        # Reset Max Value
+        self.pbResetMax = QPushButton("Reset")
         layout.addWidget(self.pbResetMax)
+        self.pbResetMax.clicked.connect(self.reset_maxValue)
+        
+        # Alerts
+        # 1 
+        alert1Group = QGroupBox("A1")
+        layout.addWidget(alert1Group)
+        alert1Layout = QVBoxLayout()
+        alert1Layout.setContentsMargins(8,0,0,5)
+        alert1Group.setLayout(alert1Layout)
+        self.lAlarm1 = QLabel("")
+        self.lAlarm1.setPixmap(self.bildAlarm1_Off)
+        alert1Layout.addWidget(self.lAlarm1)
+        # 2 
+        alert2Group = QGroupBox("A2")
+        layout.addWidget(alert2Group)
+        alert2Layout = QVBoxLayout()
+        alert2Layout.setContentsMargins(8,0,0,5)
+        alert2Group.setLayout(alert2Layout)
+        self.lAlarm2 = QLabel("")
+        self.lAlarm2.setPixmap(self.bildAlarm2_Off)
+        alert2Layout.addWidget(self.lAlarm2)
     
     
-    def update_GasData(self, value):
-        pass
+    def set_GasSensorName(self, name):
+        self.setTitle(self.name + ": " + name)
     
+    
+    def update_GasSensorStatus(self, status):
+        # Alarme
+        if(status != None):
+            # 1
+            if(status[gasGardEA.CH_ALARM_1]):
+                self.lAlarm1.setPixmap(self.bildAlarm1)
+            else:
+                self.lAlarm1.setPixmap(self.bildAlarm1_Off)
+            # 2 
+            if(status[gasGardEA.CH_ALARM_2]):
+                self.lAlarm2.setPixmap(self.bildAlarm2)
+            else:
+                self.lAlarm2.setPixmap(self.bildAlarm2_Off)
+        
+        else:
+            # TODO: Anzeige, dass keine Status Daten von Sensor
+            pass    
+        
+        
+    def update_GasSensorValue(self, value):
+        self.leCurrentValue.setText(str(value))
+        if(value != None):
+            if(value >= self.maxValue):
+                self.maxValue = value
+                self.leCurrentValueMax.setText(str(self.maxValue))
+        else:
+            self.leCurrentValueMax.setText(str("---"))
+            
+    def reset_maxValue(self):
+        self.maxValue = 0

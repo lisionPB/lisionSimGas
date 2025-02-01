@@ -136,6 +136,9 @@ class ReglerUI(QMainWindow):
         # Verbinde Datenankunft mit Darstellung
         self.sgr.get_datamanager().sig_newDataReceived.connect(self.rmw.display_data)
          
+         
+        
+         
         ###      
         # Sicherheitsmagnetschalter  
         # Verbinde Sec Setup
@@ -159,6 +162,11 @@ class ReglerUI(QMainWindow):
             self.ggs.sig_GG_ConnectFinished.connect(self.print_ConnectTryMessage_GasGard)
             # Starten der SEC-Messschleife, sobald Verbindung hergestellt
             self.ggs.sig_GG_ConnectFinished.connect(self.ggs._start_MessSchleife)            
+            # Ankommende GasGard Daten in DataManager einspeisen
+            self.sgr.get_datamanager().addChannels(list(self.ggs._ggEA._sensors.keys()))
+            self.ggs.sig_NewGGData.connect(self.sgr.get_datamanager().append_RawData) 
+            # Channel Names des Graphen setzen
+            self.rmw.graphWidget_gasGard.set_selectedChannelNames(list(self.ggs._ggEA._sensors.keys()))
 
             # Trenne Verbindung bei Schließen der Anwendung
             self._sig_close.connect(self.ggs._close_ggSetup)
@@ -220,9 +228,6 @@ class ReglerUI(QMainWindow):
         if(closeOK):
             self._sig_close.emit()
             
-            #self.timer_updateUI.disconnect()
-            #self.timer_updateUI.stop()
-            
             # Save ReglerConfig
             self.sgr.save_reglerConfig()
             
@@ -240,7 +245,6 @@ class ReglerUI(QMainWindow):
             
             
     def switch_expertMode(self, checked):
-        # print (checked)
         self.rmw.set_extendedFunctionVisibility(checked) 
         
             
@@ -323,18 +327,25 @@ class ReglerMainWidget(QWidget):
         #~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # Graph
         #~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        # Regler
         
+        # CurveNames
+        chNames_SGR = []
+        for p in mw.sgr._ports:
+            chNames_SGR.append(p)
         
         self.graphWidget = mgw.MessdatenGraphWidget(self, mw.sgr.get_datamanager())
         self.leftLayout.addWidget(self.graphWidget)
         self.graphWidget.set_floatingWindowEnabled(False)
+        self.graphWidget.sig_closeExternal.connect(self.closeMessdatenUI)
         
-        # CurveNames
-        curveNames = dict()
-        for p in mw.sgr._ports:
-            curveNames[p] = mw.sgr._ports[p].get_name()   
-        self.graphWidget.set_curveNames(curveNames)
         
+        # GasGard
+        
+        self.graphWidget_gasGard = mgw.MessdatenGraphWidget(self, mw.sgr.get_datamanager())
+        self.leftLayout.addWidget(self.graphWidget_gasGard)
+        self.graphWidget_gasGard.set_floatingWindowEnabled(False)
+        self.graphWidget_gasGard.sig_closeExternal.connect(self.closeMessdatenUI_GasGard)
         
         
         
@@ -398,6 +409,8 @@ class ReglerMainWidget(QWidget):
         
         self.gsWidget = gsw.GasSensorWidget(self.__mainWindow.sgr, self.__mainWindow.ggs, self)
         rightLayout.addWidget(self.gsWidget)
+        # Statusanzeige
+        self.__mainWindow.ggs.sig_NewGGStatus.connect(self.gsWidget.update_GasSensorStatus)
         
             
         #--------------------------------------
@@ -440,14 +453,17 @@ class ReglerMainWidget(QWidget):
         
 
     def display_data(self, data):
-        #print (data)
+        # print (data)
         self.graphWidget.update_MessGraphWidget()
+        self.graphWidget_gasGard.update_MessGraphWidget()
         self.pruefWidget.update_pruefWidget(data)
+        self.gsWidget.update_GasSensorValues(data)
         
         
         
     def set_GraphRange(self, gesZeit):
         self.graphWidget.set_timeRangeOnFocus(gesZeit)
+        self.graphWidget_gasGard.set_timeRangeOnFocus(gesZeit)
         
         
     def set_ManualModeEnabled(self, enabled):
@@ -459,9 +475,13 @@ class ReglerMainWidget(QWidget):
 
     
     def closeMessdatenUI(self):
-        self.graphWidget.set_openedExtern(False)
         self.leftLayout.insertWidget(0, self.graphWidget)
 
+
+    def closeMessdatenUI_GasGard(self):
+        self.leftLayout.insertWidget(1, self.graphWidget_gasGard)
+        
+        
 
 ############################################################################################################################
 #
@@ -907,12 +927,12 @@ class SecMagnetSwitch(QGroupBox):
     
     
     def set_extendedFunctionVisibility(self, extendedVis):
-
+        pass
+        """
         for i, s in enumerate(self.sms._sgEA._sensors):            
-            # Andere Gasflaschen außer 1. ausblenden
             if(i != 0):
                 self.gasGroups[s].setVisible(extendedVis)
-
+        """
         
     
     def buttonConnect_clicked(self):
@@ -1010,7 +1030,7 @@ class GasData_Widget(QGroupBox):
         self.tFP.setReadOnly(True)
         self.tFP.setAlignment(QtCore.Qt.AlignCenter)
         fpLayout.addWidget(self.tFP)
-        self.lFP = QLabel("[bar]")
+        self.lFP = QLabel("bar")
         self.lFP.setFixedWidth(60)
         fpLayout.addWidget(self.lFP)
         
@@ -1028,7 +1048,7 @@ class GasData_Widget(QGroupBox):
         self.tTP.setReadOnly(True)
         self.tTP.setAlignment(QtCore.Qt.AlignCenter)
         tpLayout.addWidget(self.tTP)
-        self.lTP = QLabel("[°C]")
+        self.lTP = QLabel("°C")
         self.lTP.setFixedWidth(60)
         tpLayout.addWidget(self.lTP)
     
@@ -1049,7 +1069,7 @@ if __name__ == '__main__':
 
     # IP-Adresse des WAGO Feldbuskopplers
     wagoIP = '172.20.20.2'
-    gasgardIP = '172.20.20.3'
+    gasgardIP = '172.20.30.2'
 
     app = QApplication(sys.argv)
    
