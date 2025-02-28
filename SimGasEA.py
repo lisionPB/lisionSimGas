@@ -24,13 +24,14 @@ class SimGasEA(object):
         """
         self.__host = host
         # Zustand der digitalen Ausgaenge intern speichern
-        self.__dout = [False for x in range(0, 2)]
+        self.__dout = [False for x in range(0, 8)]
   
         # Initialen Verbindungsversuch starten
         self.__client = None
         self.connect()
         
         self._sensors = {}
+        self._sensorsMGS = {}
         
 
         
@@ -44,7 +45,10 @@ class SimGasEA(object):
             self.__client = host
             
             # Setze alle Ausgangsinformationen auf einen initialen Wert gemaess der Config-Datei
-            self.MAGVENT(0)
+            
+            # Schließe alle mag ventile
+            for i in range(3):
+                self.writeDigitalOutput(i, False)
             
             print("Verbindung zu SimGasEA hergestellt\n")
             
@@ -60,40 +64,33 @@ class SimGasEA(object):
     def setSensorBereiche(self, sensors):
         self._sensors = sensors
     
+    
+    def setMGSSensorBereiche(self, mgsSensors):
+        self._sensorsMGS = mgsSensors
+    
+    
 
-    def __readDigitalInput(self):
-        """
-        Einlesen aller digitalen Eingaenge.
-        """
+    
+    
+    def writeDigitalOutput(self, chId, val):
+    
         if(self.__client):
             try:
-                return self.__client.read_coils(0, 2)
-            except:
-                print("ERR: Lesen der digitalen Eingänge")
-                return []
-        return None
-
-
-    def MAGVENT(self, __state=None):
-        """
-        Hauptventil für den Gasfluss (Digitaler Ausgang)
-        """
-        if(self.__client):
-            try:
-                if __state == None:
-                    return self.__dout[0]
-                else:
-                    ans = self.__client.write_coil(0, __state).value
-                    if isinstance(ans, bool):
-                        self.__dout[0] = ans
-                        return ans
-                    
+                ans = self.__client.write_coil(chId, val).value
+                if isinstance(ans, bool):
+                    self.__dout[chId] = ans
+                    return ans
+                
             except Exception as e:
                 print (e)
-                print("Fehler beim Ansteuern des Magnetventils")
+                print("Fehler beim Ansteuern des Magnetventils " + str(chId))
     
         return None
-            
+
+
+    def isDigitalOutputSet(self, chId):
+        return self.__dout[chId]
+    
     
     def GASFLOWACTIVE(self, __state=None):
         """
@@ -103,40 +100,31 @@ class SimGasEA(object):
             if __state == None:
                 return self.__dout[1]
             else:
-                ans = self.__client.write_coil(1, __state).value
+                ans = self.__client.write_coil(3, __state).value
                 if isinstance(ans, bool):
-                    self.__dout[1] = ans
+                    self.__dout[3] = ans
                     return ans
         return None
-           
-            
-    def VORDRUCK(self):
+    
+    
+    
+    def STOERUNG(self, __state=None):
         """
-        Druck in der Gasflasche (Analoger Eingang 2 Byte)
+        LED zur Anzeige, ob Gas fließt (Digitaler Ausgang)
         """
         if(self.__client):
-            # Lesen des Wertes von der Analogkarte
-            ans = self.__client.read_input_registers(0)
-            val = ans.getRegister(0)
-            # 0 - 16 bar Messbereich
-            fac = 16 / 2047
-            # Vorzeichen ermitteln
-            sig = 1 if (val & 32768) == 0 else -1
-            # Vorzeichen entfernen
-            val = val & 32767
-            # Liegt ein Fehler vor?
-            err = False if (val & 3) == 0 else True
-            # Zahl ermitteln
-            val = (val >> 4) * fac * sig
-            # Rückgabe eines Messwertfehlers. err=False => Wert ist gültig!
-            return  err, val
+            if __state == None:
+                return self.__dout[1]
+            else:
+                ans = self.__client.write_coil(4, __state).value
+                if isinstance(ans, bool):
+                    self.__dout[4] = ans
+                    return ans
         return None
+    
 
-
-    def VORDRUCK_ID(self, idstr):
-        """
-        Druck in der Gasflasche mit id idstr (Analoger Eingang 2 Byte)
-        """
+    def readAnalogInputVordruck(self, idstr):
+        
         if(self.__client):
             # Lesen des Wertes von der Analogkarte
             ans = self.__client.read_input_registers(int(self._sensors[idstr]["addr"][0]))
@@ -154,6 +142,26 @@ class SimGasEA(object):
             # Rückgabe eines Messwertfehlers. err=False => Wert ist gültig!
             return  err, val
         return None        
+    
+    
+    def readAnalogInputMGSBox(self, idstr):
+        if(self.__client):
+            # Lesen des Wertes von der Analogkarte
+            ans = self.__client.read_input_registers(int(self._sensorsMGS[idstr]["addr"][0]))
+            val = ans.getRegister(0)
+            # 0 - max bar Messbereich
+            fac = (float(self._sensorsMGS[idstr]["max"]) - float(self._sensorsMGS[idstr]["min"])) / 2047
+            # Vorzeichen ermitteln
+            sig = 1 if (val & 32768) == 0 else -1
+            # Vorzeichen entfernen
+            val = val & 32767
+            # Liegt ein Fehler vor?
+            err = False if (val & 3) == 0 else True
+            # Zahl ermitteln
+            val = ((val >> 4) * fac + float(self._sensorsMGS[idstr]["min"]) ) * sig
+            # Rückgabe eines Messwertfehlers. err=False => Wert ist gültig!
+            return  err, val
+        return None 
         
         
         
@@ -194,6 +202,6 @@ if __name__ == '__main__':
     #print(koppler_1.MAGVENT())
     #
     #
-    print(koppler_1.VORDRUCK())
+    # print(koppler_1.VORDRUCK())
 
 

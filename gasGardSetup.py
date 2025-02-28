@@ -140,11 +140,6 @@ class GasGardSetup(QObject):
                 print ("GG: Fehler beim Auslesen der Messwertes!")
                 self._ggConnectStatus = self.GG_CONNECT_STATUS_NONE          
     
-           
-
-
-    def get_Messwerte(self):
-        return self.data
 
 
     def _close_ggSetup(self):

@@ -29,8 +29,6 @@ class SecSetup(QObject):
     SEC_CONNECT_STATUS_NONE = -1     # Verbindung zu keinem COM-Port aufgebaut
     SEC_CONNECT_STATUS_OK = 1        # Verbindungen zu allen Ports hergestellt.
        
-    CMD_TABLE = ["MOx","FP?","TE?","HU?"]
-    
     CONFIG_FILE_SENSOREN = "config_sensors.json"
     
     _sig_NewSecData = pyqtSignal(dict)
@@ -47,9 +45,6 @@ class SecSetup(QObject):
         
         self._secConnectStatus = self.SEC_CONNECT_STATUS_NONE
         
-        self.cmdSwitch = 0
-        self.cmdOpen = 0
-        self.data = {"FP?":0}
         
         # Übergeben der Sensormessbereiche
         self._sgEA.setSensorBereiche(self._load_sensorConfig(self.CONFIG_FILE_SENSOREN))
@@ -58,12 +53,19 @@ class SecSetup(QObject):
         self.dataGas = {}
         for f in self._sgEA._sensors:
             self.dataGas[f] = {"FP" : None, "TP" : None}
+            
+        # Init MGS Boxen Data
+        self.dataMGS = {}
+        for s in self._sgEA._sensorsMGS:
+            self.dataMGS[f] = 0
+        
 
         
         ##############
         # Status
-        
-        self._sms_Open = False
+        # Magnet Switches
+        self._sms_open = [False for i in range (3)]
+
         
         ##############
         # Messschleife
@@ -98,6 +100,7 @@ class SecSetup(QObject):
         """
         # TODO: Ausnahmebehandlung, wenn Config File nicht gefunden wurde oder File ungültiges Format hat!
         
+        # Gas Vordruck Sensoren
         f = open(confFileURL)
         conf = json.load(f)
         
@@ -106,6 +109,7 @@ class SecSetup(QObject):
         f.close()
         
         return sensors
+
 
 
     def save_sensorConfig(self):       
@@ -131,61 +135,100 @@ class SecSetup(QObject):
         
     def _read_Messwerte(self):
         
+        self.__read_Vordruck()
+#        self.__read_MGSBoxen()
+
+            
+
+    def __read_Vordruck(self):
+        
+        # Versuche Verbindung neu aufzubauen, wenn Fehler vorliegt:
+        if(self._secConnectStatus != self.SEC_CONNECT_STATUS_OK):
+            self._connect_sec()           
+                
+        if(self._secConnectStatus == self.SEC_CONNECT_STATUS_OK):
+            
+            print("Try: read vordruck")
+            
+            # Vordruck
+            try:
+                                
+                ###
+                for f in self.dataGas:
+                    err2, fp = self._sgEA.readAnalogInputVordruck(f)
+                    self.dataGas[f]["FP"] = fp
+                    
+                    # Berechnung GasTemp:
+                    if(type(fp) != None and fp != 0):
+                        self.dataGas[f]["TP"] = 987.0 / ( 6.2886 - math.log10(fp*100) ) - 273.15
+                
+                    if(err2):
+                        raise Exception("Fehler beim Auslesen des Vordrucks")
+                    
+                
+            except Exception as e:
+                # Fehler beim Auslesen des Messwertes
+                print (e)
+                print ("SEC: Fehler beim Auslesen des Gasvordrucks !")
+                self._secConnectStatus = self.SEC_CONNECT_STATUS_NONE
+                
+                
+                            
+
+    def __read_MGSBoxen(self):
+        
         # Versuche Verbindung neu aufzubauen, wenn Fehler vorliegt:
         if(self._secConnectStatus != self.SEC_CONNECT_STATUS_OK):
             self._connect_sec()
                 
                 
         if(self._secConnectStatus == self.SEC_CONNECT_STATUS_OK):
-            # Vordruck
+            
+            
+            print("Try: read mgs boxen")
+            
+            # MGS Messboxen
             try:
-                err, msg = self._sgEA.VORDRUCK()
-                
                                 
                 ###
-                for f in self.dataGas:
-                    err2, fp = self._sgEA.VORDRUCK_ID(f)
-                    self.dataGas[f]["FP"] = fp
+                for f in self.dataMGS:
+                    err, val = self._sgEA.readAnalogInputMGSBox(f)
+                    self.dataMGS[f] = val
+                                    
+                    if(err):
+                        raise Exception("Fehler beim Auslesen der MGS Box " + str(f) )
                     
-                    # Berechnung GasTemp:
-                    if(type(fp) != None and fp != 0):
-                        self.dataGas[f]["TP"] = 987.0 / ( 6.2886 - math.log10(fp*100) ) - 273.15
-                ###
-                
-                
-                
-                if(err):
-                    raise Exception("Fehler beim Auslesen des Vordrucks")
                 
             except Exception as e:
                 # Fehler beim Auslesen des Messwertes
                 print (e)
-                print ("SEC: Fehler beim Auslesen des Messwertes!")
+                print ("SEC: Fehler beim Auslesen der MGS Boxen !")
                 self._secConnectStatus = self.SEC_CONNECT_STATUS_NONE
-            
-            val = "---"
-            try:
-                val = float(msg)
-            except:
-                pass
-            self.data["FP?"] = val
-            return self.data                 
-    
-           
-
-
-    def get_Messwerte(self):
-        return self.data
 
 
 
-    def set_sms_open(self, open):
-        self._sgEA.MAGVENT(int(open))
-        self._sms_Open = self._sgEA.MAGVENT()
+    def set_sms_open(self, ventilNr, open):
+        """
+            ventilNr (int): 1-3
+            open (bool): True: Open, False: Closed 
+        """
+        self._sgEA.writeDigitalOutput(ventilNr-1 , open)
+        self._sms_open[ventilNr-1] = self._sgEA.isDigitalOutputSet(ventilNr)
+        
     
         
-    def is_sms_open(self):
-        return self._sms_Open
+    def is_sms_open(self, ventilNr):
+        """
+        Nr: 1 - 3
+        """
+        return self._sms_open[ventilNr - 1]
+    
+    
+    def is_sms_open_any(self):
+        for i in range(3):
+            if(self.is_sms_open(i+1)):
+                return True
+        return False
     
         
     def set_gasFlowLED(self, activ):
@@ -197,7 +240,9 @@ class SecSetup(QObject):
     
         self.closing = True
     
-        self.set_sms_open(False)
+        # close Mag Vents
+        for i in range(3):        
+            self.set_sms_open(i+1, False)
     
         # Update Thread beenden    
         self.sig_closeConnection.emit()

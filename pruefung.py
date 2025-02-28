@@ -65,8 +65,8 @@ class Pruefung(QObject):
         Kein Starten des Timers bis zum Start der eigentlichen Prüfung !!! -> pruefWidget
         """
                     
-        # Prüfe, ob Sicherheitsmagnetventil geöffnet wurde
-        if(not self._sms.is_sms_open()):
+        # Prüfe, ob Sicherheitsmagnetventile geöffnet wurde
+        if(not self._sms.is_sms_open_any()):
             self._rs.protokoll.append(cw.ProtokollEintrag("Sicherheitsmagnetventil nicht geöffnet! Prüfung wird nicht gestartet!", typ=cw.ProtokollEintrag.TYPE_FAILURE))
             return False
         

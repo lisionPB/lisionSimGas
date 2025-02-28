@@ -39,7 +39,7 @@ import gasGardSetup as gs
 class ReglerUI(QMainWindow):
     
     TITEL = "SimGas Regler GUI - CORI"
-    VERSION = "0.14"
+    VERSION = "0.15"
     YEAR = "2025"
     
     _sig_close = pyqtSignal()
@@ -56,7 +56,7 @@ class ReglerUI(QMainWindow):
     # Menü zum Nullabgleich verfügbar machen
     ENABLE_FUNCTION_NULLABGLEICH = True
     
-    # Sicherheitsmagnetschalter # NICHT ANPASSEN, WENN MAN NICHT WEIß, WAS MAN TUT!
+    # Sicherheitsmagnetschalter
     ENABLE_SEC_MAGNET_SWITCH = True
     
     # GasGard Verbindung
@@ -153,6 +153,8 @@ class ReglerUI(QMainWindow):
 
             # Verbindung herstellen
             self.sms._connect_sec()
+            
+            
             
         ###
         # GasGard  
@@ -429,18 +431,12 @@ class ReglerMainWidget(QWidget):
         self.console = cw.ConsoleWidget(self.__mainWindow.sgr.protokoll)
         rightLayout.addWidget(self.console)
              
-        
-    
-
             
     def set_extendedFunctionVisibility(self, extendedVis):
         
         self.reglerTable.set_extendedFunctionVisibility(extendedVis)
         self.dataTable.setVisible(extendedVis)
-        self.smsWidget.set_extendedFunctionVisibility(extendedVis)
         self.pruefWidget.set_extendedFunctionVisibility(extendedVis)
-    
-    
     
             
         
@@ -857,46 +853,10 @@ class SecMagnetSwitch(QGroupBox):
         
         self.sms = sms
         self.sgr = sgr
-        
-        ################################
-        # Connection
-        ##########################
-        
-        self.connectionGroup = QGroupBox ("Sicherheitsmagnetschalter")
-        connectLayout = QHBoxLayout()
-        self.connectionGroup.setLayout(connectLayout)
-        mainLayout.addWidget(self.connectionGroup)
-        
-        # Connect Status
-        self.bildActive = QPixmap("symbols/light_green.png")
-        self.bildWarning = QPixmap("symbols/light_yellow.png")
-        self.bildInactive = QPixmap("symbols/light_red.png")
+
           
-        self.lActive = QLabel("")
-        #self.lActive.setFixedWidth(25)
-        connectLayout.addWidget(self.lActive)
-        
-        connectLayout.addSpacing(1)
-        
-        # Open Status
-        self.lOpen = QLabel("----")
-        self.lOpen.setFixedWidth(60)
-        connectLayout.addWidget(self.lOpen)
-        
-        # Port
-        self.lPort = QLabel("COM:")
-        self.lPort.setFixedWidth(60)
-        #connectLayout.addWidget(self.lPort)
-        self.tPortNum = QLineEdit("11")
-        #self.tPortNum.setFixedWidth(60)
-        #connectLayout.addWidget(self.tPortNum)
-        
-        # Connect
-        self.pbConnect = QPushButton("Connect")
-        #self.pbConnect.setFixedWidth(60)
-        self.pbConnect.clicked.connect(self.buttonConnect_clicked)
-        #connectLayout.addWidget(self.pbConnect)
-        
+        """
+      
         # Open
         self.pbOpen = QPushButton("Hauptventil öffnen")
         #self.pbOpen.setFixedWidth(160)
@@ -908,6 +868,8 @@ class SecMagnetSwitch(QGroupBox):
         #self.pbClose.setFixedWidth(160)
         self.pbClose.clicked.connect(self.buttonClose_clicked)
         connectLayout.addWidget(self.pbClose)
+        
+        """
         
         #############################
         # Data
@@ -921,32 +883,12 @@ class SecMagnetSwitch(QGroupBox):
         self.gasGroups = {}
         
         for i, s in enumerate(self.sms._sgEA._sensors):
-            self.gasGroups[s] = GasData_Widget(s)
+            self.gasGroups[s] = GasData_Widget(s, i+1, sms)
             dataLayout.addWidget(self.gasGroups[s])
     
     
     
-    def set_extendedFunctionVisibility(self, extendedVis):
-        pass
-        """
-        for i, s in enumerate(self.sms._sgEA._sensors):            
-            if(i != 0):
-                self.gasGroups[s].setVisible(extendedVis)
-        """
-        
-    
-    def buttonConnect_clicked(self):
-        port = "COM" + self.tPortNum.text()
-        
-        
-    def buttonOpen_clicked(self):
-        self.sms.set_sms_open(True)
-        
-        
-    def buttonClose_clicked(self):
-        self.sms.set_sms_open(False)
-        
-    
+
     
     def update_SecMagnetSwitch(self):
         if(self.sms != None):
@@ -954,67 +896,32 @@ class SecMagnetSwitch(QGroupBox):
             # Connection
             if(self.sms._secConnectStatus == self.sms.SEC_CONNECT_STATUS_NONE):
                 # NOT CONNECTED
-                self.lActive.setPixmap(self.bildInactive)
-                self.lOpen.setEnabled(False)
-                self.pbConnect.setEnabled(True)
-                self.lOpen.setText("")
+                pass
+                
             else:
-                # CONNECTED
-                self.lActive.setPixmap(self.bildActive)
-                self.lOpen.setEnabled(True)
-                self.pbConnect.setEnabled(False)
-                
-                # Open STatus
-                if(self.sms._sms_Open == False):
-                    self.lOpen.setText("CLOSED")
-                else:
-                    self.lOpen.setText("OPEN")     
-                    
-                    
-                    
-                # Messwerte
-                
-                fp = self.sms.data[self.sms.CMD_TABLE[1]]
-                tp = "---"
-                
-                
-                extFPdata = dict()
-                
-                # print(fp)
-                
-                if(type(fp) != str and fp != 0):
-                    
-                    # Berechnung GasTemp:
-                    tp = 987.0 / ( 6.2886 - math.log10(fp*100) ) - 273.15
-                    
-                    extFPdata["FP"] = fp
-                    
-                    # Aktuelle Gas-Eigenschaften an Regler zur Kalibrierung weitergeben
-                    self.sgr.set_current_GasEigenschaften(fp, tp)
-                    
-                    # Gas Druck und Gas Temperatur in String umwandeln   
-                    fp = "{:4.1f}".format(fp)
-                    tp = "{:4.1f}".format(tp)
-                    
-                self.sgr.set_externData(extFPdata)
-
-
-                # Gasflaschen-Array-Daten verarbeiten
-                
+                # CONNECTED                
                 for s in self.gasGroups:
+                    print(self.sms.dataGas[s])
+                    # Gas Vordruck
                     self.gasGroups[s].update_GasData(self.sms.dataGas[s]["FP"], self.sms.dataGas[s]["TP"])
+                    # MGS Boxen
                 
                 
 class GasData_Widget(QGroupBox):
     
-    def __init__(self, name):
+    def __init__(self, name, ventilNr, sms):
         super().__init__(name)
+        
+        self.ventilNr = ventilNr
+        self.sms = sms
+        
         dataLeftLayout = QHBoxLayout()
         self.setLayout(dataLeftLayout)
         dataLeftLayout.setContentsMargins(5,5,5,5)
         
         self.cbActive = QCheckBox()
         dataLeftLayout.addWidget(self.cbActive)
+        self.cbActive.clicked.connect(self._toggleMagVentOpen)
         
         # FP
         fpGroup = QGroupBox()
@@ -1061,6 +968,11 @@ class GasData_Widget(QGroupBox):
         if(type(tp) == float):
             tp = "{:4.1f}".format(tp)
             self.tTP.setText(tp)        
+            
+            
+    def _toggleMagVentOpen(self):
+        self.sms.set_sms_open(self.ventilNr, self.cbActive.isChecked())
+        
     
           
             

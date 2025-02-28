@@ -22,5 +22,13 @@
     "Gassensor 6": {
         "channel": 6,
         "addr": 40060
+    },
+    "Gassensor 7": {
+        "channel": 7,
+        "addr": 40070
+    },
+    "Gassensor 8": {
+        "channel": 8,
+        "addr": 40080
     }
 }
