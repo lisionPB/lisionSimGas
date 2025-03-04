@@ -4,7 +4,7 @@ from PyQt5.QtGui import (QIcon, QPixmap)
 from PyQt5.QtCore import (Qt)
 
 
-class SensorConfigUI(QDialog):
+class SensorMGSConfigUI(QDialog):
     def __init__(self, sms):
         super().__init__()
   
@@ -13,7 +13,7 @@ class SensorConfigUI(QDialog):
         layout = QVBoxLayout()
         self.setLayout(layout)
   
-        self.setWindowTitle("Sensorkonfiguration")
+        self.setWindowTitle("Sensorkonfiguration für MGS Boxen")
 
         # Konfig
         self.sensorConfigGroup = SensorConfigGroup(sms)
@@ -41,8 +41,8 @@ class SensorConfigUI(QDialog):
         config = self.sensorConfigGroup.getConfig()    
         
         for s in config:
-            self.sms._sgEA._sensors[s]["min"] = config[s][0]
-            self.sms._sgEA._sensors[s]["max"] = config[s][1]
+            self.sms._sgEA._sensorsMGS[s]["min"] = config[s][0]
+            self.sms._sgEA._sensorsMGS[s]["max"] = config[s][1]
   
         self.close()
   
@@ -50,16 +50,30 @@ class SensorConfigUI(QDialog):
   
 class SensorConfigGroup(QGroupBox):
     def __init__(self, sms):
-        super().__init__("Sensorkonfiguration")
+        super().__init__("Sensorkonfiguration MGS Boxen")
 
-        layout = QVBoxLayout()
+        layout = QHBoxLayout()
         self.setLayout(layout)
         
+        groupBox1 = QGroupBox("MGS Box 1")
+        layoutBox1 = QVBoxLayout()
+        groupBox1.setLayout(layoutBox1)
+        layout.addWidget(groupBox1)
+        
+        groupBox2 = QGroupBox("MGS Box 2")
+        layoutBox2 = QVBoxLayout()
+        groupBox2.setLayout(layoutBox2)
+        layout.addWidget(groupBox2)
+        
         self.scrs = {}
-        for s in sms._sgEA._sensors:
-            scr = SensorConfigRow(s, sms._sgEA._sensors[s])
+        for i, s in enumerate(sms._sgEA._sensorsMGS):
+            scr = SensorConfigRow(s, sms._sgEA._sensorsMGS[s])
             self.scrs[s] = scr
-            layout.addWidget(scr)
+            if(i <= 1):
+                layoutBox1.addWidget(scr)
+            else:
+                layoutBox2.addWidget(scr)
+                
             
             
     def getConfig(self):
@@ -91,9 +105,10 @@ class SensorConfigRow(QGroupBox):
         lMin = QLabel("Wert 4mA")
         layout.addWidget(lMin)
         self.sMin = QDoubleSpinBox()
-        self.sMin.setMinimum(0.00)
-        self.sMin.setMaximum(10000.00)
-        self.sMin.setSingleStep(0.01)
+        self.sMin.setMinimum(0)
+        self.sMin.setMaximum(1000000)
+        self.sMin.setSingleStep(1)
+        self.sMin.setDecimals(0)
         self.sMin.setValue(self.s["min"])
         self.sMin.setEnabled(True)
         layout.addWidget(self.sMin)
@@ -102,9 +117,10 @@ class SensorConfigRow(QGroupBox):
         lMax = QLabel("Wert 20mA")
         layout.addWidget(lMax)
         self.sMax = QDoubleSpinBox()
-        self.sMax.setMinimum(0.00)
-        self.sMax.setMaximum(10000.00)
-        self.sMax.setSingleStep(0.01)
+        self.sMax.setMinimum(0)
+        self.sMax.setMaximum(1000000)
+        self.sMax.setSingleStep(1)
+        self.sMax.setDecimals(0)
         self.sMax.setValue(self.s["max"])
         self.sMax.setEnabled(True)
         layout.addWidget(self.sMax)

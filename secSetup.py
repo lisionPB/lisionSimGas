@@ -30,6 +30,7 @@ class SecSetup(QObject):
     SEC_CONNECT_STATUS_OK = 1        # Verbindungen zu allen Ports hergestellt.
        
     CONFIG_FILE_SENSOREN = "config_sensors.json"
+    CONFIG_FILE_SENSOREN_MGS = "config_mgs.json"
     
     _sig_NewSecData = pyqtSignal(dict)
     _sig_SEC_SetupConnect = pyqtSignal()
@@ -48,6 +49,7 @@ class SecSetup(QObject):
         
         # Übergeben der Sensormessbereiche
         self._sgEA.setSensorBereiche(self._load_sensorConfig(self.CONFIG_FILE_SENSOREN))
+        self._sgEA.setMGSSensorBereiche(self._load_sensorConfig(self.CONFIG_FILE_SENSOREN_MGS))
         
         # Init Flaschendruck Data
         self.dataGas = {}
@@ -57,7 +59,7 @@ class SecSetup(QObject):
         # Init MGS Boxen Data
         self.dataMGS = {}
         for s in self._sgEA._sensorsMGS:
-            self.dataMGS[f] = 0
+            self.dataMGS[s] = 0
         
 
         
@@ -136,7 +138,7 @@ class SecSetup(QObject):
     def _read_Messwerte(self):
         
         self.__read_Vordruck()
-#        self.__read_MGSBoxen()
+        self.__read_MGSBoxen()
 
             
 
@@ -147,8 +149,6 @@ class SecSetup(QObject):
             self._connect_sec()           
                 
         if(self._secConnectStatus == self.SEC_CONNECT_STATUS_OK):
-            
-            print("Try: read vordruck")
             
             # Vordruck
             try:
@@ -184,9 +184,6 @@ class SecSetup(QObject):
                 
         if(self._secConnectStatus == self.SEC_CONNECT_STATUS_OK):
             
-            
-            print("Try: read mgs boxen")
-            
             # MGS Messboxen
             try:
                                 
@@ -196,7 +193,8 @@ class SecSetup(QObject):
                     self.dataMGS[f] = val
                                     
                     if(err):
-                        raise Exception("Fehler beim Auslesen der MGS Box " + str(f) )
+                        print("Fehler beim Auslesen von " + str(f) )
+                        # raise Exception("Fehler beim Auslesen der MGS Box " + str(f) )
                     
                 
             except Exception as e:

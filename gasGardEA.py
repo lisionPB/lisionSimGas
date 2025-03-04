@@ -125,6 +125,7 @@ class GasGardEA(QObject):
         
         return True
 
+
     def setSensorBereiche(self, sensors):
         self._sensors = sensors
 
@@ -209,7 +210,7 @@ class GasGardEA(QObject):
         sensors_values = None
         
         if(self.__client):
-            r = self.__client.read_holding_registers(address=0, count=70)
+            r = self.__client.read_holding_registers(address=0, count=89)
 
             if r.isError():
                 print("ERR: Lesen der digitalen Eingänge")
@@ -232,7 +233,8 @@ class GasGardEA(QObject):
                         sensors_status[s][CH_ALARM_1] = rr[(10*ch) + MODBUS_ADR_SENSOR_OFFSET_STATUS] & 1
                         sensors_status[s][CH_ALARM_2] = rr[(10*ch) + MODBUS_ADR_SENSOR_OFFSET_STATUS] & 2
                         # values
-                        sensors_values[s] = rr[(10*ch) + MODBUS_ADR_SENSOR_OFFSET_VALUE]
+                        rawVal = rr[(10*ch) + MODBUS_ADR_SENSOR_OFFSET_VALUE]
+                        sensors_values[s] = rawVal if rawVal < 32768 else rawVal - 65536
                     
                 except Exception as exc:
                     print("Fehler beim Lesen der GasGard Sensoren")

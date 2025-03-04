@@ -61,6 +61,7 @@ class SimGasEA(object):
         return False
         
     
+    
     def setSensorBereiche(self, sensors):
         self._sensors = sensors
     
@@ -184,24 +185,26 @@ if __name__ == '__main__':
     # Einbinden der Klasse aus der externen Bibliothek
     from SimGasEA import SimGasEA
     
+    import time
+    
     # Der Koppler hat die "echte" IP-Adresse: '192.168.2.236'
     # Achtung: Die IP-Adresse ist vom jeweiligen Netzwerk abhänig!
-    koppler_1 = SimGasEA('172.29.55.101')
+    koppler_1 = SimGasEA('172.20.20.2')
     
     # Der Zugriff auf die E/A-Ebene erfolgt mit den "symbolischen Namen", die durch
     # die jeweilige 'Config'-Datei vorgegeben wurden. Kenntnisse über Modbus oder sonstige
     # 'Besonderheiten' sind nicht erforderlich.
 
-    # Setzen eines digitalen Ausgangs:
-    koppler_1.MAGVENT(1)
-    #
-    # Löschen eines digitalen Ausgangs:
-    #koppler_1.MAGVENT(0)
-    #
-    # Abfrage, ob der Ausgang gesetzt ist oder nicht:
-    #print(koppler_1.MAGVENT())
-    #
-    #
-    # print(koppler_1.VORDRUCK())
+    sensorIds = [
+        "MGS-Box 1 - Out 1",
+        "MGS-Box 1 - Out 2",
+        "MGS-Box 2 - Out 1",
+        "MGS-Box 2 - Out 2"
+    ]
 
+    for i in range (100):
+        for j in range (8):
+            koppler_1.readAnalogInputMGSBox(sensorIds[j])
+
+        time.sleep(1)
 

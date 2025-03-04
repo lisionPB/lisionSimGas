@@ -30,6 +30,7 @@ import consoleWidget as cw
 import helpDialog as hd
 import reglerConfigUI as rc
 import sensorConfigUI as sc
+import sensorMGSConfigUI as scmgs
 import reglerConfigNullUI as rcn
 import secSetup as ss
 import reglerReadOutputLog as rrol
@@ -114,6 +115,11 @@ class ReglerUI(QMainWindow):
         self.configSensorAct.setStatusTip('Sensorkonfiguration')
         self.configSensorAct.triggered.connect(self.open_config_sensors)
         configMenu.addAction(self.configSensorAct)
+        
+        self.configSensorActMGS = QAction('&Sensorkonfiguration MGS', self)
+        self.configSensorActMGS.setStatusTip('Sensorkonfiguration MGS')
+        self.configSensorActMGS.triggered.connect(self.open_config_sensorsMGS)
+        configMenu.addAction(self.configSensorActMGS)
         
         self.configNullAct = QAction('&Nullpunktabgleich', self)
         self.configNullAct.setStatusTip('Nullpunktabgleich')
@@ -283,8 +289,14 @@ class ReglerUI(QMainWindow):
         configUI = rc.ReglerConfigUI(self.sgr)
         configUI.exec()
         
+        
     def open_config_sensors(self):
         configUIsensors = sc.SensorConfigUI(self.sms)
+        configUIsensors.exec()
+         
+         
+    def open_config_sensorsMGS(self):
+        configUIsensors = scmgs.SensorMGSConfigUI(self.sms)
         configUIsensors.exec()
          
     
@@ -880,11 +892,36 @@ class SecMagnetSwitch(QGroupBox):
         dataGroup.setLayout(dataLayout)
         mainLayout.addWidget(dataGroup)
         
+        # Gas Sensoren
         self.gasGroups = {}
-        
         for i, s in enumerate(self.sms._sgEA._sensors):
             self.gasGroups[s] = GasData_Widget(s, i+1, sms)
             dataLayout.addWidget(self.gasGroups[s])
+            
+        # MGS Boxen
+        
+        self.mgsGroups = {}
+        mgsGroup = QWidget()
+        mgsLayout = QHBoxLayout()
+        mgsGroup.setLayout(mgsLayout)
+        dataLayout.addWidget(mgsGroup)
+        
+        groupBox1 = QGroupBox("MGS Box 1")
+        layoutBox1 = QVBoxLayout()
+        groupBox1.setLayout(layoutBox1)
+        mgsLayout.addWidget(groupBox1)
+        
+        groupBox2 = QGroupBox("MGS Box 2")
+        layoutBox2 = QVBoxLayout()
+        groupBox2.setLayout(layoutBox2)
+        mgsLayout.addWidget(groupBox2)
+                
+        for i, s in enumerate(self.sms._sgEA._sensorsMGS):
+            self.mgsGroups[s] = MGS_Box_Widget(s)
+            if(i <= 1):
+                layoutBox1.addWidget(self.mgsGroups[s])
+            else:
+                layoutBox2.addWidget(self.mgsGroups[s])
     
     
     
@@ -900,11 +937,12 @@ class SecMagnetSwitch(QGroupBox):
                 
             else:
                 # CONNECTED                
+                # Gas Vordruck
                 for s in self.gasGroups:
-                    print(self.sms.dataGas[s])
-                    # Gas Vordruck
                     self.gasGroups[s].update_GasData(self.sms.dataGas[s]["FP"], self.sms.dataGas[s]["TP"])
-                    # MGS Boxen
+                # MGS Boxen
+                for s in self.mgsGroups:
+                    self.mgsGroups[s].update_MGSData(self.sms.dataMGS[s])
                 
                 
 class GasData_Widget(QGroupBox):
@@ -974,6 +1012,41 @@ class GasData_Widget(QGroupBox):
         self.sms.set_sms_open(self.ventilNr, self.cbActive.isChecked())
         
     
+    
+class MGS_Box_Widget(QGroupBox):
+    def __init__(self, name):
+        super().__init__(name)
+        
+        dataLeftLayout = QHBoxLayout()
+        self.setLayout(dataLeftLayout)
+        dataLeftLayout.setContentsMargins(5,5,5,5)
+
+        # PPM
+        valGroup = QGroupBox()
+        valLayout = QHBoxLayout()
+        valLayout.setContentsMargins(0,0,0,0)
+        valGroup.setLayout(valLayout)
+        dataLeftLayout.addWidget(valGroup)
+        self.lVal = QLabel("Gas-Konz.")
+        self.lVal.setFixedWidth(100)
+        valLayout.addWidget(self.lVal)
+        self.tVal = QLineEdit("")
+        self.tVal.setFixedWidth(60)
+        self.tVal.setReadOnly(True)
+        self.tVal.setAlignment(QtCore.Qt.AlignCenter)
+        valLayout.addWidget(self.tVal)
+        self.lVal = QLabel("ppm")
+        self.lVal.setFixedWidth(60)
+        valLayout.addWidget(self.lVal)
+        
+        valLayout.addStretch(1)
+        
+        
+    def update_MGSData(self, val):
+ 
+        if(type(val) == float):
+            val = "{:6.0f}".format(val)
+            self.tVal.setText(val)
           
             
 

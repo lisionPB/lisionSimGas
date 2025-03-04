@@ -59,25 +59,7 @@ class GasSensorWidget(QGroupBox):
         
         
     def init_UI(self):
-        
-        ################################
-        # Connection
-        ##########################
-        
-        self.connectionGroup = QGroupBox ("Verbindungssstatus")
-        connectLayout = QHBoxLayout()
-        self.connectionGroup.setLayout(connectLayout)
-        self.mainLayout.addWidget(self.connectionGroup)
-        
-        # Connect Status
-        # self.bildActive = QPixmap("symbols/light_green.png")
-          
-        self.lActive = QLabel("")
-        connectLayout.addWidget(self.lActive)
-        
-        connectLayout.addSpacing(1)
-        
-        
+                
         #############################
         # Data
         #############################
@@ -140,7 +122,7 @@ class GasData_Widget(QGroupBox):
         layout.setContentsMargins(5,0,5,5)
         
         # Messwert
-        self.lCurrentValue = QLabel("Messwert: ")
+        self.lCurrentValue = QLabel("Messwert:")
         self.lCurrentValue.setFixedWidth(100)
         layout.addWidget(self.lCurrentValue)
         self.leCurrentValue = QLineEdit("")
@@ -153,7 +135,7 @@ class GasData_Widget(QGroupBox):
         layout.addWidget(self.lCurrentValueUnit)
         
         # Max Value
-        self.lCurrentValueMax = QLabel("Maximalwert: ")
+        self.lCurrentValueMax = QLabel("Max-Wert:")
         self.lCurrentValueMax.setFixedWidth(100)
         layout.addWidget(self.lCurrentValueMax)
         self.leCurrentValueMax = QLineEdit("")
