@@ -147,6 +147,7 @@ class SimGasEA(object):
     
     def readAnalogInputMGSBox(self, idstr):
         if(self.__client):
+            # print(f"idstr: {idstr}")
             # Lesen des Wertes von der Analogkarte
             ans = self.__client.read_input_registers(int(self._sensorsMGS[idstr]["addr"][0]))
             val = ans.getRegister(0)

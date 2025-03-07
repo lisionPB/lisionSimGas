@@ -1,0 +1,73 @@
+from PyQt5 import QtCore
+from PyQt5.QtWidgets import QGroupBox, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit
+
+class MGSWidget(QGroupBox):
+    
+    def __init__(self, sms):
+        super().__init__("MGS Boxen")
+        
+        self.sms = sms
+        
+        self.mgsGroups = {}
+        
+        self.mainLayout = QHBoxLayout()
+        self.setLayout(self.mainLayout)
+        
+        groupBox1 = QGroupBox("MGS Box 1")
+        layoutBox1 = QVBoxLayout()
+        groupBox1.setLayout(layoutBox1)
+        self.mainLayout.addWidget(groupBox1)
+        
+        groupBox2 = QGroupBox("MGS Box 2")
+        layoutBox2 = QVBoxLayout()
+        groupBox2.setLayout(layoutBox2)
+        self.mainLayout.addWidget(groupBox2)
+                
+        for i, s in enumerate(self.sms._sgEA._sensorsMGS):
+            self.mgsGroups[s] = MGS_Box_Widget(self.sms._sgEA._sensorsMGS[s]["label"])
+            if(i <= 1):
+                layoutBox1.addWidget(self.mgsGroups[s])
+            else:
+                layoutBox2.addWidget(self.mgsGroups[s])
+                
+                
+    def update_MGSWidget(self):
+        for s in self.mgsGroups:
+            self.mgsGroups[s].update_MGSData(self.sms.dataMGS[s])
+            
+            
+            
+class MGS_Box_Widget(QGroupBox):
+    def __init__(self, name):
+        super().__init__(name)
+        
+        dataLeftLayout = QHBoxLayout()
+        self.setLayout(dataLeftLayout)
+        dataLeftLayout.setContentsMargins(5,5,5,5)
+
+        # PPM
+        valGroup = QGroupBox()
+        valLayout = QHBoxLayout()
+        valLayout.setContentsMargins(0,0,0,0)
+        valGroup.setLayout(valLayout)
+        dataLeftLayout.addWidget(valGroup)
+        self.lVal = QLabel("Gas-Konz.")
+        self.lVal.setFixedWidth(100)
+        valLayout.addWidget(self.lVal)
+        self.tVal = QLineEdit("")
+        self.tVal.setFixedWidth(60)
+        self.tVal.setReadOnly(True)
+        self.tVal.setAlignment(QtCore.Qt.AlignCenter)
+        valLayout.addWidget(self.tVal)
+        self.lVal = QLabel("ppm")
+        self.lVal.setFixedWidth(60)
+        valLayout.addWidget(self.lVal)
+        
+        valLayout.addStretch(1)
+        
+        
+    def update_MGSData(self, val):
+ 
+        if(type(val) == float):
+            val = "{:6.0f}".format(val)
+            self.tVal.setText(val)

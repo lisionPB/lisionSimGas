@@ -1,31 +1,39 @@
 {
     "MGS-Box 1 - Out 1": {
+        "label": "Sensor 1",
+        "data_label": "MGS 1-1",
         "min": 0.0,
-        "max": 10000,
+        "max": 10000.0,
         "addr": [
             3,
             0
         ]
     },
     "MGS-Box 1 - Out 2": {
+        "label": "Sensor 2",
+        "data_label": "MGS 1-2",
         "min": 0.0,
-        "max": 10000,
+        "max": 10000.0,
         "addr": [
             4,
             0
         ]
     },
     "MGS-Box 2 - Out 1": {
+        "label": "Sensor 1",
+        "data_label": "MGS 2-1",
         "min": 0.0,
-        "max": 100000,
+        "max": 1000.0,
         "addr": [
             5,
             0
         ]
     },
     "MGS-Box 2 - Out 2": {
+        "label": "Sensor 2",
+        "data_label": "MGS 2-2",
         "min": 0.0,
-        "max": 100000,
+        "max": 1000.0,
         "addr": [
             6,
             0

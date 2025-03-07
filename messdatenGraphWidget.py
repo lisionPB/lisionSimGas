@@ -88,6 +88,7 @@ class MessdatenGraphWidget(QGroupBox):
         self.referenzSpinner.setValue(0)
         self.referenzSpinner.setFixedWidth(100)
         self.referenzSpinner.valueChanged.connect(self.set_referenzLinie)
+        self.referenzSpinner.setEnabled(True)
         
         self.refLineLabel = QLabel("Ref. Linie")
         self.refLineLabel.setAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
@@ -95,8 +96,10 @@ class MessdatenGraphWidget(QGroupBox):
         self.controlLayout.addWidget(self.refLineLabel, 1)
         self.controlLayout.addWidget(self.referenzSpinner, 1)
              
-        
-              
+
+    def set_dataManager(self, dm, channels=None):
+        self.graphWidget.set_dataManager(dm, channels)
+
     def update_MessGraphWidget(self, visibilities=None, sampletime=1000):
         self.graphWidget.update_MessGraphPlot(visibilities, sampletime)
     
@@ -115,6 +118,7 @@ class MessdatenGraphWidget(QGroupBox):
         self.graphWidget.set_timeRangeOnFocus(timeRange)
 
 
+    # TODO: mit exportImg zusammenführen
     def buttonSavePNG_clicked(self):
         
         exporter = pyexp.ImageExporter(self.graphWidget.plotItem)
@@ -200,12 +204,20 @@ class MessdatenGraphPlot(pg.PlotWidget):
         pg.mkPen(0,0,100, width=1),     #   blau
         pg.mkPen(105,0,0, width=1),     #   rot
         pg.mkPen(105,75,0, width=1),     #   orange
+        
+        pg.mkPen(120,0,120, width=1),       #   lila
+        pg.mkPen(150,50,150, width=1),     #   rosa  
+        pg.mkPen(0,120,120, width=1),       #  blaugrün
+        pg.mkPen(50,120,120, width=1),     #   hellblaugrün
+        pg.mkPen(0,120,0, width=1),   #   grün
+        pg.mkPen(50,120,50, width=1),     #   hellgrün     
+        pg.mkPen(0,0,100, width=1),     #   blau
+        pg.mkPen(105,0,0, width=1),     #   rot
+        pg.mkPen(105,75,0, width=1),     #   orange
     ]
     
     def __init__(self, dataMan, chNames=None):	       
         super().__init__(axisItems={'bottom': FmtXAxisItem(orientation='bottom')})
-
-
 
         self.__update = True
 
@@ -237,7 +249,7 @@ class MessdatenGraphPlot(pg.PlotWidget):
         ###########
         # Legende
         self.addLegend()
-        self.getPlotItem().legend.setColumnCount(10)
+        self.getPlotItem().legend.setColumnCount(12)
         anchorx = 0
         anchory = 0
         anchor = (anchorx, anchory)

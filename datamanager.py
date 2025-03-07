@@ -4,7 +4,7 @@ Created on Tue Sep 13 11:22:45 2022
 
 @author: Paul Benz
 
-v2.4 (Channel Labels)
+v2.5 (append rawdata: kopiere daten zunächst in neues dict um veränderungen an original zu vermeiden)
 
 Last changed: 26.05.2023
 
@@ -80,7 +80,7 @@ class DataManager(QObject):
         return t - self.__startTime
     
         
-    def append_RawData(self, data):
+    def append_RawData(self, rawdata):
         """
         Fügt die Rohdaten der Datenstruktur hinzu. Die Zeit wird automatisch Verwaltet.
         
@@ -89,6 +89,12 @@ class DataManager(QObject):
         """
         
         # Hole für jeden Kanal die Daten aus data
+
+        # kopiere rawdata in neues dict
+        data = {}
+        for d in rawdata:
+            data[d] = rawdata[d]
+    
         for cn in self.__channelNames:
             if(not cn in data or data[cn] == "BUSY"):
                 # print ("Datenframe unvollständig ( " + cn  + " )!")
@@ -129,6 +135,15 @@ class DataManager(QObject):
             channelLabels (_type_): dict()
         """
         self.__channelLabels = channelLabels
+        
+    
+    def update_channelLabels(self, channelLabels):
+        """Aktualisiert die Label der enthaltenen Kanäle
+
+        Args:
+            channelLabels (_type_): namen : labels
+        """
+        self.__channelLabels.update(channelLabels)
         
         
     def replace_incompleteData(self, cn):

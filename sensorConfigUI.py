@@ -38,13 +38,21 @@ class SensorConfigUI(QDialog):
         
     
     def saveConfig(self):
-        config = self.sensorConfigGroup.getConfig()    
         
-        for s in config:
-            self.sms._sgEA._sensors[s]["min"] = config[s][0]
-            self.sms._sgEA._sensors[s]["max"] = config[s][1]
+        # Gas Flaschen Sensorik
+        config_gfs = self.sensorConfigGroup.getConfig_GasFlaschenSensorik()    
+        for s in config_gfs:
+            self.sms._sgEA._sensors[s]["min"] = config_gfs[s][0]
+            self.sms._sgEA._sensors[s]["max"] = config_gfs[s][1]
   
+        # MGS Boxen Sensorik
+        config_mgs = self.sensorConfigGroup.getConfig_MGSBoxenSensorik()    
+        for s in config_mgs:
+            self.sms._sgEA._sensorsMGS[s]["min"] = config_mgs[s][0]
+            self.sms._sgEA._sensorsMGS[s]["max"] = config_mgs[s][1]
+            
         self.close()
+  
   
     
   
@@ -55,21 +63,47 @@ class SensorConfigGroup(QGroupBox):
         layout = QVBoxLayout()
         self.setLayout(layout)
         
-        self.scrs = {}
+        
+        # Gas Flaschen
+        self.scrs_gfs = {}
+        
+        flaschenGroup = QGroupBox("Gas-Zufuhr Sensorik")
+        flaschenLayout = QVBoxLayout()
+        flaschenGroup.setLayout(flaschenLayout)
+        layout.addWidget(flaschenGroup)
+        
         for s in sms._sgEA._sensors:
             scr = SensorConfigRow(s, sms._sgEA._sensors[s])
-            self.scrs[s] = scr
-            layout.addWidget(scr)
+            self.scrs_gfs[s] = scr
+            flaschenLayout.addWidget(scr)
+            
+        # MGS Boxen
+        self.scrs_mgs = {}
+        
+        mgsGroup = QGroupBox("MGS Boxen Sensorik")
+        mgsLayout = QVBoxLayout()
+        mgsGroup.setLayout(mgsLayout)
+        layout.addWidget(mgsGroup)
+        
+        for s in sms._sgEA._sensorsMGS:
+            scr = SensorConfigRow(s, sms._sgEA._sensorsMGS[s])
+            self.scrs_mgs[s] = scr
+            mgsLayout.addWidget(scr)
             
             
-    def getConfig(self):
+    def getConfig_GasFlaschenSensorik(self):
         conf = {}
-        for s in self.scrs:
-            conf[s] = [self.scrs[s].sMin.value(), self.scrs[s].sMax.value()]
+        for s in self.scrs_gfs:
+            conf[s] = [self.scrs_gfs[s].sMin.value(), self.scrs_gfs[s].sMax.value()]
             
         return conf
             
-  
+    def getConfig_MGSBoxenSensorik(self):
+        conf = {}
+        for s in self.scrs_mgs:
+            conf[s] = [self.scrs_mgs[s].sMin.value(), self.scrs_mgs[s].sMax.value()]
+            
+        return conf
 
   
 class SensorConfigRow(QGroupBox):
@@ -92,7 +126,7 @@ class SensorConfigRow(QGroupBox):
         layout.addWidget(lMin)
         self.sMin = QDoubleSpinBox()
         self.sMin.setMinimum(0.00)
-        self.sMin.setMaximum(10000.00)
+        self.sMin.setMaximum(1000000.00)
         self.sMin.setSingleStep(0.01)
         self.sMin.setValue(self.s["min"])
         self.sMin.setEnabled(True)
@@ -103,7 +137,7 @@ class SensorConfigRow(QGroupBox):
         layout.addWidget(lMax)
         self.sMax = QDoubleSpinBox()
         self.sMax.setMinimum(0.00)
-        self.sMax.setMaximum(10000.00)
+        self.sMax.setMaximum(1000000.00)
         self.sMax.setSingleStep(0.01)
         self.sMax.setValue(self.s["max"])
         self.sMax.setEnabled(True)

@@ -32,21 +32,15 @@ from parametrierungUI import ParametrierungUI
 import gasGardEA
 
 
-class GasSensorWidget(QGroupBox):
+class GasGardWidget(QGroupBox):
     
     _sig_pdfSaved = pyqtSignal(str) # "" wenn fehler, sonst Filename
     
-    def __init__(self, rs, ggs, mw):
-        """
-        Arguments:
-            rs (ReglerSetup): zugrundliegendes reglerSetup 
-        """
+    def __init__(self, ggs):
         
-        super().__init__("Gas Sensorik")
+        super().__init__("GasGard XL")
         
-        # self.sgr = rs
         self.ggs = ggs
-        self.mw = mw
         
         self.mainLayout = QVBoxLayout()
         self.setLayout(self.mainLayout)
@@ -64,16 +58,11 @@ class GasSensorWidget(QGroupBox):
         # Data
         #############################
         
-        dataGroup = QGroupBox("Gas-Sensoren")
-        dataLayout = QVBoxLayout()
-        dataGroup.setLayout(dataLayout)
-        self.mainLayout.addWidget(dataGroup)
-        
         self.gasGroups = {}
         
         for i, s in enumerate(self.ggs._ggEA._sensors):
-            self.gasGroups[s] = GasData_Widget(s)
-            dataLayout.addWidget(self.gasGroups[s])
+            self.gasGroups[s] = GasData_Widget(self.ggs._ggEA._sensors[s]["label"])
+            self.mainLayout.addWidget(self.gasGroups[s])
     
     
     def set_SensorNames(self):

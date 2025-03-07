@@ -24,13 +24,13 @@ import hwSetup as hs
 import reglerSetup as rs
 import messdatenGraphWidget as mgw
 import messdatenTableWidget as mtw
-import gasSensorWidget as gsw
+import mgsWidget as mgsw
+import gasGardWidget as gsw
 import pruefWidget as pw
 import consoleWidget as cw
 import helpDialog as hd
 import reglerConfigUI as rc
 import sensorConfigUI as sc
-import sensorMGSConfigUI as scmgs
 import reglerConfigNullUI as rcn
 import secSetup as ss
 import reglerReadOutputLog as rrol
@@ -40,7 +40,7 @@ import gasGardSetup as gs
 class ReglerUI(QMainWindow):
     
     TITEL = "SimGas Regler GUI - CORI"
-    VERSION = "0.15"
+    VERSION = "0.16"
     YEAR = "2025"
     
     _sig_close = pyqtSignal()
@@ -116,11 +116,6 @@ class ReglerUI(QMainWindow):
         self.configSensorAct.triggered.connect(self.open_config_sensors)
         configMenu.addAction(self.configSensorAct)
         
-        self.configSensorActMGS = QAction('&Sensorkonfiguration MGS', self)
-        self.configSensorActMGS.setStatusTip('Sensorkonfiguration MGS')
-        self.configSensorActMGS.triggered.connect(self.open_config_sensorsMGS)
-        configMenu.addAction(self.configSensorActMGS)
-        
         self.configNullAct = QAction('&Nullpunktabgleich', self)
         self.configNullAct.setStatusTip('Nullpunktabgleich')
         self.configNullAct.triggered.connect(self.open_configNull)
@@ -153,13 +148,20 @@ class ReglerUI(QMainWindow):
             self.sms.sig_SEC_ConnectFinished.connect(self.print_ConnectTryMessage_SEC)
             # Starten der SEC-Messschleife, sobald Verbindung hergestellt
             self.sms.sig_SEC_ConnectFinished.connect(self.sms._start_MessSchleife)            
-
+            # Ankommende MGSBoxen Daten in DataManager einspeisen
+            self.sgr.get_datamanager().addChannels(list(self.sms._sgEA._sensorsMGS.keys()))
+            # channel labels
+            secLabels = {}
+            for s in self.sms._sgEA._sensorsMGS:
+                secLabels[s] = self.sms._sgEA._sensorsMGS[s]["data_label"]
+            self.sgr.get_datamanager().update_channelLabels(secLabels)
+            self.sms._sig_NewSecData.connect(self.sgr.get_datamanager().append_RawData) 
+            
             # Schließe Sicherheitsmagnetschalter bei Schließen der Anwendung
             self._sig_close.connect(self.sms._close_secSetup)
 
             # Verbindung herstellen
             self.sms._connect_sec()
-            
             
             
         ###
@@ -172,9 +174,12 @@ class ReglerUI(QMainWindow):
             self.ggs.sig_GG_ConnectFinished.connect(self.ggs._start_MessSchleife)            
             # Ankommende GasGard Daten in DataManager einspeisen
             self.sgr.get_datamanager().addChannels(list(self.ggs._ggEA._sensors.keys()))
+            # channel labels
+            ggLabels = {}
+            for s in self.ggs._ggEA._sensors:
+                ggLabels[s] = self.ggs._ggEA._sensors[s]["data_label"]
+            self.sgr.get_datamanager().update_channelLabels(ggLabels)
             self.ggs.sig_NewGGData.connect(self.sgr.get_datamanager().append_RawData) 
-            # Channel Names des Graphen setzen
-            self.rmw.graphWidget_gasGard.set_selectedChannelNames(list(self.ggs._ggEA._sensors.keys()))
 
             # Trenne Verbindung bei Schließen der Anwendung
             self._sig_close.connect(self.ggs._close_ggSetup)
@@ -182,6 +187,24 @@ class ReglerUI(QMainWindow):
             # Verbindung herstellen
             self.ggs._connect_gg()
            
+           
+           
+        ###
+        # GasSensorik Graph: GasGard + mgs Boxen
+               
+        # Channel Names des Graphen setzen
+        chNameList = []
+        # GasGard
+        chNameList.extend(list(self.ggs._ggEA._sensors.keys()))
+        # MGS Boxen
+        chNameList.extend(list(self.sms._sgEA._sensorsMGS.keys()))
+        
+        # print(chNameList)
+        
+        self.rmw.graphWidget_gasSensorik.set_selectedChannelNames(chNameList)
+            
+            
+            
             
         ###
         # Gas Durchfluss Regler
@@ -294,11 +317,6 @@ class ReglerUI(QMainWindow):
         configUIsensors = sc.SensorConfigUI(self.sms)
         configUIsensors.exec()
          
-         
-    def open_config_sensorsMGS(self):
-        configUIsensors = scmgs.SensorMGSConfigUI(self.sms)
-        configUIsensors.exec()
-         
     
     def open_configNull(self):
         configNullUI = rcn.ReglerConfigNullUI(self.sgr)
@@ -311,8 +329,8 @@ class ReglerUI(QMainWindow):
         self.rmw.reglerTable.update_ReglerListWidget()
         
         if(self.ENABLE_SEC_MAGNET_SWITCH):
-            self.rmw.smsWidget.update_SecMagnetSwitch()        
-
+            self.rmw.smsWidget.update_SecMagnetSwitch()   
+            self.rmw.mgsWidget.update_MGSWidget()
 
 
 class ReglerMainWidget(QWidget):
@@ -356,10 +374,10 @@ class ReglerMainWidget(QWidget):
         
         # GasGard
         
-        self.graphWidget_gasGard = mgw.MessdatenGraphWidget(self, mw.sgr.get_datamanager())
-        self.leftLayout.addWidget(self.graphWidget_gasGard)
-        self.graphWidget_gasGard.set_floatingWindowEnabled(False)
-        self.graphWidget_gasGard.sig_closeExternal.connect(self.closeMessdatenUI_GasGard)
+        self.graphWidget_gasSensorik = mgw.MessdatenGraphWidget(self, mw.sgr.get_datamanager())
+        self.leftLayout.addWidget(self.graphWidget_gasSensorik)
+        self.graphWidget_gasSensorik.set_floatingWindowEnabled(False)
+        self.graphWidget_gasSensorik.sig_closeExternal.connect(self.closeMessdatenUI_GasGard)
         
         
         
@@ -418,11 +436,23 @@ class ReglerMainWidget(QWidget):
             
         
         #-------------------------------
-        # Gassensoren: GasGard Sensoren
+        # Gassensoren: Gas Sensorik
         #---------------------------------
         
-        self.gsWidget = gsw.GasSensorWidget(self.__mainWindow.sgr, self.__mainWindow.ggs, self)
-        rightLayout.addWidget(self.gsWidget)
+        gasSensorikGroup = QGroupBox("Gas Sensorik")
+        gasSensorikLayout = QVBoxLayout()
+        gasSensorikGroup.setLayout(gasSensorikLayout)
+        rightLayout.addWidget(gasSensorikGroup)   
+        
+        # MGS Boxen
+        
+        self.mgsWidget = mgsw.MGSWidget(self.__mainWindow.sms)
+        gasSensorikLayout.addWidget(self.mgsWidget)
+        
+        # GasGard XL
+        
+        self.gsWidget = gsw.GasGardWidget(self.__mainWindow.ggs)
+        gasSensorikLayout.addWidget(self.gsWidget)
         # Statusanzeige
         self.__mainWindow.ggs.sig_NewGGStatus.connect(self.gsWidget.update_GasSensorStatus)
         
@@ -463,7 +493,7 @@ class ReglerMainWidget(QWidget):
     def display_data(self, data):
         # print (data)
         self.graphWidget.update_MessGraphWidget()
-        self.graphWidget_gasGard.update_MessGraphWidget()
+        self.graphWidget_gasSensorik.update_MessGraphWidget()
         self.pruefWidget.update_pruefWidget(data)
         self.gsWidget.update_GasSensorValues(data)
         
@@ -471,7 +501,7 @@ class ReglerMainWidget(QWidget):
         
     def set_GraphRange(self, gesZeit):
         self.graphWidget.set_timeRangeOnFocus(gesZeit)
-        self.graphWidget_gasGard.set_timeRangeOnFocus(gesZeit)
+        self.graphWidget_gasSensorik.set_timeRangeOnFocus(gesZeit)
         
         
     def set_ManualModeEnabled(self, enabled):
@@ -487,7 +517,7 @@ class ReglerMainWidget(QWidget):
 
 
     def closeMessdatenUI_GasGard(self):
-        self.leftLayout.insertWidget(1, self.graphWidget_gasGard)
+        self.leftLayout.insertWidget(1, self.graphWidget_gasSensorik)
         
         
 
@@ -866,22 +896,6 @@ class SecMagnetSwitch(QGroupBox):
         self.sms = sms
         self.sgr = sgr
 
-          
-        """
-      
-        # Open
-        self.pbOpen = QPushButton("Hauptventil öffnen")
-        #self.pbOpen.setFixedWidth(160)
-        self.pbOpen.clicked.connect(self.buttonOpen_clicked)
-        connectLayout.addWidget(self.pbOpen)
-        
-        # Close
-        self.pbClose = QPushButton("Hauptventil schließen")
-        #self.pbClose.setFixedWidth(160)
-        self.pbClose.clicked.connect(self.buttonClose_clicked)
-        connectLayout.addWidget(self.pbClose)
-        
-        """
         
         #############################
         # Data
@@ -892,40 +906,12 @@ class SecMagnetSwitch(QGroupBox):
         dataGroup.setLayout(dataLayout)
         mainLayout.addWidget(dataGroup)
         
-        # Gas Sensoren
+        # Gas Flaschen Sensoren
         self.gasGroups = {}
         for i, s in enumerate(self.sms._sgEA._sensors):
             self.gasGroups[s] = GasData_Widget(s, i+1, sms)
             dataLayout.addWidget(self.gasGroups[s])
-            
-        # MGS Boxen
-        
-        self.mgsGroups = {}
-        mgsGroup = QWidget()
-        mgsLayout = QHBoxLayout()
-        mgsGroup.setLayout(mgsLayout)
-        dataLayout.addWidget(mgsGroup)
-        
-        groupBox1 = QGroupBox("MGS Box 1")
-        layoutBox1 = QVBoxLayout()
-        groupBox1.setLayout(layoutBox1)
-        mgsLayout.addWidget(groupBox1)
-        
-        groupBox2 = QGroupBox("MGS Box 2")
-        layoutBox2 = QVBoxLayout()
-        groupBox2.setLayout(layoutBox2)
-        mgsLayout.addWidget(groupBox2)
-                
-        for i, s in enumerate(self.sms._sgEA._sensorsMGS):
-            self.mgsGroups[s] = MGS_Box_Widget(s)
-            if(i <= 1):
-                layoutBox1.addWidget(self.mgsGroups[s])
-            else:
-                layoutBox2.addWidget(self.mgsGroups[s])
     
-    
-    
-
     
     def update_SecMagnetSwitch(self):
         if(self.sms != None):
@@ -940,9 +926,6 @@ class SecMagnetSwitch(QGroupBox):
                 # Gas Vordruck
                 for s in self.gasGroups:
                     self.gasGroups[s].update_GasData(self.sms.dataGas[s]["FP"], self.sms.dataGas[s]["TP"])
-                # MGS Boxen
-                for s in self.mgsGroups:
-                    self.mgsGroups[s].update_MGSData(self.sms.dataMGS[s])
                 
                 
 class GasData_Widget(QGroupBox):
@@ -1012,42 +995,6 @@ class GasData_Widget(QGroupBox):
         self.sms.set_sms_open(self.ventilNr, self.cbActive.isChecked())
         
     
-    
-class MGS_Box_Widget(QGroupBox):
-    def __init__(self, name):
-        super().__init__(name)
-        
-        dataLeftLayout = QHBoxLayout()
-        self.setLayout(dataLeftLayout)
-        dataLeftLayout.setContentsMargins(5,5,5,5)
-
-        # PPM
-        valGroup = QGroupBox()
-        valLayout = QHBoxLayout()
-        valLayout.setContentsMargins(0,0,0,0)
-        valGroup.setLayout(valLayout)
-        dataLeftLayout.addWidget(valGroup)
-        self.lVal = QLabel("Gas-Konz.")
-        self.lVal.setFixedWidth(100)
-        valLayout.addWidget(self.lVal)
-        self.tVal = QLineEdit("")
-        self.tVal.setFixedWidth(60)
-        self.tVal.setReadOnly(True)
-        self.tVal.setAlignment(QtCore.Qt.AlignCenter)
-        valLayout.addWidget(self.tVal)
-        self.lVal = QLabel("ppm")
-        self.lVal.setFixedWidth(60)
-        valLayout.addWidget(self.lVal)
-        
-        valLayout.addStretch(1)
-        
-        
-    def update_MGSData(self, val):
- 
-        if(type(val) == float):
-            val = "{:6.0f}".format(val)
-            self.tVal.setText(val)
-          
             
 
 if __name__ == '__main__':

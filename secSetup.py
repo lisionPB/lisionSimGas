@@ -114,9 +114,15 @@ class SecSetup(QObject):
 
 
 
-    def save_sensorConfig(self):       
+    def save_sensorConfig(self):    
+           
+        # Gas Flaschen Sensorik
         with open(self.CONFIG_FILE_SENSOREN, "w") as outfile:
             json.dump(self._sgEA._sensors, outfile, indent=4)
+            
+        # MGS Boxen Sensorik
+        with open(self.CONFIG_FILE_SENSOREN_MGS, "w") as outfile:
+            json.dump(self._sgEA._sensorsMGS, outfile, indent=4)
             
         print ("SEC Sensor-Konfiguration gespeichert.")
 
@@ -185,16 +191,21 @@ class SecSetup(QObject):
         if(self._secConnectStatus == self.SEC_CONNECT_STATUS_OK):
             
             # MGS Messboxen
-            try:
                                 
-                ###
+            ###
+            try:
+                newData = True
                 for f in self.dataMGS:
+                    # print(f"f: {f}")
                     err, val = self._sgEA.readAnalogInputMGSBox(f)
                     self.dataMGS[f] = val
                                     
                     if(err):
+                        newData = False
                         print("Fehler beim Auslesen von " + str(f) )
-                        # raise Exception("Fehler beim Auslesen der MGS Box " + str(f) )
+
+                if(newData):
+                    self._sig_NewSecData.emit(self.dataMGS)
                     
                 
             except Exception as e:
