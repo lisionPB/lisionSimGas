@@ -1009,12 +1009,16 @@ class SecMagnetSwitch(QGroupBox):
         
         self.mw.befuellungsvorgang = befu.Befuellen(self.sgr, self.sms)
         self.mw.befuellungsvorgang.sig_befuellung_finished.connect(self.befuellungsvorgangBeendet)
-        self.mw.rmw.pruefWidget.pbStartPruefung.setEnabled(False)
-        self.mw.befuellungsvorgang.initBefuellung()
+        if(self.mw.befuellungsvorgang.initBefuellung()):
+            self.mw.rmw.pruefWidget.pbStartPruefung.setEnabled(False)
+            self.mw.rmw.set_ManualModeEnabled(False)
+
         
         
     def befuellungsvorgangBeendet(self):
         self.mw.befuellungsvorgang = None   
+        self.mw.rmw.set_ManualModeEnabled(True)
+        self._sig_updateZuschaltung.emit()
 
 
     #Entlüftungsvorgang
@@ -1022,12 +1026,14 @@ class SecMagnetSwitch(QGroupBox):
         
         self.mw.entlueftungsvorgang = entl.Entlueftung(self.sgr, self.sms)
         self.mw.entlueftungsvorgang.sig_entlueftung_finished.connect(self.entlueftungsvorgangBeendet)
-        self.mw.rmw.pruefWidget.pbStartPruefung.setEnabled(False)
-        self.mw.entlueftungsvorgang.initEntlueftung()
-        
+        if(self.mw.entlueftungsvorgang.initEntlueftung()):
+            self.mw.rmw.pruefWidget.pbStartPruefung.setEnabled(False)
+            self.mw.rmw.set_ManualModeEnabled(False)
         
     def entlueftungsvorgangBeendet(self):
-        self.mw.entlueftungsvorgang = None   
+        self.mw.entlueftungsvorgang = None
+        self.mw.rmw.set_ManualModeEnabled(True)  
+        self._sig_updateZuschaltung.emit()
         
         
     # update
@@ -1054,6 +1060,7 @@ class SecMagnetSwitch(QGroupBox):
     
     
     def enableBefuellungUndEntlueft(self, enable):
+        self.buttonBefuellen.setEnabled(enable)
         self.buttonEntlueften.setEnabled(enable)
         
     

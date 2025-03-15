@@ -31,7 +31,9 @@ class Entlueftung(QObject):
         
         if returnValue == QMessageBox.Ok:
             self.startEntlueftung()
-            
+            return True
+        
+        return False
             
     
     def startEntlueftung(self):

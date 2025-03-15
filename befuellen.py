@@ -33,6 +33,9 @@ class Befuellen(QObject):
         
         if returnValue == QMessageBox.Ok:
             self.startBefuellung()
+            return True
+        
+        return False
             
             
     
@@ -53,7 +56,7 @@ class Befuellen(QObject):
         self.sms.write_sms_zuschaltungen()
         
         # Regler öffnen
-        self.sgr.set_allOpen(0.15)
+        self.sgr.set_allOpen(0.10)
         
         
     def schliesseRegler(self):
