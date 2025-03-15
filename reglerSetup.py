@@ -320,6 +320,17 @@ class SimGasRegler(hws.HWSetup):
         return ok
 
 
+    def set_allOpen(self, anteil=1.0) -> bool:
+        """Öffnet alle Regel-Stellglieder
+
+        Returns:
+            bool: False, wenn Öffnen fehlschlägt. Sonst True.
+        """
+        return self.set_GesamtSollWert(anteil, None)
+
+    
+
+
     def set_GesamtSollwertAbsolut(self, stellwert, reglerAuswahl=None) -> bool:
         """Setzt des Gesamt-Sollwert als Absoluten Wert [g/min].
 
@@ -358,7 +369,7 @@ class SimGasRegler(hws.HWSetup):
         
         
 
-    def set_GesamtSollWert(self, anteil, reglerAuswahl, pruefung=False) -> bool:
+    def set_GesamtSollWert(self, anteil, reglerAuswahl, pruefung=False, entlueften=False) -> bool:
         """ 1. Schließen aller Regler, wenn anteil = 0
             2. Überprüfung ob Sollwert innerhalb der Systemgrenzen abgebildet werden kann
             3. Setzen der einzelnen Regelstellglieder  
@@ -382,6 +393,9 @@ class SimGasRegler(hws.HWSetup):
                 self.__gesSoll = 0
             return ok
         
+        
+        if(reglerAuswahl == None):
+            reglerAuswahl = self._ports
         
         # Überprüfung des Stellwertes auf Grenzen durch Arbeitsbereiche
         

@@ -14,7 +14,6 @@ class Pruefung(QObject):
     
     PRUEF_STATE_FAILURE = -1
     PRUEF_STATE_SETUP = 0
-    PRUEF_STATE_READY = 1
     PRUEF_STATE_RUNNING = 2
     PRUEF_STATE_STARTING = 2.1
     PRUEF_STATE_ENDING = 2.2
@@ -23,6 +22,9 @@ class Pruefung(QObject):
     _sig_pruefCanceled = pyqtSignal()
     _sig_pruefFinalized = pyqtSignal()
     _sig_pruefEnded = pyqtSignal()
+    
+    DEFAULT_ZEIT_START = 10000 # ms
+    DEFAULT_ZEIT_ENDE =  10000 # ms
     
     def __init__(self, rs, sms, gesZeit, gesMenge, startZeit):
         """
@@ -61,22 +63,22 @@ class Pruefung(QObject):
     def prepare_pruefung(self):
         """
         Bereitet die Prüfung mit den gesetzten Einstellungen vor.
-        Prüft, ob Sicherheitsmagnetventil offen
         Kein Starten des Timers bis zum Start der eigentlichen Prüfung !!! -> pruefWidget
         """
                     
-        # Prüfe, ob Sicherheitsmagnetventile geöffnet wurde
+        
+        """
+        # Prüfe, ob Sicherheitsmagnetventile manuell geöffnet wurde
         if(not self._sms.is_sms_open_any()):
             self._rs.protokoll.append(cw.ProtokollEintrag("Sicherheitsmagnetventil nicht geöffnet! Prüfung wird nicht gestartet!", typ=cw.ProtokollEintrag.TYPE_FAILURE))
             return False
-        
+        """
         
         # Prüfe auf gültige Reglerkonfiguration        
         if(not self._reglerAuswahlArbeitsBereichMax > 0):
             self.sgr.protokoll.append(cw.ProtokollEintrag("Prüfung konnte nicht gestartet werden! Prüf-Konfiguration überprüfen!", typ=cw.ProtokollEintrag.TYPE_FAILURE))
             return False
-            
-            
+ 
             
         for p in self._rs._ports:
             self._rs._ports[p].start_Integration()
@@ -93,8 +95,8 @@ class Pruefung(QObject):
             self._state = self.PRUEF_STATE_STARTING
             
             return True
-            
-            
+        
+        return False
         
         
     def start_pruefung(self):
@@ -142,6 +144,9 @@ class Pruefung(QObject):
         if(not self._rs.set_allClosed()):
             self._rs.protokoll.append(cw.ProtokollEintrag("ACHTUNG! Automatisches Schließen der Regler fehlgeschlagen!", typ=cw.ProtokollEintrag.TYPE_FAILURE))
 
+        # Setze alle geplante Zuschaltungen der Flaschen auf False
+        self._sms.clear_sms_zuschaltungen()
+
         self._state = self.PRUEF_STATE_FAILURE        
         self._sig_pruefCanceled.emit()
         
@@ -168,7 +173,7 @@ class Pruefung(QObject):
         print ("Prüfung wird abgeschlossen ...")
         self._rs.protokoll.append(cw.ProtokollEintrag("Prüfung abgeschlossen! Gesamtfluss: " + str(round(self._gsr.totalFlowSum, 2)) + "g", typ=cw.ProtokollEintrag.TYPE_SUCCESS))    
         
-        self._sig_pruefFinalized.emit()
+        self._sig_pruefFinalized.emit() # not used?!
         
         
     
@@ -176,6 +181,11 @@ class Pruefung(QObject):
         """
         Abschließende Vorgänge
         """
+        
+        # Setze alle geplante Zuschaltungen der Flaschen auf False
+        self._sms.clear_sms_zuschaltungen()
+        # Schließe alle Ventile
+        self._sms.write_sms_zuschaltungen()
         
         self._state = self.PRUEF_STATE_DONE
         self._sig_pruefEnded.emit()

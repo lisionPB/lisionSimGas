@@ -30,7 +30,6 @@ import parametrierung
 from parametrierungUI import ParametrierungUI
 
 
-
 class PruefWidget(QGroupBox):
     
     DEFAULT_ZEIT_MIN = 1
@@ -286,6 +285,7 @@ class PruefWidget(QGroupBox):
         self.pbStartPruefung = QPushButton("Prüfung starten")
         layoutPruefControls.addWidget(self.pbStartPruefung)
         self.pbStartPruefung.clicked.connect(self.start_pruefungClicked)
+        self.pbStartPruefung.setEnabled(False)
         
         # Prüfung Abbrechen
         
@@ -294,11 +294,10 @@ class PruefWidget(QGroupBox):
         self.pbCancelPruefung.clicked.connect(self.cancel_pruefungClicked)
         self.pbCancelPruefung.setVisible(False)
         
-        
         # Save PDF
         self.buttonSavePDF = QPushButton("PDF exportieren...")
         self.buttonSavePDF.clicked.connect(self.buttonSavePDF_clicked)
-        self.buttonSavePDF.setFixedWidth(200)
+        self.buttonSavePDF.setFixedWidth(150)
         self.buttonSavePDF.setEnabled(False)
         layoutPruefControls.addWidget(self.buttonSavePDF)
         
@@ -313,7 +312,6 @@ class PruefWidget(QGroupBox):
     def buttonSavePDF_clicked(self):
         self.exportPruefPDF()
 
-    
     
     def calc_initFluss(self):
         
@@ -373,6 +371,10 @@ class PruefWidget(QGroupBox):
         self.pruefung._sig_pruefCanceled.connect(self.mw.graphWidget.stop_update)
         self.pruefung._sig_pruefEnded.connect(self.mw.graphWidget.stop_update)
         self.pruefung._sig_pruefEnded.connect(self.reportPruefung)
+        # Flaschenzuschaltungen zurücksetzen wenn canceled or ended
+        self.pruefung._sig_pruefCanceled.connect(self.mw.smsWidget.clear_allFlaschenZuschaltungen)
+        self.pruefung._sig_pruefEnded.connect(self.mw.smsWidget.clear_allFlaschenZuschaltungen)
+        
             
     
     def cancel_pruefungClicked(self):     
@@ -404,9 +406,12 @@ class PruefWidget(QGroupBox):
             # Starten der Messschleife          
             self.sgr._start_MessSchleife()
             
-            self.timer_startPruefung.setInterval(0)
+            self.timer_startPruefung.setInterval(self.pruefung.DEFAULT_ZEIT_START)
             self.timer_startPruefung.start()
             self.sgr.protokoll.append(cw.ProtokollEintrag("Prüfung wird gestartet... ", typ=cw.ProtokollEintrag.TYPE_STANDARD))
+
+            # öffne Magnetventile
+            self.sms.write_sms_zuschaltungen()
 
             return True
 
@@ -438,7 +443,7 @@ class PruefWidget(QGroupBox):
         
         if(self.pruefung != None):
             # Prüfung läuft bereits -> Prüfung abbrechen
-            if(self.pruefung._state == Pruefung.PRUEF_STATE_RUNNING or self.pruefung._state == Pruefung.PRUEF_STATE_STARTING or self.pruefung._state == Pruefung.PRUEF_STATE_ENDING):
+            if((self.pruefung._state == Pruefung.PRUEF_STATE_RUNNING) or (self.pruefung._state == Pruefung.PRUEF_STATE_STARTING) or (self.pruefung._state == Pruefung.PRUEF_STATE_ENDING)):
                 print ("Prüfung abgebrochen!")
                 self.pruefung.cancel_pruefung()
                 # Halte Finish Timer an.
@@ -475,7 +480,7 @@ class PruefWidget(QGroupBox):
             self.lRunMengeValue.setText(("%.2f" % (menge)) + "  (" +  ("%.2f" % (mengeAnteil * 100))  +"%)")
         
             # Abschließen der Prüfung
-            self.timer_endPruefung.setInterval(int(2000)) # 2 Sekunde verzögert. Evtl geht auch 0 aber testen!
+            self.timer_endPruefung.setInterval(self.pruefung.DEFAULT_ZEIT_ENDE) #
             self.timer_endPruefung.start()
         
     
@@ -589,10 +594,16 @@ class PruefWidget(QGroupBox):
     
     def set_extendedFunctionVisibility(self, extendedVis):
         self.groupParametrierung.setVisible(extendedVis)
+
         
-    
-    def set_ControlledModeEnabled(self, enabled):
-        self.pbStartPruefung.setEnabled(enabled)    
+    def updateFlaschenZuschaltung(self):
+        enableStart = False
+        for s in self.sms.zuschaltung:
+            if(self.sms.zuschaltung[s] == True):
+                enableStart = True
+                
+        self.pbStartPruefung.setEnabled(enableStart) 
+        
         
             
             

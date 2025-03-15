@@ -168,6 +168,7 @@ class Regler_Dvr(QObject):
         self.__wunschSollValInt = int(self.__wunschSoll / self.__arbeitsbereich[1] * 32000)
         # TODO: Überprüfung, Ob sollwert erfolgreich gesetzt
         return True
+
         
         
     def _set_SollwertValid(self, valid):

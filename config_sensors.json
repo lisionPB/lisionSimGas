@@ -5,7 +5,8 @@
         "addr": [
             0,
             0
-        ]
+        ],
+        "ventilNr": 0
     },
     "Gasflasche 2": {
         "min": 0.0,
@@ -13,7 +14,8 @@
         "addr": [
             1,
             0
-        ]
+        ],
+        "ventilNr": 1
     },
     "Gasflasche 3": {
         "min": 0.0,
@@ -21,6 +23,7 @@
         "addr": [
             2,
             0
-        ]
+        ],
+        "ventilNr": 2
     }
 }

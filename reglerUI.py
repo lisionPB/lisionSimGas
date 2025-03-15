@@ -29,18 +29,22 @@ import gasGardWidget as gsw
 import pruefWidget as pw
 import consoleWidget as cw
 import helpDialog as hd
+import expertModeEnterPW as emepw
 import reglerConfigUI as rc
 import sensorConfigUI as sc
 import reglerConfigNullUI as rcn
+import zuschaltGrenzwerteConfigUI as zgc
 import secSetup as ss
 import reglerReadOutputLog as rrol
 import gasGardSetup as gs
 
+import entlueftung as entl
+import befuellen as befu
 
 class ReglerUI(QMainWindow):
     
     TITEL = "SimGas Regler GUI - CORI"
-    VERSION = "0.16"
+    VERSION = "0.17"
     YEAR = "2025"
     
     _sig_close = pyqtSignal()
@@ -76,11 +80,15 @@ class ReglerUI(QMainWindow):
         self.sgr = sgr
         self.sms = sms
         self.ggs = ggs
+        
+        self.befuellungsvorgang = None
+        self.entlueftungsvorgang = None
             
         self.rmw = ReglerMainWidget(self)     
         self.setCentralWidget(self.rmw)  
         
         # Hide Extended Functions
+        self.extendedFunctions = self.SHOW_EXTENDED_FUNCTIONS
         self.rmw.set_extendedFunctionVisibility(self.SHOW_EXTENDED_FUNCTIONS) 
                 
         self.setWindowTitle(self.TITEL)
@@ -121,6 +129,11 @@ class ReglerUI(QMainWindow):
         self.configNullAct.triggered.connect(self.open_configNull)
         if(self.ENABLE_FUNCTION_NULLABGLEICH):
             configMenu.addAction(self.configNullAct)
+            
+        self.configZuGrenz = QAction('&Zuschaltungsgrenzwerte', self)
+        self.configZuGrenz.setStatusTip('Zuschaltungsgrenzwerte')
+        self.configZuGrenz.triggered.connect(self.open_configZuschaltGrenzwerte)
+        configMenu.addAction(self.configZuGrenz)
         
         self.configExpertModeAct = QAction('&Expertenmodus', configMenu, checkable=True)    
         configMenu.addAction(self.configExpertModeAct)
@@ -240,8 +253,35 @@ class ReglerUI(QMainWindow):
         
         closeOK = True
         
+        # Schließen verhindern, wenn Befüllungsvorgang läuft
+        if(self.befuellungsvorgang != None):
+            closeOK = False
+            
+            msgBoxReg = QMessageBox()
+            msgBoxReg.setWindowIcon(QIcon('symbols/lision.ico'))
+            msgBoxReg.setIcon(QMessageBox.Warning)
+            msgBoxReg.setText("Die Software kann nicht geschlossen werden, solange ein Befüllungsvorgang läuft!")
+            msgBoxReg.setWindowTitle("Befüllungsvorgang läuft nocht!")
+            msgBoxReg.setStandardButtons(QMessageBox.Ok)
+        
+            msgBoxReg.exec()
+        
+        # Schließen verhindern, wenn Entlüftungsvorgang läuft
+        if(self.entlueftungsvorgang != None):
+            closeOK = False
+            
+            msgBoxReg = QMessageBox()
+            msgBoxReg.setWindowIcon(QIcon('symbols/lision.ico'))
+            msgBoxReg.setIcon(QMessageBox.Warning)
+            msgBoxReg.setText("Die Software kann nicht geschlossen werden, solange ein Entlüftungsvorgang läuft!")
+            msgBoxReg.setWindowTitle("Entlüftungsvorgang läuft nocht!")
+            msgBoxReg.setStandardButtons(QMessageBox.Ok)
+        
+            msgBoxReg.exec()
+           
+        
         # Schließen verhindern, solange Sollwert > 0
-        if(self.sgr.get_GesamtSollWert() > 0):
+        if(closeOK and self.sgr.get_GesamtSollWert() > 0):
             
             msgBoxReg = QMessageBox()
             msgBoxReg.setWindowIcon(QIcon('symbols/lision.ico'))
@@ -265,8 +305,12 @@ class ReglerUI(QMainWindow):
             # Save SensorConfig
             self.sms.save_sensorConfig()
             
+            # Save ZuschaltConfig
+            self.sms.save_zuschaltungsGrenzwertConfig()
+            
             # Save PruefConfig
             self.rmw.pruefWidget.save_pruefConfig()
+            
             
             print ("Regler UI closed")
         else:
@@ -276,9 +320,21 @@ class ReglerUI(QMainWindow):
             
             
     def switch_expertMode(self, checked):
-        self.rmw.set_extendedFunctionVisibility(checked) 
+        if(checked):
+            enterPWDialog = emepw.DialogExpertModeEnterPW()
+            enterPWDialog.sig_pw.connect(self.checkExpertModePW)
+            enterPWDialog.exec()
+        else:
+            self.rmw.set_extendedFunctionVisibility(False)   
         
-            
+        
+    def checkExpertModePW(self, pw):
+        if(pw):
+            self.rmw.set_extendedFunctionVisibility(True)
+        else:
+            self.configExpertModeAct.trigger()
+
+        
     
     def print_ConnectTryMessage(self, check):
         if(check == 1): 
@@ -321,6 +377,11 @@ class ReglerUI(QMainWindow):
     def open_configNull(self):
         configNullUI = rcn.ReglerConfigNullUI(self.sgr)
         configNullUI.exec()
+        
+        
+    def open_configZuschaltGrenzwerte(self):
+        configZuschaltungUI = zgc.ZuschaltGrenzwerteConfigUI(self.sms)
+        configZuschaltungUI.exec()
         
         
     def updateUI(self):
@@ -431,7 +492,7 @@ class ReglerMainWidget(QWidget):
         # Gaszufuhr: Flaschen, Magnetschalter
         #---------------------------------
         if(self.__mainWindow.ENABLE_SEC_MAGNET_SWITCH):
-            self.smsWidget = SecMagnetSwitch(self.__mainWindow.sms, self.__mainWindow.sgr)
+            self.smsWidget = SecMagnetSwitch(self.__mainWindow, self.__mainWindow.sms, self.__mainWindow.sgr)
             rightLayout.addWidget(self.smsWidget)
             
         
@@ -463,6 +524,7 @@ class ReglerMainWidget(QWidget):
         
         self.pruefWidget = pw.PruefWidget(self.__mainWindow.sgr, self.__mainWindow.sms, self)
         self.pruefWidget._sig_pdfSaved.connect(self.handle_pdfExport)   
+        self.smsWidget._sig_updateZuschaltung.connect(self.pruefWidget.updateFlaschenZuschaltung)
         rightLayout.addWidget(self.pruefWidget)
         
         
@@ -510,7 +572,11 @@ class ReglerMainWidget(QWidget):
         self.__mainWindow.configAct.setEnabled(enabled)
         self.__mainWindow.configNullAct.setEnabled(enabled)
         self.__mainWindow.configSensorAct.setEnabled(enabled)
-
+        self.__mainWindow.configZuGrenz.setEnabled(enabled)
+        # Flaschenzuschaltung
+        self.smsWidget.enableFlaschenZuschaltungen(enabled)
+        self.smsWidget.enableBefuellungUndEntlueft(enabled)
+    
     
     def closeMessdatenUI(self):
         self.leftLayout.insertWidget(0, self.graphWidget)
@@ -776,6 +842,8 @@ class ReglerOverview_Widget(QGroupBox):
         
     def set_extendedFunctionVisibility(self, extendedVis):
 
+            ReglerUI.SHOW_EXTENDED_FUNCTIONS = extendedVis
+
             self.sSetSoll.setVisible(extendedVis)  
             self.pbSetSoll.setVisible(extendedVis)      
             self.pbClose.setVisible(extendedVis)
@@ -879,8 +947,8 @@ class ReglerOverview_Widget(QGroupBox):
         
         
     
-    def set_secLockOpen(self, open):
-        self.secLockOpen = open
+    def set_secLockOpen(self, _open):
+        self.secLockOpen = _open
 
 
         
@@ -888,30 +956,81 @@ class ReglerOverview_Widget(QGroupBox):
       
 class SecMagnetSwitch(QGroupBox):
     
-    def __init__(self, sms, sgr):
+    _sig_updateZuschaltung = pyqtSignal()
+    
+    def __init__(self, mw, sms, sgr):
         super().__init__("Gas-Zufuhr")
         mainLayout = QVBoxLayout()
         self.setLayout(mainLayout)
         
+        self.mw = mw
         self.sms = sms
         self.sgr = sgr
-
         
         #############################
         # Data
         #############################
         
-        dataGroup = QGroupBox("Gas-Flaschen")
-        dataLayout = QVBoxLayout()
-        dataGroup.setLayout(dataLayout)
-        mainLayout.addWidget(dataGroup)
-        
         # Gas Flaschen Sensoren
         self.gasGroups = {}
-        for i, s in enumerate(self.sms._sgEA._sensors):
-            self.gasGroups[s] = GasData_Widget(s, i+1, sms)
-            dataLayout.addWidget(self.gasGroups[s])
+        for s in self.sms._sgEA._sensors:
+            gdw = GasData_Widget(s, sms)
+            self.gasGroups[s] = gdw
+            gdw._sig_updateZuschaltung.connect(self._sig_updateZuschaltung.emit)
+            mainLayout.addWidget(self.gasGroups[s])
+            
+            
+        ##############################
+        # GAS Befüllung und Entlüftung
+        ##################
+        
+        gasBefEntWidget = QWidget()
+        gasBefEntLayout = QHBoxLayout()
+        gasBefEntWidget.setLayout(gasBefEntLayout)
+        mainLayout.addWidget(gasBefEntWidget)
+        
+        # Befüllen
+        self.buttonBefuellen = QPushButton("Prüfanlage befüllen")
+        self.buttonBefuellen.clicked.connect(self.buttonBefuellen_clicked)
+        self.buttonBefuellen.setFixedWidth(150)
+        self.buttonBefuellen.setEnabled(True)
+        gasBefEntLayout.addWidget(self.buttonBefuellen)    
     
+        # Entlüftung
+        self.buttonEntlueften = QPushButton("Prüfanlage entlüften")
+        self.buttonEntlueften.clicked.connect(self.buttonEntlueften_clicked)
+        self.buttonEntlueften.setFixedWidth(150)
+        self.buttonEntlueften.setEnabled(True)
+        gasBefEntLayout.addWidget(self.buttonEntlueften)
+        
+
+    # Befüllungsvorgang
+    def buttonBefuellen_clicked(self):
+        
+        self.mw.befuellungsvorgang = befu.Befuellen(self.sgr, self.sms)
+        self.mw.befuellungsvorgang.sig_befuellung_finished.connect(self.befuellungsvorgangBeendet)
+        self.mw.rmw.pruefWidget.pbStartPruefung.setEnabled(False)
+        self.mw.befuellungsvorgang.initBefuellung()
+        
+        
+    def befuellungsvorgangBeendet(self):
+        self.mw.befuellungsvorgang = None   
+
+
+    #Entlüftungsvorgang
+    def buttonEntlueften_clicked(self):
+        
+        self.mw.entlueftungsvorgang = entl.Entlueftung(self.sgr, self.sms)
+        self.mw.entlueftungsvorgang.sig_entlueftung_finished.connect(self.entlueftungsvorgangBeendet)
+        self.mw.rmw.pruefWidget.pbStartPruefung.setEnabled(False)
+        self.mw.entlueftungsvorgang.initEntlueftung()
+        
+        
+    def entlueftungsvorgangBeendet(self):
+        self.mw.entlueftungsvorgang = None   
+        
+        
+    # update
     
     def update_SecMagnetSwitch(self):
         if(self.sms != None):
@@ -926,14 +1045,32 @@ class SecMagnetSwitch(QGroupBox):
                 # Gas Vordruck
                 for s in self.gasGroups:
                     self.gasGroups[s].update_GasData(self.sms.dataGas[s]["FP"], self.sms.dataGas[s]["TP"])
-                
+                    
+                    
+                    
+    def enableFlaschenZuschaltungen(self, enable):
+        for s in self.gasGroups:
+            self.gasGroups[s].setZuschaltungEnabled(enable)
+    
+    
+    def enableBefuellungUndEntlueft(self, enable):
+        self.buttonEntlueften.setEnabled(enable)
+        
+    
+    def clear_allFlaschenZuschaltungen(self):
+        for s in self.gasGroups:
+            self.gasGroups[s]._setMagVentClosed()
+    
+    
                 
 class GasData_Widget(QGroupBox):
     
-    def __init__(self, name, ventilNr, sms):
+    _sig_updateZuschaltung = pyqtSignal()
+    
+    def __init__(self, name, sms):
         super().__init__(name)
         
-        self.ventilNr = ventilNr
+        self.s = name
         self.sms = sms
         
         dataLeftLayout = QHBoxLayout()
@@ -991,11 +1128,77 @@ class GasData_Widget(QGroupBox):
             self.tTP.setText(tp)        
             
             
-    def _toggleMagVentOpen(self):
-        self.sms.set_sms_open(self.ventilNr, self.cbActive.isChecked())
-        
+    def setZuschaltungEnabled(self, enabled):
+        self.cbActive.setEnabled(enabled)
+            
+            
+    def _setMagVentClosed(self):
+        self.cbActive.setChecked(False)
+        self.sms.set_sms_zuschaltung(self.s, False) 
     
             
+    def _toggleMagVentOpen(self):
+        
+        # Prüfe Zuschaltung der Flasche
+        if(self.cbActive.isChecked()):
+            
+            zuschaltungOK = self.sms.checkFlaschenZuschaltung(self.s)
+
+            # Keine Daten zu Flaschendruck vorhanden
+            if(zuschaltungOK == -1):
+                
+                self.cbActive.setChecked(False)
+                
+                msgBoxReg = QMessageBox()
+                msgBoxReg.setWindowIcon(QIcon('symbols/lision.ico'))
+                msgBoxReg.setIcon(QMessageBox.Warning)
+                msgBoxReg.setText("Achtung! Es sind keine Daten zum Flaschen-Druck vorhanden!\nFlasche kann für die Prüfung nicht verwendet werden!")
+                msgBoxReg.setWindowTitle("Keine Daten!")
+                msgBoxReg.setStandardButtons(QMessageBox.Ok)
+                
+                returnValue = msgBoxReg.exec()
+
+            # Eigendruck zu niedrig
+            elif(zuschaltungOK == 1):
+                
+                self.cbActive.setChecked(False)
+                
+                msgBoxReg = QMessageBox()
+                msgBoxReg.setWindowIcon(QIcon('symbols/lision.ico'))
+                msgBoxReg.setIcon(QMessageBox.Warning)
+                msgBoxReg.setText("Achtung! Der Druck der gewählten Flasche ist zu niedrig!\nFlasche kann für die Prüfung nicht verwendet werden!")
+                msgBoxReg.setWindowTitle("Flaschendruck zu niedrig!")
+                msgBoxReg.setStandardButtons(QMessageBox.Ok)
+                
+                returnValue = msgBoxReg.exec()
+
+            # Differenzdruck zu hoch
+            elif(zuschaltungOK == 2):
+            
+                self.cbActive.setChecked(False)
+                
+                msgBoxReg = QMessageBox()
+                msgBoxReg.setWindowIcon(QIcon('symbols/lision.ico'))
+                msgBoxReg.setIcon(QMessageBox.Warning)
+                msgBoxReg.setText("Achtung! Der Druckunterschied zwischen den gewählten Flaschen ist zu hoch!\nFlasche kann für die Prüfung nicht verwendet werden!")
+                msgBoxReg.setWindowTitle("Druckdifferenz zu hoch!")
+                msgBoxReg.setStandardButtons(QMessageBox.Ok)
+                
+                returnValue = msgBoxReg.exec()        
+                
+            
+        # Schalten durchführen   
+        self.sms.set_sms_zuschaltung(self.s, self.cbActive.isChecked()) 
+        
+        if(ReglerUI.SHOW_EXTENDED_FUNCTIONS):
+            self.sms.set_sms_open(self.s, self.cbActive.isChecked())
+        
+        self._sig_updateZuschaltung.emit()
+
+
+        
+        
+        
 
 if __name__ == '__main__':
 

@@ -31,6 +31,7 @@ class SecSetup(QObject):
        
     CONFIG_FILE_SENSOREN = "config_sensors.json"
     CONFIG_FILE_SENSOREN_MGS = "config_mgs.json"
+    CONFIG_FILE_ZUSCHALTGRENZEN = "config_zuschaltgrenzen.json"
     
     _sig_NewSecData = pyqtSignal(dict)
     _sig_SEC_SetupConnect = pyqtSignal()
@@ -47,14 +48,21 @@ class SecSetup(QObject):
         self._secConnectStatus = self.SEC_CONNECT_STATUS_NONE
         
         
+        
         # Übergeben der Sensormessbereiche
         self._sgEA.setSensorBereiche(self._load_sensorConfig(self.CONFIG_FILE_SENSOREN))
         self._sgEA.setMGSSensorBereiche(self._load_sensorConfig(self.CONFIG_FILE_SENSOREN_MGS))
         
+        # Zuschaltsicherheitsbereiche für Flaschendruck
+        self.zuschaltGrenzwerte = self.load_zuschaltungsGrenzwertConfig(self.CONFIG_FILE_ZUSCHALTGRENZEN)
+        
         # Init Flaschendruck Data
         self.dataGas = {}
+        self.zuschaltung = {}
         for f in self._sgEA._sensors:
             self.dataGas[f] = {"FP" : None, "TP" : None}
+            self.zuschaltung[f] = False
+            
             
         # Init MGS Boxen Data
         self.dataMGS = {}
@@ -66,7 +74,9 @@ class SecSetup(QObject):
         ##############
         # Status
         # Magnet Switches
-        self._sms_open = [False for i in range (3)]
+        self._sms_open = {}
+        for s in self._sgEA._sensors:
+            self._sms_open[s] = False
 
         
         ##############
@@ -126,6 +136,22 @@ class SecSetup(QObject):
             
         print ("SEC Sensor-Konfiguration gespeichert.")
 
+
+    def load_zuschaltungsGrenzwertConfig(self, configFileURL):
+        f = open(configFileURL)
+        conf = json.load(f)
+              
+        f.close()
+        
+        return conf
+    
+    
+    def save_zuschaltungsGrenzwertConfig(self):
+        # Gas Flaschen Grenzwerte
+        with open(self.CONFIG_FILE_ZUSCHALTGRENZEN, "w") as outfile:
+            json.dump(self.zuschaltGrenzwerte, outfile, indent=4)
+            
+        print ("Konfiguration der Zuschalt-Grenzwerte gespeichert.")
         
             
     def _start_MessSchleife(self):
@@ -215,29 +241,69 @@ class SecSetup(QObject):
                 self._secConnectStatus = self.SEC_CONNECT_STATUS_NONE
 
 
-
-    def set_sms_open(self, ventilNr, open):
+    def set_sms_zuschaltung(self, name, _open):
         """
-            ventilNr (int): 1-3
+        Setzt die geplante Zuschaltung für ein Gasflasche
+
+        Args:
+            name (str): as in self._sgEA._sensors
+            _open (bool): True: open, False: close
+        """
+        
+        self.zuschaltung[name] = _open
+
+
+    def clear_sms_zuschaltungen(self):
+        for s in self.zuschaltung:
+            self.zuschaltung[s] = False
+
+
+    def write_sms_zuschaltungen(self):
+        """
+        Überträgt die geplante Zuschaltung der Gasflaschen an die Magnetventile
+        """
+        for s in self.zuschaltung:
+            self.set_sms_open(s, self.zuschaltung[s])
+
+
+    def set_sms_open(self, name, _open):
+        """
+            name: wie in self.sgEA._sensors
             open (bool): True: Open, False: Closed 
         """
-        self._sgEA.writeDigitalOutput(ventilNr-1 , open)
-        self._sms_open[ventilNr-1] = self._sgEA.isDigitalOutputSet(ventilNr)
-        
-    
-        
-    def is_sms_open(self, ventilNr):
-        """
-        Nr: 1 - 3
-        """
-        return self._sms_open[ventilNr - 1]
+        self._sgEA.writeDigitalOutput(self._sgEA._sensors[name]["ventilNr"], _open)
+        self._sms_open[name] = self._sgEA.isDigitalOutputSet(self._sgEA._sensors[name]["ventilNr"])
     
     
     def is_sms_open_any(self):
-        for i in range(3):
-            if(self.is_sms_open(i+1)):
+        for s in self._sms_open:
+            if(self._sms_open[s]):
                 return True
         return False
+      
+            
+    def checkFlaschenZuschaltung(self, name, checkEigendruck=True, checkDiffDruck=True):
+        """
+        @return: 0: OK, 1: Eigendruck zu niedrig, 2: Differenzdruck zu groß , -1: Keine Daten vorhanden
+        """
+        
+        # Keine Daten vorhanden
+        if(not self.dataGas[name]["FP"]):
+            return -1
+        
+        if(checkEigendruck):
+            # Eigendruck
+            if(self.dataGas[name]["FP"] < self.zuschaltGrenzwerte["DRUCK_MIN"]):
+                return 1
+        
+        if(checkDiffDruck):
+            # Differenzdruck 
+            for s in self.dataGas:
+                if(self.zuschaltung[s]):
+                    if (abs(self.dataGas[s]["FP"] - self.dataGas[name]["FP"]) > self.zuschaltGrenzwerte["DIFF_MAX"]):
+                        return 2    
+        
+        return 0
     
         
     def set_gasFlowLED(self, activ):
@@ -249,9 +315,9 @@ class SecSetup(QObject):
     
         self.closing = True
     
-        # close Mag Vents
-        for i in range(3):        
-            self.set_sms_open(i+1, False)
+        # close Mag Vents            
+        for s in self._sgEA._sensors:
+            self.set_sms_open(s, False)
     
         # Update Thread beenden    
         self.sig_closeConnection.emit()
