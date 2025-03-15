@@ -396,7 +396,7 @@ class Regler_Dvr(QObject):
             
             # Überprüfung auf Grenzen des Sollwertes auf Arbeitsbereich
             if((soll < self.__arbeitsbereich[0] - self.__arbeitsbereich[0] * self.ARBEITSBEREICH_TOLERANZ or soll > self.__arbeitsbereich[1] + self.__arbeitsbereich[1] * self.ARBEITSBEREICH_TOLERANZ ) and soll != 0):
-                print(str(self.__port) + ": Fehler beim Setzen des Sollwertes! Sollwert + " + str(soll) + " liegt nicht im Arbeitsbereich " + str(self.__arbeitsbereich) + " des Reglers!")
+                print(str(self.__port) + ": Fehler beim Setzen des Sollwertes! Sollwert " + str(soll) + " liegt nicht im Arbeitsbereich " + str(self.__arbeitsbereich) + " des Reglers!")
                 return False
             
             
