@@ -52,7 +52,7 @@ class PruefWidget(QGroupBox):
         self.sms = sms
         self.mw = mw
         
-        self._load_pruefConfig()
+        self.conf = self._load_pruefConfig()
         
         self.mainLayout = QVBoxLayout()
         self.setLayout(self.mainLayout)
@@ -92,6 +92,8 @@ class PruefWidget(QGroupBox):
         self.mw.graphWidget.graphWidget.setCurveVisibility(conf["visibility"])
         
         f.close()
+        
+        return conf
 
 
     def save_pruefConfig(self):  
@@ -364,12 +366,16 @@ class PruefWidget(QGroupBox):
         self.evt_startPruefung()
         # Graph Update aktivieren
         self.mw.graphWidget.set_update(True)
+        self.mw.graphWidget_gasSensorik.set_update(True)
         self.pruefung._sig_pruefCanceled.connect(self.mw.graphWidget.stop_update)
+        self.pruefung._sig_pruefCanceled.connect(self.mw.graphWidget_gasSensorik.stop_update)
         # Buttons resetten, wenn Prüfung fertig.
         self.pruefung._sig_pruefCanceled.connect(self.resetPruefButtons)
         # Graph Aktualisierung aussetzen wenn Prüfung nicht mehr läuft.
         self.pruefung._sig_pruefCanceled.connect(self.mw.graphWidget.stop_update)
+        self.pruefung._sig_pruefCanceled.connect(self.mw.graphWidget_gasSensorik.stop_update)
         self.pruefung._sig_pruefEnded.connect(self.mw.graphWidget.stop_update)
+        self.pruefung._sig_pruefEnded.connect(self.mw.graphWidget_gasSensorik.stop_update)
         self.pruefung._sig_pruefEnded.connect(self.reportPruefung)
         # Flaschenzuschaltungen zurücksetzen wenn canceled or ended
         self.pruefung._sig_pruefCanceled.connect(self.mw.smsWidget.clear_allFlaschenZuschaltungen)
@@ -537,23 +543,32 @@ class PruefWidget(QGroupBox):
                     c.drawString(offsetX, offsetErgebnisse,"Prüfergebnisse:")
                     c.drawString(offsetX, offsetErgebnisse - 1 * lineHeight, "Ist Prüfgasmenge: " + str("%.1f" % self.pruefung.get_pruefLaufMenge()) + "g")
                                                  
-                    # Graph
-                    exporter = pyexp.ImageExporter(self.mw.graphWidget.graphWidget.plotItem)
-                    # imgName = QtCore.QFileInfo(fn).baseName() + ".png"
-                    imgName = QtCore.QFileInfo(fn).absoluteFilePath() + QtCore.QFileInfo(fn).baseName() + ".png"
+                    # Graph Gasfluss
+                    offsetGraphZufuhr = 530
+                    c.drawString(offsetX, offsetGraphZufuhr,"Zeitverlauf Gaszufuhr:")
+                    offsetGraph_Gasfluss = 200
+                    exporterGasfluss = pyexp.ImageExporter(self.mw.graphWidget.graphWidget.plotItem)
+                    # imgNameGas = QtCore.QFileInfo(fn).baseName() + ".png"
+                    imgNameGas = QtCore.QFileInfo(fn).absoluteFilePath() + QtCore.QFileInfo(fn).baseName() + "gaszufuhr.png"
                     # exporter.parameters()["invertValue"] = True
-                    exporter.export(imgName)
-                    c.drawImage(imgName, offsetX , -200, width = 17 * cm, preserveAspectRatio=True)
-                    os.remove(imgName)
+                    exporterGasfluss.export(imgNameGas)
+                    c.drawImage(imgNameGas, offsetX , offsetGraph_Gasfluss, width = 17 * cm, preserveAspectRatio=True)
+                    os.remove(imgNameGas)
                     
+                    # Graph MGS Boxen
+                    offsetGraphKonzentration = 330
+                    c.drawString(offsetX, offsetGraphKonzentration,"Zeitverlauf Gaskonzentration:")
+                    offsetGraph_Sensorik = 0
+                    exporterSensorik = pyexp.ImageExporter(self.mw.graphWidget_gasSensorik.graphWidget.plotItem)
+                    # imgNameSens = QtCore.QFileInfo(fn).baseName() + ".png"
+                    imgNameSens = QtCore.QFileInfo(fn).absoluteFilePath() + QtCore.QFileInfo(fn).baseName() + "sensorik.png"
+                    # exporter.parameters()["invertValue"] = True
+                    exporterSensorik.export(imgNameSens)
+                    c.drawImage(imgNameSens, offsetX , offsetGraph_Sensorik, width = 17 * cm, preserveAspectRatio=True)
+                    os.remove(imgNameSens)
                     
-                    #graphData = self.mw.graphWidget.get_graphdata()
-                    #plt.plot(graphData)
-                    #plt.savefig('foo.png')
-
-                    # Speichern
                     c.showPage()
-                    c.save()           
+                    c.save()                      
                     
                     self._sig_pdfSaved.emit(fn)     
                 

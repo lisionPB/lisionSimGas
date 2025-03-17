@@ -160,11 +160,15 @@ class ReglerUI(QMainWindow):
             # Message bei Verbindungsversuch
             self.sms.sig_SEC_ConnectFinished.connect(self.print_ConnectTryMessage_SEC)
             # Starten der SEC-Messschleife, sobald Verbindung hergestellt
-            self.sms.sig_SEC_ConnectFinished.connect(self.sms._start_MessSchleife)            
+            self.sms.sig_SEC_ConnectFinished.connect(self.sms._start_MessSchleife) 
+            # Ankommende Vordruck Daten in DataManager einspeisen
+            self.sgr.get_datamanager().addChannels(list(self.sms._sgEA._sensors.keys()))           
             # Ankommende MGSBoxen Daten in DataManager einspeisen
             self.sgr.get_datamanager().addChannels(list(self.sms._sgEA._sensorsMGS.keys()))
             # channel labels
             secLabels = {}
+            for s in self.sms._sgEA._sensors:
+                secLabels[s] = self.sms._sgEA._sensors[s]["data_label"]
             for s in self.sms._sgEA._sensorsMGS:
                 secLabels[s] = self.sms._sgEA._sensorsMGS[s]["data_label"]
             self.sgr.get_datamanager().update_channelLabels(secLabels)
@@ -212,12 +216,11 @@ class ReglerUI(QMainWindow):
         # MGS Boxen
         chNameList.extend(list(self.sms._sgEA._sensorsMGS.keys()))
         
-        # print(chNameList)
-        
         self.rmw.graphWidget_gasSensorik.set_selectedChannelNames(chNameList)
-            
-            
-            
+        
+        # Gaszufuhr
+        self.rmw.graphWidget.set_selectedChannelNames(["COM1", "COM1_SOLL", "COM2", "COM2_SOLL", "COM3", "COM3_SOLL", "GES_IST", "GES_SOLL", "Gasflasche 1", "Gasflasche 2", "Gasflasche 3"])
+        self.rmw.graphWidget.graphWidget.setCurveVisibility(self.rmw.pruefWidget.conf["visibility"])
             
         ###
         # Gas Durchfluss Regler
@@ -1012,7 +1015,8 @@ class SecMagnetSwitch(QGroupBox):
         if(self.mw.befuellungsvorgang.initBefuellung()):
             self.mw.rmw.pruefWidget.pbStartPruefung.setEnabled(False)
             self.mw.rmw.set_ManualModeEnabled(False)
-
+        else:
+            self.mw.befuellungsvorgang = None
         
         
     def befuellungsvorgangBeendet(self):
@@ -1029,11 +1033,14 @@ class SecMagnetSwitch(QGroupBox):
         if(self.mw.entlueftungsvorgang.initEntlueftung()):
             self.mw.rmw.pruefWidget.pbStartPruefung.setEnabled(False)
             self.mw.rmw.set_ManualModeEnabled(False)
+        else:
+            self.mw.entlueftungsvorgang = None
+            
         
     def entlueftungsvorgangBeendet(self):
         self.mw.entlueftungsvorgang = None
         self.mw.rmw.set_ManualModeEnabled(True)  
-        self._sig_updateZuschaltung.emit()
+        self.test.emit()
         
         
     # update

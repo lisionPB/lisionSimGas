@@ -1,5 +1,6 @@
 {
     "Gasflasche 1": {
+        "data_label": "FP 1",
         "min": 0.0,
         "max": 16.0,
         "addr": [
@@ -9,6 +10,7 @@
         "ventilNr": 0
     },
     "Gasflasche 2": {
+        "data_label": "FP 2",
         "min": 0.0,
         "max": 15.999999999999998,
         "addr": [
@@ -18,6 +20,7 @@
         "ventilNr": 1
     },
     "Gasflasche 3": {
+        "data_label": "FP 3",
         "min": 0.0,
         "max": 15.999999999999998,
         "addr": [

@@ -6,8 +6,8 @@ import consoleWidget as cw
 
 class Befuellen(QObject):
     
-    DEFAULT_BEFUELLUNGSZEIT = 5     # s
-    DEFAULT_BERUHIGUNGSZEIT = 10    # Am Ende erst Regler dann Magnetventile
+    DEFAULT_BEFUELLUNGSZEIT = 2     # s
+    DEFAULT_BERUHIGUNGSZEIT = 5    # Am Ende erst Regler dann Magnetventile
     
     sig_befuellung_finished = pyqtSignal()
     
@@ -25,7 +25,7 @@ class Befuellen(QObject):
         msgBoxReg = QMessageBox()
         msgBoxReg.setWindowIcon(QIcon('symbols/lision.ico'))
         msgBoxReg.setIcon(QMessageBox.Warning)
-        msgBoxReg.setText("Achtung! Bitte alle Gasflaschen zur Befüllung der Anlage öffnen!\nVorsicht: Kurzzeitiger Gasaustritt am Reglerausgang!")
+        msgBoxReg.setText("Achtung! Bitte alle Gasflaschen zur Befüllung der Anlage öffnen!\nVorsicht: Gasaustritt am Reglerausgang!")
         msgBoxReg.setWindowTitle("Befüllungsvorgang starten")
         msgBoxReg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
         
@@ -49,9 +49,11 @@ class Befuellen(QObject):
         
         # Magnetventile öffnen, Nur die die auch angeschlossen sind!
         for s in self.sms.zuschaltung:
-            if(self.sms.checkFlaschenZuschaltung(s, checkDiffDruck=False)):
+            if(self.sms.checkFlaschenZuschaltung(s, checkDiffDruck=False) == 0):
+                print("zuschaltung für " + s + " OK!")
                 self.sms.set_sms_zuschaltung(s, True)
             else:
+                print("zuschaltung für " + s + " nicht OK!")
                 self.sms.set_sms_zuschaltung(s, False)
         self.sms.write_sms_zuschaltungen()
         
@@ -60,6 +62,7 @@ class Befuellen(QObject):
         
         
     def schliesseRegler(self):
+        
         # Regler schließen
         self.sgr.set_allClosed()
         

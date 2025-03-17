@@ -63,7 +63,6 @@ class SimGasRegler(hws.HWSetup):
             
         chNames.append("GES_IST")
         chNames.append("GES_SOLL")
-        chNames.append("FP")
             
         self.dm.set_channelNames(chNames)
         self.dm.set_channelLabels(chLabels)

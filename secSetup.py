@@ -168,13 +168,18 @@ class SecSetup(QObject):
                 
         
     def _read_Messwerte(self):
+        data = {}
+        data.update(self.__read_Vordruck())
+        data.update(self.__read_MGSBoxen())
         
-        self.__read_Vordruck()
-        self.__read_MGSBoxen()
+        if(len(data) > 0):
+            self._sig_NewSecData.emit(data)
 
             
 
     def __read_Vordruck(self):
+        
+        data = {}
         
         # Versuche Verbindung neu aufzubauen, wenn Fehler vorliegt:
         if(self._secConnectStatus != self.SEC_CONNECT_STATUS_OK):
@@ -189,6 +194,7 @@ class SecSetup(QObject):
                 for f in self.dataGas:
                     err2, fp = self._sgEA.readAnalogInputVordruck(f)
                     self.dataGas[f]["FP"] = fp
+                    data[f] = fp
                     
                     # Berechnung GasTemp:
                     if(type(fp) != None and fp != 0):
@@ -204,10 +210,14 @@ class SecSetup(QObject):
                 print ("SEC: Fehler beim Auslesen des Gasvordrucks !")
                 self._secConnectStatus = self.SEC_CONNECT_STATUS_NONE
                 
+        return data
+                
                 
                             
 
     def __read_MGSBoxen(self):
+        
+        data = {}
         
         # Versuche Verbindung neu aufzubauen, wenn Fehler vorliegt:
         if(self._secConnectStatus != self.SEC_CONNECT_STATUS_OK):
@@ -225,13 +235,11 @@ class SecSetup(QObject):
                     # print(f"f: {f}")
                     err, val = self._sgEA.readAnalogInputMGSBox(f)
                     self.dataMGS[f] = val
+                    data[f] = val
                                     
                     if(err):
                         newData = False
                         print("Fehler beim Auslesen von " + str(f) )
-
-                if(newData):
-                    self._sig_NewSecData.emit(self.dataMGS)
                     
                 
             except Exception as e:
@@ -239,6 +247,8 @@ class SecSetup(QObject):
                 print (e)
                 print ("SEC: Fehler beim Auslesen der MGS Boxen !")
                 self._secConnectStatus = self.SEC_CONNECT_STATUS_NONE
+                
+        return data
 
 
     def set_sms_zuschaltung(self, name, _open):

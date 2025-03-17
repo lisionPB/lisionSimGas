@@ -11,6 +11,8 @@
         "COM3_SOLL": false,
         "GES_IST": true,
         "GES_SOLL": true,
-        "FP": true
+        "Gasflasche 1": false,
+        "Gasflasche 2": false,
+        "Gasflasche 3": false
     }
 }

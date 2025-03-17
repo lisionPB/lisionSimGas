@@ -154,7 +154,7 @@ class MessdatenGraphWidget(QGroupBox):
     def set_selectedChannelNames(self, chNames):
         self.graphWidget.set_selectedChannelNames(chNames)
         
-        
+    
     def set_curveNames(self, names):
         self.graphWidget.set_curveNames(names)
         
@@ -189,31 +189,34 @@ class MessdatenGraphPlot(pg.PlotWidget):
         pg.mkPen(250,100,250, width=1),     #   rosa  
         pg.mkPen(0,220,220, width=1),       #  blaugrün
         pg.mkPen(100,220,220, width=1),     #   hellblaugrün
-        pg.mkPen(0,220,0, width=1),   #   grün
+        pg.mkPen(0,220,0, width=1),         #   grün
         pg.mkPen(100,220,100, width=1),     #   hellgrün     
-        pg.mkPen(0,0,200, width=1),     #   blau
-        pg.mkPen(255,0,0, width=1),     #   rot
-        pg.mkPen(255,150,0, width=1),     #   orange
         
-        pg.mkPen(120,0,120, width=1),       #   lila
-        pg.mkPen(150,50,150, width=1),     #   rosa  
-        pg.mkPen(0,120,120, width=1),       #  blaugrün
-        pg.mkPen(50,120,120, width=1),     #   hellblaugrün
-        pg.mkPen(0,120,0, width=1),   #   grün
-        pg.mkPen(50,120,50, width=1),     #   hellgrün     
-        pg.mkPen(0,0,100, width=1),     #   blau
-        pg.mkPen(105,0,0, width=1),     #   rot
-        pg.mkPen(105,75,0, width=1),     #   orange
+        pg.mkPen(0,170,0, width=1),         #   grün        GES_IST
+        pg.mkPen(255,0,0, width=1),       #   rot         GES_SOLL
+        pg.mkPen(0,0,255, width=1),       #   blau        FP GAS 1  
+        pg.mkPen(255,0,255, width=1),       #   lila        FP GAS 2    
+        pg.mkPen(0,255,255, width=1),       #   türkis      FP GAS 3         
         
-        pg.mkPen(120,0,120, width=1),       #   lila
-        pg.mkPen(150,50,150, width=1),     #   rosa  
-        pg.mkPen(0,120,120, width=1),       #  blaugrün
-        pg.mkPen(50,120,120, width=1),     #   hellblaugrün
-        pg.mkPen(0,120,0, width=1),   #   grün
-        pg.mkPen(50,120,50, width=1),     #   hellgrün     
-        pg.mkPen(0,0,100, width=1),     #   blau
-        pg.mkPen(105,0,0, width=1),     #   rot
-        pg.mkPen(105,75,0, width=1),     #   orange
+        pg.mkPen(0,170,0, width=1),       #   grün    MGS 1 1
+        pg.mkPen(255,0,0, width=1),       #   rot    MGS 1 2
+        pg.mkPen(0,0,255, width=1),       #   blau    MGS 2 1
+        pg.mkPen(255,0,255, width=1),       #   lila    MGS 2 2
+        pg.mkPen(0,170,0, width=1),       #   grün    GG 1
+        pg.mkPen(255,0,0, width=1),       #   rot     GG 2
+        pg.mkPen(0,0,255, width=1),       #   blau    GG 3
+        pg.mkPen(255,0,255, width=1),       #   lila    GG 4
+        pg.mkPen(0,255,255, width=1),       #   türkis    GG 5 
+        pg.mkPen(200,200,0, width=1),       #   orange    GG 6 
+        pg.mkPen(0,0,0, width=1),            #   schwarz    GG 7 
+        pg.mkPen(150,150,150, width=1),       #   grau    GG 8 
+        
+        pg.mkPen(0,0,0, width=1),            #   schwarz     ? 
+        pg.mkPen(0,0,0, width=1),            #   schwarz     ? 
+        pg.mkPen(0,0,0, width=1)           #   schwarz      ? 
+        
+        
+
     ]
     
     def __init__(self, dataMan, chNames=None):	       
@@ -301,6 +304,7 @@ class MessdatenGraphPlot(pg.PlotWidget):
         self.curves = dict()
         
         # Daten 
+        # print("init channels: ")
         for i,k in enumerate(self.__dataMan.get_channelNames()):
             if(k in self.__chNames):
                 self.plotVis[k] = True                
@@ -334,7 +338,7 @@ class MessdatenGraphPlot(pg.PlotWidget):
     def set_selectedChannelNames(self, chNames):
         self.__chNames = chNames
         self.init_curves()
-    
+
 
     def set_curveNames(self, curveNames):
         # self.__curveNames = curveNames

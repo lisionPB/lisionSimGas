@@ -6,7 +6,7 @@ import consoleWidget as cw
 
 class Entlueftung(QObject):
     
-    DEFAULT_ENTLUEFTUNGSZEIT = 15   # s
+    DEFAULT_ENTLUEFTUNGSZEIT = 8   # s
     
     sig_entlueftung_finished = pyqtSignal()
     
