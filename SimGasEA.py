@@ -40,8 +40,7 @@ class SimGasEA(object):
             # Starte den Client für die Verbindung zum Server
             
             host = ModbusTcpClient(self.__host)
-            
-            #TODO: Check, ob Verbindungsaufbau erfolgreich                
+                       
             self.__client = host
             
             # Setze alle Ausgangsinformationen auf einen initialen Wert gemaess der Config-Datei

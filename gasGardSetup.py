@@ -18,6 +18,7 @@ class GasGardSetup(QObject):
     Verwende _start_MessSchleife(self) um Messschleife zu starten
     """
     
+    TIMEOUT_DISABLE_GG = 10  # Timeout für Verbindungsherstellung vor Deaktivierung [s]
     DEFAULT_SCAN_INTERVAL = 500
        
     CONFIG_FILE_SENSOREN = "config_gasgard.json"
@@ -32,6 +33,7 @@ class GasGardSetup(QObject):
     
     sig_closeConnection = pyqtSignal()
     
+    _sig_disableGG = pyqtSignal()
     
     def __init__(self, ggEA):
         super().__init__()
@@ -39,6 +41,8 @@ class GasGardSetup(QObject):
         self._ggEA = ggEA   
         
         self._ggConnectStatus = self.GG_CONNECT_STATUS_NONE
+        self.ggConnectStartTime = time.time()
+        self.enableGGSensors = True
         
         # Übergeben der Sensormessbereiche
         self._ggEA.setSensorBereiche(self._load_sensorConfig(self.CONFIG_FILE_SENSOREN))
@@ -47,6 +51,8 @@ class GasGardSetup(QObject):
         self.dataGas = {}
         for f in self._ggEA._sensors:
             self.dataGas[f] = {'value': None}
+            
+            
         
         ##############
         # Messschleife
@@ -128,7 +134,9 @@ class GasGardSetup(QObject):
                 
                 self.sig_NewGGStatus.emit(dev_status, sens_status)
                 self.sig_NewGGData.emit(sens_vals)
-                
+                                
+                self.ggConnectStartTime = time.time()    # reset connection timeout            
+            
                 """
                 for f in self.dataGas:
                     self.dataGas[f]["value"] = vals
@@ -226,7 +234,7 @@ class GG_ConnectThread(QThread):
                 
         lastStatus = self.ggs._ggConnectStatus
                 
-        if(not self.ggs._update_GGSetupInProgress):
+        if(not self.ggs._update_GGSetupInProgress and self.ggs.enableGGSensors == True):
         
             print ("Verbinde GasGard Setup ...")
     
@@ -236,6 +244,12 @@ class GG_ConnectThread(QThread):
 
             if(self.ggs._ggEA.connect() == True):
                 self.ggs._ggConnectStatus = GasGardSetup.GG_CONNECT_STATUS_OK # Alle COM-Ports wurden verbunden
+                # print("GGS 247")
+            else:
+                if(time.time() - self.ggs.ggConnectStartTime > self.ggs.TIMEOUT_DISABLE_GG):
+                    self.ggs.enableGGSensors = False
+                    print("GasGard Sensoren antworten nicht und werden deaktiviert.")
+                    self.ggs._sig_disableGG.emit()
 
             self.ggs._update_GGSetupInProgress = False
             

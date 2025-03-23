@@ -24,6 +24,9 @@ class SecSetup(QObject):
     Verwende _start_MessSchleife(self) um Messschleife zu starten
     """
     
+    
+    TIMEOUT_DISABLE_MSG = 10     # Timeout für Verbindungsherstellung vor Deaktivierung [s]
+    
     DEFAULT_SCAN_INTERVAL = 250
     
     SEC_CONNECT_STATUS_NONE = -1     # Verbindung zu keinem COM-Port aufgebaut
@@ -36,6 +39,7 @@ class SecSetup(QObject):
     _sig_NewSecData = pyqtSignal(dict)
     _sig_SEC_SetupConnect = pyqtSignal()
     sig_SEC_ConnectFinished = pyqtSignal(int)
+    _sig_disableMGS = pyqtSignal(int)
     
     sig_closeConnection = pyqtSignal()
     
@@ -46,7 +50,6 @@ class SecSetup(QObject):
         self._sgEA = sgEA   
         
         self._secConnectStatus = self.SEC_CONNECT_STATUS_NONE
-        
         
         
         # Übergeben der Sensormessbereiche
@@ -65,9 +68,14 @@ class SecSetup(QObject):
             
             
         # Init MGS Boxen Data
+        
+        self.mgsConnectStartTime = {}
+        self.enableMGSBoxen = {} 
         self.dataMGS = {}
         for s in self._sgEA._sensorsMGS:
             self.dataMGS[s] = 0
+            self.mgsConnectStartTime[self._sgEA._sensorsMGS[s]["box"]] = time.time()
+            self.enableMGSBoxen[self._sgEA._sensorsMGS[s]["box"]] = True
         
 
         
@@ -224,6 +232,7 @@ class SecSetup(QObject):
             self._connect_sec()
                 
                 
+                
         if(self._secConnectStatus == self.SEC_CONNECT_STATUS_OK):
             
             # MGS Messboxen
@@ -237,16 +246,24 @@ class SecSetup(QObject):
                     self.dataMGS[f] = val
                     data[f] = val
                                     
-                    if(err):
+                    if(err and (self.enableMGSBoxen[self._sgEA._sensorsMGS[f]["box"]] == True)):
                         newData = False
                         print("Fehler beim Auslesen von " + str(f) )
+                        if(time.time() - self.mgsConnectStartTime[self._sgEA._sensorsMGS[f]["box"]] > self.TIMEOUT_DISABLE_MSG):
+                            self.enableMGSBoxen[self._sgEA._sensorsMGS[f]["box"]] = False
+                            print("MGS Box " + str(self._sgEA._sensorsMGS[f]["box"]) + " antwortet nicht und wird deaktiviert.")
+                            self._sig_disableMGS.emit(self._sgEA._sensorsMGS[f]["box"])
+                    else:
+                        # MGS Box bleibt enabled
+                        self.enableMGSBoxen[self._sgEA._sensorsMGS[f]["box"]] = True
+                        self.mgsConnectStartTime[self._sgEA._sensorsMGS[f]["box"]] = time.time()
                     
                 
             except Exception as e:
                 # Fehler beim Auslesen des Messwertes
                 print (e)
                 print ("SEC: Fehler beim Auslesen der MGS Boxen !")
-                self._secConnectStatus = self.SEC_CONNECT_STATUS_NONE
+                # self._secConnectStatus = self.SEC_CONNECT_STATUS_NONE
                 
         return data
 

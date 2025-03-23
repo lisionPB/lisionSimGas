@@ -6,6 +6,7 @@ Main Klasse der SimGas Steuerungssoftware
 """
 import sys
 import ctypes
+import lock
 import pandas
 import math
 import pyqtgraph as pg
@@ -159,6 +160,7 @@ class ReglerUI(QMainWindow):
         if(self.ENABLE_SEC_MAGNET_SWITCH):
             # Message bei Verbindungsversuch
             self.sms.sig_SEC_ConnectFinished.connect(self.print_ConnectTryMessage_SEC)
+            self.sms._sig_disableMGS.connect(self.print_DisableMessage_MGSBox)
             # Starten der SEC-Messschleife, sobald Verbindung hergestellt
             self.sms.sig_SEC_ConnectFinished.connect(self.sms._start_MessSchleife) 
             # Ankommende Vordruck Daten in DataManager einspeisen
@@ -187,6 +189,7 @@ class ReglerUI(QMainWindow):
         if(self.ENABLE_GASGARD_SENSORS):
             # Message bei Verbindungsversuch
             self.ggs.sig_GG_ConnectFinished.connect(self.print_ConnectTryMessage_GasGard)
+            self.ggs._sig_disableGG.connect(self.print_DisableMessage_GasGard)
             # Starten der SEC-Messschleife, sobald Verbindung hergestellt
             self.ggs.sig_GG_ConnectFinished.connect(self.ggs._start_MessSchleife)            
             # Ankommende GasGard Daten in DataManager einspeisen
@@ -360,6 +363,13 @@ class ReglerUI(QMainWindow):
             self.sgr.protokoll.append(cw.ProtokollEintrag("Fehler beim Verbinden der GasGard-Hardware!", typ=cw.ProtokollEintrag.TYPE_FAILURE))
     
     
+    def print_DisableMessage_GasGard(self):
+        self.sgr.protokoll.append(cw.ProtokollEintrag("GasGard Sensorik nicht verbunden.", typ=cw.ProtokollEintrag.TYPE_WARNING))
+    
+    
+    def print_DisableMessage_MGSBox(self, box):
+        self.sgr.protokoll.append(cw.ProtokollEintrag(f"MGS Box {box} nicht verbunden.", typ=cw.ProtokollEintrag.TYPE_WARNING))
+        
     
     
     def open_help(self):
@@ -1220,27 +1230,34 @@ if __name__ == '__main__':
     wagoIP = '172.20.20.2'
     gasgardIP = '172.20.30.2'
 
-    app = QApplication(sys.argv)
-   
-    # SecSetup (Magnetschalter)
-    sgEA = SimGasEA(wagoIP) 
-    sms = ss.SecSetup(sgEA)
+    if(not lock.islocked()):
+        lock.lock()
+
+        app = QApplication(sys.argv)
     
-    # Regel Stellglieder
-    sgr = rs.SimGasRegler(sgEA)
-    
-    # GasGard Sensorik
-    ggEA = GasGardEA(gasgardIP)
-    ggs = gs.GasGardSetup(ggEA)
+        # SecSetup (Magnetschalter)
+        sgEA = SimGasEA(wagoIP) 
+        sms = ss.SecSetup(sgEA)
+        
+        # Regel Stellglieder
+        sgr = rs.SimGasRegler(sgEA)
+        
+        # GasGard Sensorik
+        ggEA = GasGardEA(gasgardIP)
+        ggs = gs.GasGardSetup(ggEA)
 
 
-    # Öffne Anzeige
-    main = ReglerUI(sgr, sms, ggs)
+        # Öffne Anzeige
+        main = ReglerUI(sgr, sms, ggs)
 
-    ec = app.exec_()
-    
-    if(sgr.terminated):
-        print ("Programm regulär geschlossen.")
-    else:   
-        sgr._close_hwSetup()
-        print ("Programm abgestürzt!")
+        ec = app.exec_()
+        
+        if(sgr.terminated):
+            print ("Programm regulär geschlossen.")
+            lock.unlock()
+        else:   
+            sgr._close_hwSetup()
+            print ("Programm abgestürzt!")
+
+    else:
+        lock.showMsgLocked("Es läuft bereits eine Instanz von SimGasUI!\nLöschen Sie andernfalls die Datei simgas.lock vom Desktop!")
