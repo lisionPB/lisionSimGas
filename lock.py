@@ -6,7 +6,7 @@ from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QApplication, QMainWindow, QMessageBox, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton
 
-FILENAME_LOCK = "C:\\Users\\BASOARO\\Desktop\\simgas.lock"
+FILENAME_LOCK = "benutzer\\simgas.lock"
 
 def islocked():
     return os.path.exists(FILENAME_LOCK)

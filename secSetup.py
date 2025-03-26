@@ -239,24 +239,26 @@ class SecSetup(QObject):
                                 
             ###
             try:
-                newData = True
                 for f in self.dataMGS:
                     # print(f"f: {f}")
                     err, val = self._sgEA.readAnalogInputMGSBox(f)
                     self.dataMGS[f] = val
                     data[f] = val
-                                    
+                    
+                    #print(f)
+                    #print(self._sgEA._sensorsMGS[f]["box"])
+                    #print(self.enableMGSBoxen[self._sgEA._sensorsMGS[f]["box"]])      
+                    
                     if(err and (self.enableMGSBoxen[self._sgEA._sensorsMGS[f]["box"]] == True)):
-                        newData = False
                         print("Fehler beim Auslesen von " + str(f) )
                         if(time.time() - self.mgsConnectStartTime[self._sgEA._sensorsMGS[f]["box"]] > self.TIMEOUT_DISABLE_MSG):
                             self.enableMGSBoxen[self._sgEA._sensorsMGS[f]["box"]] = False
                             print("MGS Box " + str(self._sgEA._sensorsMGS[f]["box"]) + " antwortet nicht und wird deaktiviert.")
                             self._sig_disableMGS.emit(self._sgEA._sensorsMGS[f]["box"])
                     else:
-                        # MGS Box bleibt enabled
-                        self.enableMGSBoxen[self._sgEA._sensorsMGS[f]["box"]] = True
-                        self.mgsConnectStartTime[self._sgEA._sensorsMGS[f]["box"]] = time.time()
+                        if(self.enableMGSBoxen[self._sgEA._sensorsMGS[f]["box"]] == True):
+                            # MGS Box bleibt enabled
+                            self.mgsConnectStartTime[self._sgEA._sensorsMGS[f]["box"]] = time.time()
                     
                 
             except Exception as e:

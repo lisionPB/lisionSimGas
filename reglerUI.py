@@ -161,6 +161,7 @@ class ReglerUI(QMainWindow):
             # Message bei Verbindungsversuch
             self.sms.sig_SEC_ConnectFinished.connect(self.print_ConnectTryMessage_SEC)
             self.sms._sig_disableMGS.connect(self.print_DisableMessage_MGSBox)
+            self.sms._sig_disableMGS.connect(self.hide_MGSBoxSensors)
             # Starten der SEC-Messschleife, sobald Verbindung hergestellt
             self.sms.sig_SEC_ConnectFinished.connect(self.sms._start_MessSchleife) 
             # Ankommende Vordruck Daten in DataManager einspeisen
@@ -190,6 +191,7 @@ class ReglerUI(QMainWindow):
             # Message bei Verbindungsversuch
             self.ggs.sig_GG_ConnectFinished.connect(self.print_ConnectTryMessage_GasGard)
             self.ggs._sig_disableGG.connect(self.print_DisableMessage_GasGard)
+            self.ggs._sig_disableGG.connect(self.hide_GasGardSensors)
             # Starten der SEC-Messschleife, sobald Verbindung hergestellt
             self.ggs.sig_GG_ConnectFinished.connect(self.ggs._start_MessSchleife)            
             # Ankommende GasGard Daten in DataManager einspeisen
@@ -367,9 +369,16 @@ class ReglerUI(QMainWindow):
         self.sgr.protokoll.append(cw.ProtokollEintrag("GasGard Sensorik nicht verbunden.", typ=cw.ProtokollEintrag.TYPE_WARNING))
     
     
+    def hide_GasGardSensors(self):
+        # self.rmw.gsWidget.setVisible(False)
+        pass
+    
     def print_DisableMessage_MGSBox(self, box):
         self.sgr.protokoll.append(cw.ProtokollEintrag(f"MGS Box {box} nicht verbunden.", typ=cw.ProtokollEintrag.TYPE_WARNING))
         
+    
+    def hide_MGSBoxSensors(self, box):
+        self.rmw.mgsWidget.hide_MGSBox(box)
     
     
     def open_help(self):
@@ -530,6 +539,7 @@ class ReglerMainWidget(QWidget):
         # Statusanzeige
         self.__mainWindow.ggs.sig_NewGGStatus.connect(self.gsWidget.update_GasSensorStatus)
         
+        gasSensorikLayout.addStretch(1)
             
         #--------------------------------------
         # Prüfung und Messung Group
@@ -1260,4 +1270,5 @@ if __name__ == '__main__':
             print ("Programm abgestürzt!")
 
     else:
-        lock.showMsgLocked("Es läuft bereits eine Instanz von SimGasUI!\nLöschen Sie andernfalls die Datei simgas.lock vom Desktop!")
+        pass
+        # lock.showMsgLocked("Es läuft bereits eine Instanz von SimGasUI!\nLöschen Sie andernfalls die Datei simgas.lock vom Desktop!")

@@ -13,15 +13,15 @@ class MGSWidget(QGroupBox):
         self.mainLayout = QHBoxLayout()
         self.setLayout(self.mainLayout)
         
-        groupBox1 = QGroupBox("MGS Box 1")
+        self.groupBox1 = QGroupBox("MGS Box 1")
         layoutBox1 = QVBoxLayout()
-        groupBox1.setLayout(layoutBox1)
-        self.mainLayout.addWidget(groupBox1)
+        self.groupBox1.setLayout(layoutBox1)
+        self.mainLayout.addWidget(self.groupBox1)
         
-        groupBox2 = QGroupBox("MGS Box 2")
+        self.groupBox2 = QGroupBox("MGS Box 2")
         layoutBox2 = QVBoxLayout()
-        groupBox2.setLayout(layoutBox2)
-        self.mainLayout.addWidget(groupBox2)
+        self.groupBox2.setLayout(layoutBox2)
+        self.mainLayout.addWidget(self.groupBox2)
                 
         for i, s in enumerate(self.sms._sgEA._sensorsMGS):
             self.mgsGroups[s] = MGS_Box_Widget(self.sms._sgEA._sensorsMGS[s]["label"])
@@ -34,6 +34,16 @@ class MGSWidget(QGroupBox):
     def update_MGSWidget(self):
         for s in self.mgsGroups:
             self.mgsGroups[s].update_MGSData(self.sms.dataMGS[s])
+            
+            
+    def hide_MGSBox(self, box):
+        if(box == 1):
+            self.groupBox1.setVisible(False)
+            self.mainLayout.addStretch()
+            
+        if(box == 2):
+            self.groupBox2.setVisible(False)
+            self.mainLayout.addStretch()
             
             
             
