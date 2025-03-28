@@ -160,8 +160,12 @@ class ReglerUI(QMainWindow):
         if(self.ENABLE_SEC_MAGNET_SWITCH):
             # Message bei Verbindungsversuch
             self.sms.sig_SEC_ConnectFinished.connect(self.print_ConnectTryMessage_SEC)
+            # Verbindungsstatus
             self.sms._sig_disableMGS.connect(self.print_DisableMessage_MGSBox)
             self.sms._sig_disableMGS.connect(self.hide_MGSBoxSensors)
+            self.sms._sig_enableMGS.connect(self.print_EnableMessage_MGSBox)
+            self.sms._sig_enableMGS.connect(self.show_MGSBoxSensors)            
+            
             # Starten der SEC-Messschleife, sobald Verbindung hergestellt
             self.sms.sig_SEC_ConnectFinished.connect(self.sms._start_MessSchleife) 
             # Ankommende Vordruck Daten in DataManager einspeisen
@@ -190,8 +194,12 @@ class ReglerUI(QMainWindow):
         if(self.ENABLE_GASGARD_SENSORS):
             # Message bei Verbindungsversuch
             self.ggs.sig_GG_ConnectFinished.connect(self.print_ConnectTryMessage_GasGard)
+            # Verbindungsstatus
             self.ggs._sig_disableGG.connect(self.print_DisableMessage_GasGard)
             self.ggs._sig_disableGG.connect(self.hide_GasGardSensors)
+            self.ggs._sig_enableGG.connect(self.print_EnableMessage_GasGard)
+            self.ggs._sig_enableGG.connect(self.show_GasGardSensors)
+            
             # Starten der SEC-Messschleife, sobald Verbindung hergestellt
             self.ggs.sig_GG_ConnectFinished.connect(self.ggs._start_MessSchleife)            
             # Ankommende GasGard Daten in DataManager einspeisen
@@ -342,8 +350,7 @@ class ReglerUI(QMainWindow):
         else:
             self.configExpertModeAct.trigger()
 
-        
-    
+
     def print_ConnectTryMessage(self, check):
         if(check == 1): 
             self.sgr.protokoll.append(cw.ProtokollEintrag("Verbindung zur Hardware hergestellt", typ=cw.ProtokollEintrag.TYPE_SUCCESS))
@@ -369,16 +376,33 @@ class ReglerUI(QMainWindow):
         self.sgr.protokoll.append(cw.ProtokollEintrag("GasGard Sensorik nicht verbunden.", typ=cw.ProtokollEintrag.TYPE_WARNING))
     
     
+    def print_EnableMessage_GasGard(self):
+        self.sgr.protokoll.append(cw.ProtokollEintrag("GasGard Sensorik verbunden.", typ=cw.ProtokollEintrag.TYPE_SUCCESS))
+        
+    
     def hide_GasGardSensors(self):
-        # self.rmw.gsWidget.setVisible(False)
-        pass
+        self.rmw.gsWidget.setEnabled(False)
+        self.rmw.gsWidget.setTitle("GasGard XL - offline")
+    
+    def show_GasGardSensors(self):
+        self.rmw.gsWidget.setEnabled(True)
+        self.rmw.gsWidget.setTitle("GasGard XL - online")
+        
     
     def print_DisableMessage_MGSBox(self, box):
         self.sgr.protokoll.append(cw.ProtokollEintrag(f"MGS Box {box} nicht verbunden.", typ=cw.ProtokollEintrag.TYPE_WARNING))
         
+        
+    def print_EnableMessage_MGSBox(self, box):
+        self.sgr.protokoll.append(cw.ProtokollEintrag(f"MGS Box {box} verbunden.", typ=cw.ProtokollEintrag.TYPE_SUCCESS))
+    
     
     def hide_MGSBoxSensors(self, box):
         self.rmw.mgsWidget.hide_MGSBox(box)
+    
+    
+    def show_MGSBoxSensors(self, box):
+        self.rmw.mgsWidget.show_MGSBox(box)
     
     
     def open_help(self):
@@ -1236,7 +1260,6 @@ class GasData_Widget(QGroupBox):
 
 if __name__ == '__main__':
 
-    # IP-Adresse des WAGO Feldbuskopplers
     wagoIP = '172.20.20.2'
     gasgardIP = '172.20.30.2'
 

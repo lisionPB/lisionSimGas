@@ -38,7 +38,7 @@ class GasGardWidget(QGroupBox):
     
     def __init__(self, ggs):
         
-        super().__init__("GasGard XL")
+        super().__init__("GasGard XL - online")
         
         self.ggs = ggs
         

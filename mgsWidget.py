@@ -13,12 +13,12 @@ class MGSWidget(QGroupBox):
         self.mainLayout = QHBoxLayout()
         self.setLayout(self.mainLayout)
         
-        self.groupBox1 = QGroupBox("MGS Box 1")
+        self.groupBox1 = QGroupBox("MGS Box 1 - online")
         layoutBox1 = QVBoxLayout()
         self.groupBox1.setLayout(layoutBox1)
         self.mainLayout.addWidget(self.groupBox1)
         
-        self.groupBox2 = QGroupBox("MGS Box 2")
+        self.groupBox2 = QGroupBox("MGS Box 2 - online")
         layoutBox2 = QVBoxLayout()
         self.groupBox2.setLayout(layoutBox2)
         self.mainLayout.addWidget(self.groupBox2)
@@ -38,13 +38,22 @@ class MGSWidget(QGroupBox):
             
     def hide_MGSBox(self, box):
         if(box == 1):
-            self.groupBox1.setVisible(False)
-            self.mainLayout.addStretch()
+            self.groupBox1.setEnabled(False)
+            self.groupBox1.setTitle("MGS Box 1 - offline")
             
         if(box == 2):
-            self.groupBox2.setVisible(False)
-            self.mainLayout.addStretch()
+            self.groupBox2.setEnabled(False)
+            self.groupBox2.setTitle("MGS Box 2 - offline")
+
+
+    def show_MGSBox(self, box):
+        if(box == 1):
+            self.groupBox1.setEnabled(True)
+            self.groupBox1.setTitle("MGS Box 1 - online")
             
+        if(box == 2):
+            self.groupBox2.setEnabled(True)
+            self.groupBox2.setTitle("MGS Box 2 - online")       
             
             
 class MGS_Box_Widget(QGroupBox):

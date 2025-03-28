@@ -25,7 +25,7 @@ class SecSetup(QObject):
     """
     
     
-    TIMEOUT_DISABLE_MSG = 10     # Timeout für Verbindungsherstellung vor Deaktivierung [s]
+    TIMEOUT_DISABLE_MSG = 3     # Timeout für Verbindungsherstellung vor Deaktivierung [s]
     
     DEFAULT_SCAN_INTERVAL = 250
     
@@ -39,7 +39,9 @@ class SecSetup(QObject):
     _sig_NewSecData = pyqtSignal(dict)
     _sig_SEC_SetupConnect = pyqtSignal()
     sig_SEC_ConnectFinished = pyqtSignal(int)
+    
     _sig_disableMGS = pyqtSignal(int)
+    _sig_enableMGS = pyqtSignal(int)
     
     sig_closeConnection = pyqtSignal()
     
@@ -248,7 +250,7 @@ class SecSetup(QObject):
                     #print(f)
                     #print(self._sgEA._sensorsMGS[f]["box"])
                     #print(self.enableMGSBoxen[self._sgEA._sensorsMGS[f]["box"]])      
-                    
+
                     if(err and (self.enableMGSBoxen[self._sgEA._sensorsMGS[f]["box"]] == True)):
                         print("Fehler beim Auslesen von " + str(f) )
                         if(time.time() - self.mgsConnectStartTime[self._sgEA._sensorsMGS[f]["box"]] > self.TIMEOUT_DISABLE_MSG):
@@ -256,9 +258,14 @@ class SecSetup(QObject):
                             print("MGS Box " + str(self._sgEA._sensorsMGS[f]["box"]) + " antwortet nicht und wird deaktiviert.")
                             self._sig_disableMGS.emit(self._sgEA._sensorsMGS[f]["box"])
                     else:
-                        if(self.enableMGSBoxen[self._sgEA._sensorsMGS[f]["box"]] == True):
-                            # MGS Box bleibt enabled
-                            self.mgsConnectStartTime[self._sgEA._sensorsMGS[f]["box"]] = time.time()
+                        self.mgsConnectStartTime[self._sgEA._sensorsMGS[f]["box"]] = time.time()
+                        if(not err and self.enableMGSBoxen[self._sgEA._sensorsMGS[f]["box"]] == False):
+                            print("MGS Box " + str(self._sgEA._sensorsMGS[f]["box"]) + " online.")
+                            # 1. auf true setzen
+                            self.enableMGSBoxen[self._sgEA._sensorsMGS[f]["box"]] = True
+                            # 2. signal auslösen -> aktivieren
+                            self._sig_enableMGS.emit(self._sgEA._sensorsMGS[f]["box"])
+                            
                     
                 
             except Exception as e:

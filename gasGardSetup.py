@@ -18,7 +18,7 @@ class GasGardSetup(QObject):
     Verwende _start_MessSchleife(self) um Messschleife zu starten
     """
     
-    TIMEOUT_DISABLE_GG = 10  # Timeout für Verbindungsherstellung vor Deaktivierung [s]
+    TIMEOUT_DISABLE_GG = 5  # Timeout für Verbindungsherstellung vor Deaktivierung [s]
     DEFAULT_SCAN_INTERVAL = 500
        
     CONFIG_FILE_SENSOREN = "config_gasgard.json"
@@ -34,6 +34,7 @@ class GasGardSetup(QObject):
     sig_closeConnection = pyqtSignal()
     
     _sig_disableGG = pyqtSignal()
+    _sig_enableGG = pyqtSignal()
     
     def __init__(self, ggEA):
         super().__init__()
@@ -244,7 +245,9 @@ class GG_ConnectThread(QThread):
 
             if(self.ggs._ggEA.connect() == True):
                 self.ggs._ggConnectStatus = GasGardSetup.GG_CONNECT_STATUS_OK # Alle COM-Ports wurden verbunden
-                # print("GGS 247")
+                self.ggs.enableGGSensors = True
+                print("GasGard Sensoren aktiviert.")
+                self.ggs._sig_enableGG.emit()
             else:
                 if(time.time() - self.ggs.ggConnectStartTime > self.ggs.TIMEOUT_DISABLE_GG):
                     self.ggs.enableGGSensors = False
