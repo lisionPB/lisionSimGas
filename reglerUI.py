@@ -45,7 +45,7 @@ import befuellen as befu
 class ReglerUI(QMainWindow):
     
     TITEL = "SimGas Regler GUI - CORI"
-    VERSION = "0.17"
+    VERSION = "0.18"
     YEAR = "2025"
     
     _sig_close = pyqtSignal()
@@ -1193,6 +1193,7 @@ class GasData_Widget(QGroupBox):
     def _setMagVentClosed(self):
         self.cbActive.setChecked(False)
         self.sms.set_sms_zuschaltung(self.s, False) 
+        self._sig_updateZuschaltung.emit()
     
             
     def _toggleMagVentOpen(self):
@@ -1293,5 +1294,6 @@ if __name__ == '__main__':
             print ("Programm abgestürzt!")
 
     else:
-        pass
+        print("Es läuft bereits eine Instanz von SimGasUI!\nLöschen Sie andernfalls die Datei simgas.lock vom Desktop!")
         # lock.showMsgLocked("Es läuft bereits eine Instanz von SimGasUI!\nLöschen Sie andernfalls die Datei simgas.lock vom Desktop!")
+        pass

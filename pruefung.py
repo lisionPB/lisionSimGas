@@ -66,7 +66,6 @@ class Pruefung(QObject):
         Kein Starten des Timers bis zum Start der eigentlichen Prüfung !!! -> pruefWidget
         """
                     
-        
         """
         # Prüfe, ob Sicherheitsmagnetventile manuell geöffnet wurde
         if(not self._sms.is_sms_open_any()):
@@ -76,7 +75,7 @@ class Pruefung(QObject):
         
         # Prüfe auf gültige Reglerkonfiguration        
         if(not self._reglerAuswahlArbeitsBereichMax > 0):
-            self.sgr.protokoll.append(cw.ProtokollEintrag("Prüfung konnte nicht gestartet werden! Prüf-Konfiguration überprüfen!", typ=cw.ProtokollEintrag.TYPE_FAILURE))
+            self._rs.protokoll.append(cw.ProtokollEintrag("Prüfung konnte nicht gestartet werden! Prüfdurchfluss nicht im Arbeitsbereich!", typ=cw.ProtokollEintrag.TYPE_FAILURE))
             return False
  
             
@@ -146,6 +145,8 @@ class Pruefung(QObject):
 
         # Setze alle geplante Zuschaltungen der Flaschen auf False
         self._sms.clear_sms_zuschaltungen()
+        # Schließe alle Ventile
+        self._sms.write_sms_zuschaltungen()
 
         self._state = self.PRUEF_STATE_FAILURE        
         self._sig_pruefCanceled.emit()
@@ -171,7 +172,7 @@ class Pruefung(QObject):
         # self._rs.set_paused(True)
         
         print ("Prüfung wird abgeschlossen ...")
-        self._rs.protokoll.append(cw.ProtokollEintrag("Prüfung abgeschlossen! Gesamtfluss: " + str(round(self._gsr.totalFlowSum, 2)) + "g", typ=cw.ProtokollEintrag.TYPE_SUCCESS))    
+        self._rs.protokoll.append(cw.ProtokollEintrag("Gesamtfluss: " + str(round(self._gsr.totalFlowSum, 2)) + "g", typ=cw.ProtokollEintrag.TYPE_SUCCESS))    
         
         self._sig_pruefFinalized.emit() # not used?!
         
@@ -204,9 +205,11 @@ class Pruefung(QObject):
             try:
                 # extrahiere Regler-Messwerte     
                 busy = False
+                flows = {}
                 gasmengen = {}
                 zahlerwerte = {}
                 for p in self._rs._ports:
+                    flows[p] = self._rs._ports[p].get_ist()
                     gasmengen[p] = self._rs._ports[p].get_integrierteMenge()
                     zahlerwerte[p] = self._rs._ports[p].get_cnt()
 
@@ -214,8 +217,14 @@ class Pruefung(QObject):
                 # print(gasmengen)
             
                 anteil = -1
+                
+                # FlowSum aktiver Regler
+                flowSum = 0
+                for p in self._reglerAuswahl:
+                    flowSum += flows[p]
+                
                 if(not busy):
-                    anteil = self._gsr.update_Regler(gasmengen, zahlerwerte) / self._reglerAuswahlArbeitsBereichMax
+                    anteil = self._gsr.update_Regler(flowSum, gasmengen, zahlerwerte) / self._reglerAuswahlArbeitsBereichMax
                   
                 if(anteil >= 0):
                     # Reglerstellwerte müssen aktualisiert werden.
@@ -258,6 +267,7 @@ class Pruefung(QObject):
         else:
             print ("LastTime NONE !!!")
             return 0
+    
     
     def get_pruefLaufMenge(self):
         return self._gsr.totalFlowSum

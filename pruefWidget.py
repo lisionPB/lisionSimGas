@@ -455,6 +455,7 @@ class PruefWidget(QGroupBox):
                 # Halte Finish Timer an.
                 # self.timer_finishPruefung.disconnect()
                 self.timer_finishPruefung.stop()
+                # self.timer_endPruefung.stop()     # Oder lieber Abbrechen unterbinden?
                 self.timer_startPruefung.stop()
                 # Sichtbarkeiten setzen
                 self.pbCancelPruefung.setVisible(False)
@@ -588,23 +589,24 @@ class PruefWidget(QGroupBox):
             # Update Prüfung
             # print ("PW: Update Pruefung!")
             
-            # self.pruefung.update_pruefung(data) # Auskommentiert, weil Update Prüfung nun jedes mal ausgeführt wird, wenn neuer Messwert individueller Regler vorliegt
-            
-            self.pbCancelPruefung.setEnabled(True)
-            
             # Update Anzeige
             
             if(self.pruefung._state == self.pruefung.PRUEF_STATE_STARTING):
+                self.pbCancelPruefung.setEnabled(True)
                 self.lRunMengeValue.setText("---")
                 self.lRunZeitValue.setText("---")
             
             elif(self.pruefung._state == self.pruefung.PRUEF_STATE_RUNNING):
+                self.pbCancelPruefung.setEnabled(True)
                 zeit = self.pruefung.get_pruefLaufZeit()
                 zeitAnteil = zeit / (self.pruefung.get_gesZeit() * 60)
                 self.lRunZeitValue.setText(self.format_timeString(zeit) + "  (" +  ("%.2f" % (zeitAnteil * 100))  +"%)")
                 menge = self.pruefung.get_pruefLaufMenge()
                 mengeAnteil = menge / self.pruefung.get_gesMenge()
                 self.lRunMengeValue.setText(("%.2f" % (menge)) + "  (" +  ("%.2f" % (mengeAnteil * 100))  +"%)")
+            
+            elif(self.pruefung._state == self.pruefung.PRUEF_STATE_ENDING):
+                self.pbCancelPruefung.setEnabled(False)
     
     
     def set_extendedFunctionVisibility(self, extendedVis):

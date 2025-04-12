@@ -71,7 +71,7 @@ class GesamtSollwertRegler:
 #
 # Interner Regler zum Nachführen des Gesamtsollwertes
 
-    def update_Regler(self, gasmengen, zaehlerwerte) -> float:
+    def update_Regler(self, flow, gasmengen, zaehlerwerte) -> float:
         """
         Aktualisiert den internen Regler zum Nachführen des Gesamtsollwertes
 
@@ -83,7 +83,8 @@ class GesamtSollwertRegler:
                     sonst: Fluss [g/min], um in Restzeit, die Rest-Gasmenge zu erreichen. 
             
         """
-        
+        self.lastFlow = flow
+
         # Aktualisiere bisher erreichte Gasmenge von aktiven Reglern
         self.update_totalFlowSum(gasmengen, zaehlerwerte)
 
@@ -145,6 +146,7 @@ class GesamtSollwertRegler:
     
     def update_totalFlowSum(self, gasmengen, zaehlerwerte):
         self.totalFlowSum, self.lastMassSum = self.calc_dataSum(gasmengen, zaehlerwerte)
+
             
     
     
@@ -229,6 +231,8 @@ class GesamtSollwertRegler:
         for p in zaehlerwerte:
             if  p in self._reglerAuswahl:
                 zaehlSum += zaehlerwerte[p]
+        
+        
         
         
         return messSum, zaehlSum        

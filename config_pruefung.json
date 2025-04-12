@@ -1,5 +1,5 @@
 {
-    "DEFAULT_MASSE_G": 15.0,
+    "DEFAULT_MASSE_G": 5.0,
     "DEFAULT_RAMPENZEIT_S": 1.0,
     "DEFAULT_ZEIT_MIN": 1.0,
     "visibility": {
