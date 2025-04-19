@@ -73,7 +73,7 @@ class ReglerUI(QMainWindow):
     
     ###################################
     
-    def __init__(self, sgr, sms, ggs):
+    def __init__(self, sgr, sms, ggs, app):
         super().__init__()
     
         # lade HW-Setup
@@ -94,6 +94,11 @@ class ReglerUI(QMainWindow):
                 
         self.setWindowTitle(self.TITEL)
         self.setWindowIcon(QIcon("symbols/lision.ico"))
+        
+        self.setWindowFlags(
+            QtCore.Qt.WindowCloseButtonHint
+        )
+    
 
         # Setzt Symbol in der Taskleiste
         myappid = u'lision.DaEf.simgas.' + self.VERSION
@@ -255,6 +260,7 @@ class ReglerUI(QMainWindow):
         # Start der UI
                   
         self.showMaximized()
+        # self.setFixedSize(app.primaryScreen().size().width()-2, app.primaryScreen().size().height())
                           
         # Starte UI Update Timer
         self.timer_updateUI = QTimer()
@@ -262,9 +268,12 @@ class ReglerUI(QMainWindow):
         self.timer_updateUI.timeout.connect(self.updateUI)
         self.timer_updateUI.start()
         
+    
+    def moveEvent(self, event):
+        # self.move(0,0)
+        event.ignore()
         
-                
-
+        
     def closeEvent(self, event):
         
         closeOK = True
@@ -572,6 +581,8 @@ class ReglerMainWidget(QWidget):
         self.pruefWidget = pw.PruefWidget(self.__mainWindow.sgr, self.__mainWindow.sms, self)
         self.pruefWidget._sig_pdfSaved.connect(self.handle_pdfExport)   
         self.smsWidget._sig_updateZuschaltung.connect(self.pruefWidget.updateFlaschenZuschaltung)
+        self.smsWidget._sig_updateZuschaltung.connect(self.smsWidget.updateFlaschenZuschaltung)
+        self.smsWidget.updateFlaschenZuschaltung()
         rightLayout.addWidget(self.pruefWidget)
         
         
@@ -622,7 +633,8 @@ class ReglerMainWidget(QWidget):
         self.__mainWindow.configZuGrenz.setEnabled(enabled)
         # Flaschenzuschaltung
         self.smsWidget.enableFlaschenZuschaltungen(enabled)
-        self.smsWidget.enableBefuellungUndEntlueft(enabled)
+        if(enabled == False):
+            self.smsWidget.enableBefuellungUndEntlueft(enabled)
     
     
     def closeMessdatenUI(self):
@@ -1066,6 +1078,9 @@ class SecMagnetSwitch(QGroupBox):
     def befuellungsvorgangBeendet(self):
         self.mw.befuellungsvorgang = None   
         self.mw.rmw.set_ManualModeEnabled(True)
+
+        self.clear_allFlaschenZuschaltungen()
+
         self._sig_updateZuschaltung.emit()
 
 
@@ -1084,7 +1099,12 @@ class SecMagnetSwitch(QGroupBox):
     def entlueftungsvorgangBeendet(self):
         self.mw.entlueftungsvorgang = None
         self.mw.rmw.set_ManualModeEnabled(True)  
-        self.test.emit()
+        
+        self.clear_allFlaschenZuschaltungen()
+        
+        self._sig_updateZuschaltung.emit()
+        
+        # self.test.emit()
         
         
     # update
@@ -1118,6 +1138,23 @@ class SecMagnetSwitch(QGroupBox):
     def clear_allFlaschenZuschaltungen(self):
         for s in self.gasGroups:
             self.gasGroups[s]._setMagVentClosed()
+             
+        self._sig_updateZuschaltung.emit()
+            
+    def updateFlaschenZuschaltung(self):
+        
+        enableBelueftung = False
+        enableEntlueftung = True
+        
+        for s in self.sms.zuschaltung:
+            # print(f"UpdateFlaschenZuschaltung: Zuschaltung: {s}: {self.sms.zuschaltung[s]}")
+            if(self.sms.zuschaltung[s] == True):
+                enableBelueftung = True
+                enableEntlueftung = False
+        
+        # Aktivierung Befüllung und Entlüftung je nach Zuschaltung
+        self.buttonBefuellen.setEnabled(enableBelueftung) 
+        self.buttonEntlueften.setEnabled(enableEntlueftung)
     
     
                 
@@ -1282,7 +1319,7 @@ if __name__ == '__main__':
 
 
         # Öffne Anzeige
-        main = ReglerUI(sgr, sms, ggs)
+        main = ReglerUI(sgr, sms, ggs, app)
 
         ec = app.exec_()
         
@@ -1294,6 +1331,6 @@ if __name__ == '__main__':
             print ("Programm abgestürzt!")
 
     else:
-        print("Es läuft bereits eine Instanz von SimGasUI!\nLöschen Sie andernfalls die Datei simgas.lock vom Desktop!")
+        print("Es läuft bereits eine Instanz von SimGasUI!\nLöschen Sie andernfalls die Datei simgas.lock!")
         # lock.showMsgLocked("Es läuft bereits eine Instanz von SimGasUI!\nLöschen Sie andernfalls die Datei simgas.lock vom Desktop!")
         pass

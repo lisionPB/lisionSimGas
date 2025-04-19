@@ -49,22 +49,24 @@ class Befuellen(QObject):
         
         # Magnetventile öffnen, Nur die die auch angeschlossen sind!
         for s in self.sms.zuschaltung:
-            if(self.sms.checkFlaschenZuschaltung(s, checkDiffDruck=False) == 0):
-                print("zuschaltung für " + s + " OK!")
-                self.sms.set_sms_zuschaltung(s, True)
-            else:
-                print("zuschaltung für " + s + " nicht OK!")
-                self.sms.set_sms_zuschaltung(s, False)
+            if(self.sms.zuschaltung[s] == True):
+                if(self.sms.checkFlaschenZuschaltung(s, checkDiffDruck=False) == 0):
+                    print("Zuschaltung " + s + " OK!")
+                    self.sms.set_sms_zuschaltung(s, True)
+                else:
+                    print("Zuschaltung " + s + " nicht OK!")
+                    self.sms.set_sms_zuschaltung(s, False)
         self.sms.write_sms_zuschaltungen()
         
-        # Regler öffnen
+        # Regler öffnen (Alle)
         self.sgr.set_allOpen(0.10)
         
         
     def schliesseRegler(self):
         
         # Regler schließen
-        self.sgr.set_allClosed()
+        if(not self.sgr.set_allClosed()):
+            self.sgr.protokoll.append(cw.ProtokollEintrag("ACHTUNG! Automatisches Schließen der Regler fehlgeschlagen!", typ=cw.ProtokollEintrag.TYPE_FAILURE))            
         
         # Timer bis zum Ende der Befüllung
         self._timer_abschluss.setInterval(self.DEFAULT_BERUHIGUNGSZEIT * 1000)

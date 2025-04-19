@@ -1,7 +1,7 @@
 
 import ctypes
 
-from PyQt5.QtCore import pyqtSignal
+from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QIcon, QPixmap
 from PyQt5.QtWidgets import QMainWindow
 
@@ -25,6 +25,10 @@ class MessdatenUI(QMainWindow):
         ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
         
         self.showMaximized()
+                
+        self.setWindowFlags(
+            QtCore.Qt.WindowCloseButtonHint | QtCore.Qt.WindowMaximizeButtonHint
+        )
         
     
    

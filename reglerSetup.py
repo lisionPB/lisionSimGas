@@ -163,9 +163,8 @@ class SimGasRegler(hws.HWSetup):
         if (not self._testmode):
             for p in self._ports:
                 soll = self._ports[p].get_soll()
-                # print ("Check Soll: " + str(soll))
                 if(soll != 0 or soll == None):       
-                    print(soll)
+                    print(f"{p}: {soll}")
                     self.protokoll.append(cw.ProtokollEintrag("SAFETY-CHECK: Verbindung und 0-Position: FEHLGESCHLAGEN!", typ=cw.ProtokollEintrag.TYPE_FAILURE))
                     return False
                 
@@ -314,6 +313,7 @@ class SimGasRegler(hws.HWSetup):
         for p in self._ports:
             if(not self.set_Sollwert(p, 0)):
                 ok = False
+                print("Fehler beim Schließen der Regler: Regler " + str(p) + " konnte nicht geschlossen werden!")
         if(ok == True):
             self.__gesSoll = 0
         return ok

@@ -91,6 +91,7 @@ class PruefWidget(QGroupBox):
                
         self.mw.graphWidget.graphWidget.setCurveVisibility(conf["visibility"])
         
+        
         f.close()
         
         return conf
@@ -303,7 +304,6 @@ class PruefWidget(QGroupBox):
         self.buttonSavePDF.setEnabled(False)
         layoutPruefControls.addWidget(self.buttonSavePDF)
         
-        
         ###############
         # Berechne Initialwerte
         
@@ -506,7 +506,7 @@ class PruefWidget(QGroupBox):
             self.exportPruefPDF("protokolle/")
             
         print("Prüf-Report erstellt.")
-    
+        
     
     def exportPruefPDF(self, parentDir=""):
         
@@ -534,38 +534,61 @@ class PruefWidget(QGroupBox):
                     c.drawString(offsetX, 800, "SimGas Prüfprotokoll - " + datetime.fromtimestamp(time.time()).strftime('%d.%m.%Y %H:%M:%S'))
                     
                     # Prüfparameter
-                    offsetParams = 750
+                    offsetParams = 770
                     c.drawString(offsetX, offsetParams, "Prüfparameter:")
                     c.drawString(offsetX, offsetParams - 1 * lineHeight, "Soll Prüfgasmenge: " + str(self.pruefung.get_gesMenge()) + "g")
                     c.drawString(offsetX, offsetParams - 2 * lineHeight, "Soll Prüfzeit: " + str(self.pruefung.get_gesZeit()) + "min")
                               
                     # Prüfergebnisse
-                    offsetErgebnisse = 650
+                    offsetErgebnisse = 700
                     c.drawString(offsetX, offsetErgebnisse,"Prüfergebnisse:")
                     c.drawString(offsetX, offsetErgebnisse - 1 * lineHeight, "Ist Prüfgasmenge: " + str("%.1f" % self.pruefung.get_pruefLaufMenge()) + "g")
                                                  
                     # Graph Gasfluss
-                    offsetGraphZufuhr = 530
+                    offsetGraphZufuhr = 740
                     c.drawString(offsetX, offsetGraphZufuhr,"Zeitverlauf Gaszufuhr:")
-                    offsetGraph_Gasfluss = 200
+                    offsetGraph_Gasfluss = 370 + 30
                     exporterGasfluss = pyexp.ImageExporter(self.mw.graphWidget.graphWidget.plotItem)
                     # imgNameGas = QtCore.QFileInfo(fn).baseName() + ".png"
                     imgNameGas = QtCore.QFileInfo(fn).absoluteFilePath() + QtCore.QFileInfo(fn).baseName() + "gaszufuhr.png"
-                    # exporter.parameters()["invertValue"] = True
-                    exporterGasfluss.export(imgNameGas)
+                    # Erstelle Plot
+                    self.mw.graphWidget.pltDataImage(imgNameGas, ["GES_SOLL", "GES_IST"], "Zeitstempel [s]", "g/min")
+                    # Zeichne Plot in PDF
                     c.drawImage(imgNameGas, offsetX , offsetGraph_Gasfluss, width = 17 * cm, preserveAspectRatio=True)
+                    # Entferne zwischengespeicherte Plot Datei
                     os.remove(imgNameGas)
-                    
+                                     
                     # Graph MGS Boxen
-                    offsetGraphKonzentration = 330
+                    offsetGraphKonzentration = 370
                     c.drawString(offsetX, offsetGraphKonzentration,"Zeitverlauf Gaskonzentration:")
                     offsetGraph_Sensorik = 0
                     exporterSensorik = pyexp.ImageExporter(self.mw.graphWidget_gasSensorik.graphWidget.plotItem)
                     # imgNameSens = QtCore.QFileInfo(fn).baseName() + ".png"
                     imgNameSens = QtCore.QFileInfo(fn).absoluteFilePath() + QtCore.QFileInfo(fn).baseName() + "sensorik.png"
-                    # exporter.parameters()["invertValue"] = True
-                    exporterSensorik.export(imgNameSens)
+                    # Bestimme ausgewählte Sensoren
+                    vizSensors = self.mw.graphWidget_gasSensorik.graphWidget.getVisibileCurves()
+                    selectedMGS = False
+                    selectedGG = False
+                    
+                    for v in vizSensors:
+                        if(str(v).startswith("MGS")):
+                            selectedMGS = True
+                        if(str(v).startswith("GG")):
+                            selectedGG = True
+                            
+                    print(selectedMGS,selectedGG)
+                    
+                    yLabel = ""
+                    if(selectedMGS):
+                        yLabel = "ppm"
+                    if(selectedGG):
+                        yLabel = "%"
+                    
+                    # Erstelle Plot
+                    self.mw.graphWidget_gasSensorik.pltDataImage(imgNameSens, vizSensors, "Zeitstempel [s]", yLabel)
+                    # Zeichne Plot in PDF
                     c.drawImage(imgNameSens, offsetX , offsetGraph_Sensorik, width = 17 * cm, preserveAspectRatio=True)
+                    # Entferne zwischengespeicherte Plot Datei
                     os.remove(imgNameSens)
                     
                     c.showPage()
@@ -619,6 +642,7 @@ class PruefWidget(QGroupBox):
             if(self.sms.zuschaltung[s] == True):
                 enableStart = True
                 
+        # Prüfung verhindern, wenn keine Zuschaltung aktiv:
         self.pbStartPruefung.setEnabled(enableStart) 
         
         

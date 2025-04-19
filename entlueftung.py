@@ -61,9 +61,11 @@ class Entlueftung(QObject):
         self.sms.write_sms_zuschaltungen()
         
         # Regler schließen
-        self.sgr.set_allClosed()
+        if(not self.sgr.set_allClosed()):
+            self.sgr.protokoll.append(cw.ProtokollEintrag("ACHTUNG! Automatisches Schließen der Regler fehlgeschlagen!", typ=cw.ProtokollEintrag.TYPE_FAILURE))            
          
         print("Entlüftungsvorgang abgeschlossen.")
         self.sgr.protokoll.append(cw.ProtokollEintrag("Entlüftungsvorgang abgeschlossen.", typ=cw.ProtokollEintrag.TYPE_SUCCESS))
         self.sig_entlueftung_finished.emit()
+        
         

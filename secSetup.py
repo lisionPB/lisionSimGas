@@ -285,7 +285,7 @@ class SecSetup(QObject):
             name (str): as in self._sgEA._sensors
             _open (bool): True: open, False: close
         """
-        
+        # print(f"{name} Zuschaltung: {_open}")
         self.zuschaltung[name] = _open
 
 

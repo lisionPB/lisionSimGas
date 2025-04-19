@@ -23,6 +23,9 @@ from messdatenUI import MessdatenUI
 
 from PyQt5.QtCore import pyqtSignal
 
+import pandas as pd
+import matplotlib.pylab as plt
+from matplotlib.ticker import StrMethodFormatter
 
 
 class MessdatenGraphWidget(QGroupBox):
@@ -39,6 +42,7 @@ class MessdatenGraphWidget(QGroupBox):
         
         self.parent = parent
         self.openedExtern = False
+
         
         ##########
         # Main Layout
@@ -118,12 +122,19 @@ class MessdatenGraphWidget(QGroupBox):
         self.graphWidget.set_timeRangeOnFocus(timeRange)
 
 
+    def pltDataImage(self, path, channels, xLabel, yLabel):
+        self.graphWidget.pltDataImage(path, channels, xLabel, yLabel)
+        
+
     # TODO: mit exportImg zusammenführen
     def buttonSavePNG_clicked(self):
         
         exporter = pyexp.ImageExporter(self.graphWidget.plotItem)
+        
         fName = "test.png"
+        fName_plt = "test_plt.png"
         result = ""
+        result_plt = ""
         
         try:
             exporter.export(fName)
@@ -424,10 +435,23 @@ class MessdatenGraphPlot(pg.PlotWidget):
     def setCurveVisibility(self, visibilities):
         for c in visibilities:
             if(c in self.curves):
-                self.curves[c].setVisible(bool(visibilities[c]))            
+                self.curves[c].setVisible(bool(visibilities[c]))     
                 
-            
+    def getCurveVisibility(self):
+        visibilities = {}       
+        for c in self.curves:
+            visibilities[c] = self.curves[c].isVisible()
+        return visibilities
+    
+    def getVisibileCurves(self):
+        vizs = []
+        for c in self.curves:
+            if(self.curves[c].isVisible()):
+                vizs.append(c)
+        return vizs        
+                       
     def toggle_plotVisibility(self, channel):
+        # unused?
         self.plotVis[channel] = not self.plotVis[channel]
     
         
@@ -475,7 +499,26 @@ class MessdatenGraphPlot(pg.PlotWidget):
             else:
                 self.curves.get(k).clear()
                 
+                
     
+    def pltDataImage(self, path, channels, xLabel, yLabel):
+
+        df = pd.DataFrame.from_dict(self.__dataMan.get_DataDict())
+        df.set_index(self.__dataMan.TIME_LABEL, inplace=True)
+        df = df[channels]
+        
+        df.plot()
+        
+        # Plot Settings
+        plt.legend(fontsize=8, loc="lower left")
+        plt.xlabel(xLabel)
+        plt.ylabel(yLabel)
+        plt.grid()
+        
+        plt.gca().yaxis.set_major_formatter(StrMethodFormatter('{x:,.2f}')) # 2 decimals
+        plt.gcf().set_size_inches(10, 4.2)
+        plt.savefig(path, bbox_inches='tight', pad_inches=0)
+        
         
 class FmtXAxisItem(pg.AxisItem):    
     """
