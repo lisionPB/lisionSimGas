@@ -24,6 +24,8 @@ class DialogExpertModeEnterPW(QDialog):
         self.setWindowTitle("Expertenmodus - Passwortabfrage")
         self.setWindowFlag(Qt.WindowContextHelpButtonHint, False)
         
+        self.setFixedWidth(300)
+        
         layout = QVBoxLayout()
         self.setLayout(layout)
         
@@ -39,6 +41,11 @@ class DialogExpertModeEnterPW(QDialog):
         okPB.clicked.connect(self.emitPW)
         okPB.clicked.connect(self.close)
   
+  
+  
+    def closeEvent(event):
+        self.sig_pw.emit(False)
+        
   
     def emitPW(self):
         self.sig_pw.emit(self.enterLE.text() == self.PW)

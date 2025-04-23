@@ -527,7 +527,7 @@ class PruefWidget(QGroupBox):
                     c.setFont("Courier", 12)
                     
                     offsetX = 50
-                    lineHeight = 20
+                    lineHeight = 18
                 
                     
                     # Titel
@@ -545,9 +545,9 @@ class PruefWidget(QGroupBox):
                     c.drawString(offsetX, offsetErgebnisse - 1 * lineHeight, "Ist Prüfgasmenge: " + str("%.1f" % self.pruefung.get_pruefLaufMenge()) + "g")
                                                  
                     # Graph Gasfluss
-                    offsetGraphZufuhr = 740
+                    offsetGraphZufuhr = 620
                     c.drawString(offsetX, offsetGraphZufuhr,"Zeitverlauf Gaszufuhr:")
-                    offsetGraph_Gasfluss = 370 + 30
+                    offsetGraph_Gasfluss = 290
                     exporterGasfluss = pyexp.ImageExporter(self.mw.graphWidget.graphWidget.plotItem)
                     # imgNameGas = QtCore.QFileInfo(fn).baseName() + ".png"
                     imgNameGas = QtCore.QFileInfo(fn).absoluteFilePath() + QtCore.QFileInfo(fn).baseName() + "gaszufuhr.png"
@@ -559,7 +559,7 @@ class PruefWidget(QGroupBox):
                     os.remove(imgNameGas)
                                      
                     # Graph MGS Boxen
-                    offsetGraphKonzentration = 370
+                    offsetGraphKonzentration = 330
                     c.drawString(offsetX, offsetGraphKonzentration,"Zeitverlauf Gaskonzentration:")
                     offsetGraph_Sensorik = 0
                     exporterSensorik = pyexp.ImageExporter(self.mw.graphWidget_gasSensorik.graphWidget.plotItem)

@@ -13,6 +13,8 @@ class ReglerConfigUI(QDialog):
         self.setLayout(layout)
   
         self.setWindowTitle("Reglerkonfiguration")
+        self.setWindowIcon(QIcon("symbols/lision.ico"))
+        self.setWindowFlag(Qt.WindowContextHelpButtonHint, False)
 
         # Konfig
         self.reglerConfigGroup = ReglerConfigGroup(sgr)

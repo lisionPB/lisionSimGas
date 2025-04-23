@@ -8,6 +8,7 @@ Created on Wed Jul 20 17:07:37 2022
 from PyQt5 import QtWidgets
 from PyQt5.QtCore import pyqtSignal
 
+import time
 import json
 
 import regler_dvr as rgl
@@ -82,7 +83,7 @@ class SimGasRegler(hws.HWSetup):
         # Setze alle Regler auf 0
         if (not self.set_allClosed() and self._hwConnectStatus == self.HW_CONNECT_STATUS_OK):
             self._hwConnectStatus = self.HW_CONNECT_STATUS_FAILURE
-            self.protokoll.append(cw.ProtokollEintrag("Warnung! Setzen der Regelstellglieder in 0-Position fehlgeschlangen! Verbindung zur Hardware überprüfen!", typ=cw.ProtokollEintrag.TYPE_FAILURE))
+            self.protokoll.append(cw.ProtokollEintrag("Warnung! Setzen der Regelstellglieder in 0-Position fehlgeschlagen! Verbindung zur Hardware überprüfen!", typ=cw.ProtokollEintrag.TYPE_FAILURE))
         else:
             self.protokoll.append(cw.ProtokollEintrag("Alle Regelstellgleider in 0-Position gesetzt. Initialisierung abgeschlossen.", typ=cw.ProtokollEintrag.TYPE_SUCCESS))
 
@@ -160,14 +161,33 @@ class SimGasRegler(hws.HWSetup):
         Returns:
             bool: True: Alle Stellglieder sind verbunden und in 0-Position
         """
+        
+        ok = False
+        notok = 0
+        startTime = time.time()
+        maxWaitTime = 2 # sec
+        
         if (not self._testmode):
-            for p in self._ports:
-                soll = self._ports[p].get_soll()
-                if(soll != 0 or soll == None):       
-                    print(f"{p}: {soll}")
-                    self.protokoll.append(cw.ProtokollEintrag("SAFETY-CHECK: Verbindung und 0-Position: FEHLGESCHLAGEN!", typ=cw.ProtokollEintrag.TYPE_FAILURE))
-                    return False
-                
+            print("Safety-Check: 0-Position:")
+            while((ok == False) and (time.time() - startTime < maxWaitTime)):
+                notok = 0
+                for p in self._ports:
+                    soll = self._ports[p].get_soll()
+                    if(soll != 0 or soll == None):
+                        print(f"{p}: {soll} nicht ok!")
+                        notok += 1
+                    else:
+                        print(f"{p}: {soll} ok.")
+                        
+                if(notok == 0):
+                    ok = True
+                else:
+                    time.sleep(0.2)
+                    
+            if(not ok):
+                self.protokoll.append(cw.ProtokollEintrag("SAFETY-CHECK: Verbindung und 0-Position: FEHLGESCHLAGEN!", typ=cw.ProtokollEintrag.TYPE_FAILURE))
+                return False
+        
         return True
 
             
@@ -314,6 +334,7 @@ class SimGasRegler(hws.HWSetup):
             if(not self.set_Sollwert(p, 0)):
                 ok = False
                 print("Fehler beim Schließen der Regler: Regler " + str(p) + " konnte nicht geschlossen werden!")
+                
         if(ok == True):
             self.__gesSoll = 0
         return ok

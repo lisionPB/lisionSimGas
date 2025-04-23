@@ -100,6 +100,10 @@ class Regler_Dvr(QObject):
                     # Test: Lesen des Messwertes.
                     if(self._read_Messwert() == None):
                         raise Exception()
+                    else:
+                        self.set_Sollwert(0)
+                        self._write_Sollwert()
+                        
                     
                     print (str(self.__port) + ": Verbindung zum Port hergestellt!")      
                     self.connected = True      
@@ -122,8 +126,8 @@ class Regler_Dvr(QObject):
         
         
     def _start_MessSchleife(self):
-        self._threadMessLoop.start()
-        
+        if(not self._worker._is_running()):
+            self._threadMessLoop.start()    
         
             
     def load_Kalibrierung(self, kalibrierung):
@@ -298,6 +302,7 @@ class Regler_Dvr(QObject):
         Returns: True, wenn Schreibvorgang erfolgreich. Sonst False.
         """
         if(self.__instrument != None):
+            # print("regler_dvr: write param (309): " + str(self.__port) + ": " + str(dde_nr) + "," + str(value))
             return self.__instrument.writeParameter(dde_nr, value)
         return False
     
@@ -358,6 +363,8 @@ class Regler_Dvr(QObject):
             if(valPer != None):
                 val = valPer * self.__arbeitsbereich[1]
                 # Neuen bestätigten Sollwert speichern
+                # if(val != 0):
+                #    print("Regler drv (361): read soll val: " + str(self.__port) + ": " + str(val))
                 self.__soll = val
             
             # Überprüfen, ob Sollwert korrekt gesetz wurde
@@ -413,6 +420,8 @@ class Regler_Dvr(QObject):
                     if(not self.busy):
                         self.busy = True
                         startTimer = time.time()
+                        # if(valInt != 0):
+                        #    print("regler_dvr: write valInt (425): " + str(self.__port) + ": " + str(valInt))
                         if(self.__instrument.writeParameter(9, valInt)):        # Dauert im Test max. 64ms
                             ok = True    
                         else:
@@ -431,7 +440,8 @@ class Regler_Dvr(QObject):
                 self.connected = False
                 self.busy = False
                 return False
-            
+            # if(soll != 0):
+            #    print("regler_dvr: write soll (444): " + str(self.__port) + ": " + str(soll))
             self.__soll = soll
             self.busy = False
             self.connected = True
@@ -518,6 +528,7 @@ class ReglerUpdateWorker(QObject):
     
     def __init__(self, regler, interval):
         super(ReglerUpdateWorker, self).__init__()
+        self._running = False
         self._regler = regler
         self._interval = interval
         self._readingData = False
@@ -528,11 +539,16 @@ class ReglerUpdateWorker(QObject):
         self._currentComTakt = -1
         
         
+    def _is_running(self):
+        return self._running
+        
     def _start_worker(self):
+        self._running = True
         self._start_timer()
         
 
     def _stop_worker(self):
+        self._running = False
         self._timer.stop()
         self._sig_finished.emit()
         

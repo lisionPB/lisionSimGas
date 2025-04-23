@@ -1,4 +1,4 @@
 {
-    "DRUCK_MIN": 3.0,
-    "DIFF_MAX": 2.0
+    "DRUCK_MIN": 0.0,
+    "DIFF_MAX": 3.0
 }

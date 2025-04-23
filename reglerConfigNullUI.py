@@ -23,6 +23,8 @@ class ReglerConfigNullUI(QDialog):
         self.setLayout(layout)
   
         self.setWindowTitle("Nullpunktabgleich")
+        self.setWindowIcon(QIcon("symbols/lision.ico"))
+        self.setWindowFlag(Qt.WindowContextHelpButtonHint, False)
 
         # Konfig
         # Gruppe aller Regelstellglieder

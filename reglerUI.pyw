@@ -6,10 +6,10 @@ Main Klasse der SimGas Steuerungssoftware
 """
 import sys
 import ctypes
-import lock
 import pandas
 import math
 import pyqtgraph as pg
+
 
 from PyQt5 import QtCore
 from PyQt5.QtGui import QIcon, QPixmap
@@ -20,6 +20,9 @@ from lisionStyle import LisionStyle
 
 from SimGasEA import SimGasEA
 from gasGardEA import GasGardEA
+
+import lock
+import logger
 
 import hwSetup as hs
 import reglerSetup as rs
@@ -260,7 +263,7 @@ class ReglerUI(QMainWindow):
         # Start der UI
                   
         self.showMaximized()
-        # self.setFixedSize(app.primaryScreen().size().width()-2, app.primaryScreen().size().height())
+        self.setFixedSize(app.primaryScreen().size().width()-2, app.primaryScreen().size().height()-10)
                           
         # Starte UI Update Timer
         self.timer_updateUI = QTimer()
@@ -270,7 +273,7 @@ class ReglerUI(QMainWindow):
         
     
     def moveEvent(self, event):
-        # self.move(0,0)
+        self.move(0,0)
         event.ignore()
         
         
@@ -357,6 +360,8 @@ class ReglerUI(QMainWindow):
         if(pw):
             self.rmw.set_extendedFunctionVisibility(True)
         else:
+            # self.rmw.set_extendedFunctionVisibility(False)
+            print("Falsches Expert Mode Passwort!")
             self.configExpertModeAct.trigger()
 
 
@@ -572,7 +577,6 @@ class ReglerMainWidget(QWidget):
         # Statusanzeige
         self.__mainWindow.ggs.sig_NewGGStatus.connect(self.gsWidget.update_GasSensorStatus)
         
-        gasSensorikLayout.addStretch(1)
             
         #--------------------------------------
         # Prüfung und Messung Group
@@ -592,6 +596,10 @@ class ReglerMainWidget(QWidget):
         
         self.console = cw.ConsoleWidget(self.__mainWindow.sgr.protokoll)
         rightLayout.addWidget(self.console)
+        self.console.setFixedHeight(111)
+        
+        rightLayout.addStretch(1)
+        
              
             
     def set_extendedFunctionVisibility(self, extendedVis):
@@ -1048,6 +1056,9 @@ class SecMagnetSwitch(QGroupBox):
         gasBefEntWidget.setLayout(gasBefEntLayout)
         mainLayout.addWidget(gasBefEntWidget)
         
+        
+        gasBefEntLayout.setContentsMargins(0,0,0,0)
+        
         # Befüllen
         self.buttonBefuellen = QPushButton("Prüfanlage befüllen")
         self.buttonBefuellen.clicked.connect(self.buttonBefuellen_clicked)
@@ -1298,11 +1309,15 @@ class GasData_Widget(QGroupBox):
 
 if __name__ == '__main__':
 
+
     wagoIP = '172.20.20.2'
     gasgardIP = '172.20.30.2'
 
     if(not lock.islocked()):
         lock.lock()
+    
+        log = logger.Logger()
+        log.startExternalLogging("log")
 
         app = QApplication(sys.argv)
     
@@ -1329,6 +1344,8 @@ if __name__ == '__main__':
         else:   
             sgr._close_hwSetup()
             print ("Programm abgestürzt!")
+
+        log.stopExternalLogging()
 
     else:
         print("Es läuft bereits eine Instanz von SimGasUI!\nLöschen Sie andernfalls die Datei simgas.lock!")

@@ -14,6 +14,8 @@ class SensorConfigUI(QDialog):
         self.setLayout(layout)
   
         self.setWindowTitle("Sensorkonfiguration")
+        self.setWindowIcon(QIcon("symbols/lision.ico"))
+        self.setWindowFlag(Qt.WindowContextHelpButtonHint, False)
 
         # Konfig
         self.sensorConfigGroup = SensorConfigGroup(sms)

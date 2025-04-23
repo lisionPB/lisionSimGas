@@ -1,6 +1,7 @@
 
 import ctypes
 
+from PyQt5 import QtCore
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QIcon, QPixmap
 from PyQt5.QtWidgets import QMainWindow
@@ -21,14 +22,14 @@ class MessdatenUI(QMainWindow):
         self.setWindowIcon(QIcon("symbols/lision.ico"))
         
         # Setzt Symbol in der Taskleiste
-        myappid = u'lision.DaEf.simgas.v0_4.messdatenUI' # arbitrary string
+        myappid = u'lision.DaEf.simgas.v0_18.messdatenUI' # arbitrary string
         ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
         
         self.showMaximized()
                 
-        self.setWindowFlags(
-            QtCore.Qt.WindowCloseButtonHint | QtCore.Qt.WindowMaximizeButtonHint
-        )
+        #self.setWindowFlags(
+        #    Qt.WindowCloseButtonHint | Qt.WindowMaximizeButtonHint
+        #)
         
     
    

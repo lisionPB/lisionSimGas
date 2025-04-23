@@ -13,7 +13,11 @@ class ZuschaltGrenzwerteConfigUI(QDialog):
         self.setLayout(layout)
   
         self.setWindowTitle("Konfiguration der Zuschalt-Grenzwerte für Gasflaschen")
+        self.setWindowIcon(QIcon("symbols/lision.ico"))
+        self.setWindowFlag(Qt.WindowContextHelpButtonHint, False)
+  
 
+        self.setFixedWidth(450)
 
         groupConfig = QGroupBox("Grenzwerte der Gasflaschen-Zuschaltung")
         self.layoutConfig = QVBoxLayout()
@@ -27,9 +31,9 @@ class ZuschaltGrenzwerteConfigUI(QDialog):
         widgetMin.setLayout(self.layoutMin)
         self.layoutConfig.addWidget(widgetMin)
         
-        lMin = QLabel("min. Druck: ")
+        lMin = QLabel("minimaler Flaschendruck: ")
         self.layoutMin.addWidget(lMin)
-        lMin.setFixedWidth(100)
+        #lMin.setFixedWidth(100)
         
         self.sMin = QDoubleSpinBox()
         self.layoutMin.addWidget(self.sMin)
@@ -51,9 +55,9 @@ class ZuschaltGrenzwerteConfigUI(QDialog):
         widgetMax.setLayout(self.layoutMax)
         self.layoutConfig.addWidget(widgetMax)
         
-        lMax = QLabel("max. Druckdif.: ")
+        lMax = QLabel("maximale Druckdifferenz: ")
         self.layoutMax.addWidget(lMax)
-        lMax.setFixedWidth(100)
+        #lMax.setFixedWidth(100)
         
         self.sMax = QDoubleSpinBox()
         self.layoutMax.addWidget(self.sMax)

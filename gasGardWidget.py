@@ -108,7 +108,7 @@ class GasData_Widget(QGroupBox):
         
         layout = QHBoxLayout()
         self.setLayout(layout)
-        layout.setContentsMargins(5,0,5,5)
+        layout.setContentsMargins(5,0,5,0)
         
         # Messwert
         self.lCurrentValue = QLabel("Messwert:")
@@ -146,7 +146,7 @@ class GasData_Widget(QGroupBox):
         alert1Group = QGroupBox("A1")
         layout.addWidget(alert1Group)
         alert1Layout = QVBoxLayout()
-        alert1Layout.setContentsMargins(8,0,0,5)
+        alert1Layout.setContentsMargins(8,0,0,3)
         alert1Group.setLayout(alert1Layout)
         self.lAlarm1 = QLabel("")
         self.lAlarm1.setPixmap(self.bildAlarm1_Off)
@@ -155,7 +155,7 @@ class GasData_Widget(QGroupBox):
         alert2Group = QGroupBox("A2")
         layout.addWidget(alert2Group)
         alert2Layout = QVBoxLayout()
-        alert2Layout.setContentsMargins(8,0,0,5)
+        alert2Layout.setContentsMargins(8,0,0,3)
         alert2Group.setLayout(alert2Layout)
         self.lAlarm2 = QLabel("")
         self.lAlarm2.setPixmap(self.bildAlarm2_Off)

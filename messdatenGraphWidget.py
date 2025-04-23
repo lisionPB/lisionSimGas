@@ -516,7 +516,7 @@ class MessdatenGraphPlot(pg.PlotWidget):
         plt.grid()
         
         plt.gca().yaxis.set_major_formatter(StrMethodFormatter('{x:,.2f}')) # 2 decimals
-        plt.gcf().set_size_inches(10, 4.2)
+        plt.gcf().set_size_inches(10, 4.5)
         plt.savefig(path, bbox_inches='tight', pad_inches=0)
         
         
