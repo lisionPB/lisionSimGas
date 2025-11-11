@@ -1,0 +1,43 @@
+Modbus Error: [Connection] Failed to connect[ModbusTcpClient 172.20.20.2:502]
+Fehler beim Ansteuern des Magnetventils 0
+Modbus Error: [Connection] Failed to connect[ModbusTcpClient 172.20.20.2:502]
+Fehler beim Ansteuern des Magnetventils 1
+Modbus Error: [Connection] Failed to connect[ModbusTcpClient 172.20.20.2:502]
+Fehler beim Ansteuern des Magnetventils 2
+Verbindung zu SimGasEA hergestellt
+
+Init Data Manager
+Verbinde GasGard Setup ...
+Verbinde SEC-Setup ...
+Verbinde HW ...
+Verbindungsversuch zu GasGard fehlgeschlagen!
+GasGard Sensoren antworten nicht und werden deaktiviert.
+Modbus Error: [Connection] Failed to connect[ModbusTcpClient 172.20.20.2:502]
+Fehler beim Ansteuern des Magnetventils 0
+Verbindung zum Port COM1 konnte nicht hergestellt werden!
+Modbus Error: [Connection] Failed to connect[ModbusTcpClient 172.20.20.2:502]
+Fehler beim Ansteuern des Magnetventils 1
+Closing HW Setup ...
+HW-Setup closed
+Modbus Error: [Connection] Failed to connect[ModbusTcpClient 172.20.20.2:502]
+Fehler beim Ansteuern des Magnetventils 2
+Verbindung zu SimGasEA hergestellt
+
+Verbindung zum Port COM2 konnte nicht hergestellt werden!
+Verbindung zum Port COM3 konnte nicht hergestellt werden!
+Modbus Error: [Connection] Failed to connect[ModbusTcpClient 172.20.20.2:502]
+Fehler beim Ansteuern des Magnetventils 0
+Modbus Error: [Connection] Failed to connect[ModbusTcpClient 172.20.20.2:502]
+Fehler beim Ansteuern des Magnetventils 1
+Modbus Error: [Connection] Failed to connect[ModbusTcpClient 172.20.20.2:502]
+Fehler beim Ansteuern des Magnetventils 2
+SEC-Setup closed
+Verbindung zu GasGard getrennt.
+Regler-Konfiguration gespeichert.
+SEC Sensor-Konfiguration gespeichert.
+Konfiguration der Zuschalt-Grenzwerte gespeichert.
+Default-Einstellungen gespeichert.
+Regler UI closed
+Warte auf Verbindung zur Hardware...
+Verbinde HW ...
+Programm regulär geschlossen.

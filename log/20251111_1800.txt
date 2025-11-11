@@ -1,0 +1,779 @@
+Verbindung zu SimGasEA hergestellt
+
+Init Data Manager
+Verbinde SEC-Setup ...
+Verbinde GasGard Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Verbinde HW ...
+Verbindung zu GasGard hergestellt!
+COM1: Verbindung zum Port hergestellt!
+COM2: Verbindung zum Port hergestellt!
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+COM3: Verbindung zum Port hergestellt!
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+GasGard Sensoren aktiviert.
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+Verbinde SEC-Setup ...
+Verbindung zu SimGasEA hergestellt
+
+Closing HW Setup ...
+COM1 closed
+COM2 closed
+COM3 closed
+Fehler beim Auslesen des Vordrucks
+SEC: Fehler beim Auslesen des Gasvordrucks !
+HW-Setup closed
+SEC-Setup closed
+Verbindung zu GasGard getrennt.
+Regler-Konfiguration gespeichert.
+SEC Sensor-Konfiguration gespeichert.
+Konfiguration der Zuschalt-Grenzwerte gespeichert.
+Default-Einstellungen gespeichert.
+Regler UI closed
+Verbinde SEC-Setup ...
+Programm regulär geschlossen.

@@ -31,7 +31,8 @@ class SecSetup(QObject):
     
     SEC_CONNECT_STATUS_NONE = -1     # Verbindung zu keinem COM-Port aufgebaut
     SEC_CONNECT_STATUS_OK = 1        # Verbindungen zu allen Ports hergestellt.
-       
+    SEC_CONNECT_MAX_TRY_CNT = 10     # Maximale Anzahl Verbindungsversuche
+
     CONFIG_FILE_SENSOREN = "config_sensors.json"
     CONFIG_FILE_SENSOREN_MGS = "config_mgs.json"
     CONFIG_FILE_ZUSCHALTGRENZEN = "config_zuschaltgrenzen.json"
@@ -52,6 +53,7 @@ class SecSetup(QObject):
         self._sgEA = sgEA   
         
         self._secConnectStatus = self.SEC_CONNECT_STATUS_NONE
+        self._connectionTries = 0
         
         
         # Übergeben der Sensormessbereiche
@@ -172,9 +174,11 @@ class SecSetup(QObject):
 
                     
     def _connect_sec(self):
-        if(not self._update_SECSetupInProcess):
-            self._sig_SEC_SetupConnect.emit()
-            
+        if(not self._connectionTries > self.SEC_CONNECT_MAX_TRY_CNT):
+            if(not self._update_SECSetupInProcess):
+                self._sig_SEC_SetupConnect.emit()
+        else:
+            print("Verwende reduzierte SEC-Hardware.")            
                 
         
     def _read_Messwerte(self):
@@ -203,15 +207,16 @@ class SecSetup(QObject):
                 ###
                 for f in self.dataGas:
                     err2, fp = self._sgEA.readAnalogInputVordruck(f)
-                    self.dataGas[f]["FP"] = fp
-                    data[f] = fp
-                    
-                    # Berechnung GasTemp:
-                    if(type(fp) != None and fp != 0):
-                        self.dataGas[f]["TP"] = 987.0 / ( 6.2886 - math.log10(fp*100) ) - 273.15
-                
+
                     if(err2):
                         raise Exception("Fehler beim Auslesen des Vordrucks")
+                    else:
+                        self.dataGas[f]["FP"] = fp
+                        data[f] = fp
+                        
+                        # Berechnung GasTemp:
+                        if(type(fp) != None and fp != 0):
+                            self.dataGas[f]["TP"] = 987.0 / ( 6.2886 - math.log10(fp*100) ) - 273.15
                     
                 
             except Exception as e:
@@ -432,7 +437,7 @@ class SEC_ConnectThread(QThread):
            
         
     def run(self):
-                
+
         lastStatus = self.hws._secConnectStatus
                 
         if(not self.hws._update_SECSetupInProcess):

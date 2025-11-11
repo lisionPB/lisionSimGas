@@ -34,6 +34,7 @@ import pruefWidget as pw
 import consoleWidget as cw
 import helpDialog as hd
 import expertModeEnterPW as emepw
+import exportConfigUI as ecui
 import reglerConfigUI as rc
 import sensorConfigUI as sc
 import reglerConfigNullUI as rcn
@@ -48,7 +49,7 @@ import befuellen as befu
 class ReglerUI(QMainWindow):
     
     TITEL = "SimGas Regler GUI - CORI"
-    VERSION = "0.18"
+    VERSION = "0.19"
     YEAR = "2025"
     
     _sig_close = pyqtSignal()
@@ -98,9 +99,7 @@ class ReglerUI(QMainWindow):
         self.setWindowTitle(self.TITEL)
         self.setWindowIcon(QIcon("symbols/lision.ico"))
         
-        self.setWindowFlags(
-            QtCore.Qt.WindowCloseButtonHint
-        )
+        # self.setWindowFlags(QtCore.Qt.WindowCloseButtonHint)
     
 
         # Setzt Symbol in der Taskleiste
@@ -143,6 +142,11 @@ class ReglerUI(QMainWindow):
         self.configZuGrenz.setStatusTip('Zuschaltungsgrenzwerte')
         self.configZuGrenz.triggered.connect(self.open_configZuschaltGrenzwerte)
         configMenu.addAction(self.configZuGrenz)
+
+        self.configExport = QAction('&Exportkonfiguration', self)
+        self.configExport.setStatusTip('Exportkonfiguration')
+        self.configExport.triggered.connect(self.open_configExport)
+        # configMenu.addAction(self.configExport)
         
         self.configExpertModeAct = QAction('&Expertenmodus', configMenu, checkable=True)    
         configMenu.addAction(self.configExpertModeAct)
@@ -263,7 +267,7 @@ class ReglerUI(QMainWindow):
         # Start der UI
                   
         self.showMaximized()
-        self.setFixedSize(app.primaryScreen().size().width()-2, app.primaryScreen().size().height()-10)
+        # self.setFixedSize(app.primaryScreen().size().width()-2, app.primaryScreen().size().height()-10)
                           
         # Starte UI Update Timer
         self.timer_updateUI = QTimer()
@@ -443,6 +447,11 @@ class ReglerUI(QMainWindow):
         configZuschaltungUI = zgc.ZuschaltGrenzwerteConfigUI(self.sms)
         configZuschaltungUI.exec()
         
+
+    def open_configExport(self):
+        configExportUI = ecui.ExportConfigUI()
+        configExportUI.exec()
+
         
     def updateUI(self):
         # print ("update UI")

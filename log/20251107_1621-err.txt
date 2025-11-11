@@ -1,0 +1,163 @@
+Connection to (172.20.20.2, 502) failed: timed out
+Connection to (172.20.20.2, 502) failed: timed out
+Connection to (172.20.20.2, 502) failed: timed out
+Connection to (172.20.20.2, 502) failed: timed out
+Connection to (172.20.30.2, 502) failed: timed out
+Connection to (172.20.20.2, 502) failed: timed out
+Traceback (most recent call last):
+  File "C:\LS3\VDE Transfer Cloud\v0_19\hwSetup.py", line 342, in _executeComTakt
+    self._hwSetup._check_GasFlussAktiv()
+  File "C:\LS3\VDE Transfer Cloud\v0_19\hwSetup.py", line 199, in _check_GasFlussAktiv
+    self.sgEA.GASFLOWACTIVE(gasFlow)
+  File "C:\LS3\VDE Transfer Cloud\v0_19\SimGasEA.py", line 103, in GASFLOWACTIVE
+    ans = self.__client.write_coil(3, __state).value
+  File "C:\Users\BASOARO\AppData\Local\Programs\Python\Python38\lib\site-packages\pymodbus\client\mixin.py", line 135, in write_coil
+    return self.execute(
+  File "C:\Users\BASOARO\AppData\Local\Programs\Python\Python38\lib\site-packages\pymodbus\client\base.py", line 395, in execute
+    raise ConnectionException(f"Failed to connect[{self!s}]")
+pymodbus.exceptions.ConnectionException: Modbus Error: [Connection] Failed to connect[ModbusTcpClient 172.20.20.2:502]
+Connection to (172.20.20.2, 502) failed: timed out
+Connection to (172.20.30.2, 502) failed: timed out
+Connection to (172.20.20.2, 502) failed: timed out
+Traceback (most recent call last):
+  File "C:\LS3\VDE Transfer Cloud\v0_19\hwSetup.py", line 342, in _executeComTakt
+    self._hwSetup._check_GasFlussAktiv()
+  File "C:\LS3\VDE Transfer Cloud\v0_19\hwSetup.py", line 199, in _check_GasFlussAktiv
+    self.sgEA.GASFLOWACTIVE(gasFlow)
+  File "C:\LS3\VDE Transfer Cloud\v0_19\SimGasEA.py", line 103, in GASFLOWACTIVE
+    ans = self.__client.write_coil(3, __state).value
+  File "C:\Users\BASOARO\AppData\Local\Programs\Python\Python38\lib\site-packages\pymodbus\client\mixin.py", line 135, in write_coil
+    return self.execute(
+  File "C:\Users\BASOARO\AppData\Local\Programs\Python\Python38\lib\site-packages\pymodbus\client\base.py", line 395, in execute
+    raise ConnectionException(f"Failed to connect[{self!s}]")
+pymodbus.exceptions.ConnectionException: Modbus Error: [Connection] Failed to connect[ModbusTcpClient 172.20.20.2:502]
+Connection to (172.20.20.2, 502) failed: timed out
+Connection to (172.20.20.2, 502) failed: timed out
+Traceback (most recent call last):
+  File "C:\LS3\VDE Transfer Cloud\v0_19\hwSetup.py", line 342, in _executeComTakt
+    self._hwSetup._check_GasFlussAktiv()
+  File "C:\LS3\VDE Transfer Cloud\v0_19\hwSetup.py", line 199, in _check_GasFlussAktiv
+    self.sgEA.GASFLOWACTIVE(gasFlow)
+  File "C:\LS3\VDE Transfer Cloud\v0_19\SimGasEA.py", line 103, in GASFLOWACTIVE
+    ans = self.__client.write_coil(3, __state).value
+  File "C:\Users\BASOARO\AppData\Local\Programs\Python\Python38\lib\site-packages\pymodbus\client\mixin.py", line 135, in write_coil
+    return self.execute(
+  File "C:\Users\BASOARO\AppData\Local\Programs\Python\Python38\lib\site-packages\pymodbus\client\base.py", line 395, in execute
+    raise ConnectionException(f"Failed to connect[{self!s}]")
+pymodbus.exceptions.ConnectionException: Modbus Error: [Connection] Failed to connect[ModbusTcpClient 172.20.20.2:502]
+Connection to (172.20.20.2, 502) failed: timed out
+Connection to (172.20.20.2, 502) failed: timed out
+Traceback (most recent call last):
+  File "C:\LS3\VDE Transfer Cloud\v0_19\hwSetup.py", line 342, in _executeComTakt
+    self._hwSetup._check_GasFlussAktiv()
+  File "C:\LS3\VDE Transfer Cloud\v0_19\hwSetup.py", line 199, in _check_GasFlussAktiv
+    self.sgEA.GASFLOWACTIVE(gasFlow)
+  File "C:\LS3\VDE Transfer Cloud\v0_19\SimGasEA.py", line 103, in GASFLOWACTIVE
+    ans = self.__client.write_coil(3, __state).value
+  File "C:\Users\BASOARO\AppData\Local\Programs\Python\Python38\lib\site-packages\pymodbus\client\mixin.py", line 135, in write_coil
+    return self.execute(
+  File "C:\Users\BASOARO\AppData\Local\Programs\Python\Python38\lib\site-packages\pymodbus\client\base.py", line 395, in execute
+    raise ConnectionException(f"Failed to connect[{self!s}]")
+pymodbus.exceptions.ConnectionException: Modbus Error: [Connection] Failed to connect[ModbusTcpClient 172.20.20.2:502]
+Connection to (172.20.20.2, 502) failed: timed out
+Connection to (172.20.20.2, 502) failed: timed out
+Traceback (most recent call last):
+  File "C:\LS3\VDE Transfer Cloud\v0_19\hwSetup.py", line 342, in _executeComTakt
+    self._hwSetup._check_GasFlussAktiv()
+  File "C:\LS3\VDE Transfer Cloud\v0_19\hwSetup.py", line 199, in _check_GasFlussAktiv
+    self.sgEA.GASFLOWACTIVE(gasFlow)
+  File "C:\LS3\VDE Transfer Cloud\v0_19\SimGasEA.py", line 103, in GASFLOWACTIVE
+    ans = self.__client.write_coil(3, __state).value
+  File "C:\Users\BASOARO\AppData\Local\Programs\Python\Python38\lib\site-packages\pymodbus\client\mixin.py", line 135, in write_coil
+    return self.execute(
+  File "C:\Users\BASOARO\AppData\Local\Programs\Python\Python38\lib\site-packages\pymodbus\client\base.py", line 395, in execute
+    raise ConnectionException(f"Failed to connect[{self!s}]")
+pymodbus.exceptions.ConnectionException: Modbus Error: [Connection] Failed to connect[ModbusTcpClient 172.20.20.2:502]
+Connection to (172.20.20.2, 502) failed: timed out
+Connection to (172.20.20.2, 502) failed: timed out
+Traceback (most recent call last):
+  File "C:\LS3\VDE Transfer Cloud\v0_19\hwSetup.py", line 342, in _executeComTakt
+    self._hwSetup._check_GasFlussAktiv()
+  File "C:\LS3\VDE Transfer Cloud\v0_19\hwSetup.py", line 199, in _check_GasFlussAktiv
+    self.sgEA.GASFLOWACTIVE(gasFlow)
+  File "C:\LS3\VDE Transfer Cloud\v0_19\SimGasEA.py", line 103, in GASFLOWACTIVE
+    ans = self.__client.write_coil(3, __state).value
+  File "C:\Users\BASOARO\AppData\Local\Programs\Python\Python38\lib\site-packages\pymodbus\client\mixin.py", line 135, in write_coil
+    return self.execute(
+  File "C:\Users\BASOARO\AppData\Local\Programs\Python\Python38\lib\site-packages\pymodbus\client\base.py", line 395, in execute
+    raise ConnectionException(f"Failed to connect[{self!s}]")
+pymodbus.exceptions.ConnectionException: Modbus Error: [Connection] Failed to connect[ModbusTcpClient 172.20.20.2:502]
+Connection to (172.20.20.2, 502) failed: timed out
+Connection to (172.20.20.2, 502) failed: timed out
+Traceback (most recent call last):
+  File "C:\LS3\VDE Transfer Cloud\v0_19\hwSetup.py", line 342, in _executeComTakt
+    self._hwSetup._check_GasFlussAktiv()
+  File "C:\LS3\VDE Transfer Cloud\v0_19\hwSetup.py", line 199, in _check_GasFlussAktiv
+    self.sgEA.GASFLOWACTIVE(gasFlow)
+  File "C:\LS3\VDE Transfer Cloud\v0_19\SimGasEA.py", line 103, in GASFLOWACTIVE
+    ans = self.__client.write_coil(3, __state).value
+  File "C:\Users\BASOARO\AppData\Local\Programs\Python\Python38\lib\site-packages\pymodbus\client\mixin.py", line 135, in write_coil
+    return self.execute(
+  File "C:\Users\BASOARO\AppData\Local\Programs\Python\Python38\lib\site-packages\pymodbus\client\base.py", line 395, in execute
+    raise ConnectionException(f"Failed to connect[{self!s}]")
+pymodbus.exceptions.ConnectionException: Modbus Error: [Connection] Failed to connect[ModbusTcpClient 172.20.20.2:502]
+Connection to (172.20.20.2, 502) failed: timed out
+Connection to (172.20.20.2, 502) failed: timed out
+Traceback (most recent call last):
+  File "C:\LS3\VDE Transfer Cloud\v0_19\hwSetup.py", line 342, in _executeComTakt
+    self._hwSetup._check_GasFlussAktiv()
+  File "C:\LS3\VDE Transfer Cloud\v0_19\hwSetup.py", line 199, in _check_GasFlussAktiv
+    self.sgEA.GASFLOWACTIVE(gasFlow)
+  File "C:\LS3\VDE Transfer Cloud\v0_19\SimGasEA.py", line 103, in GASFLOWACTIVE
+    ans = self.__client.write_coil(3, __state).value
+  File "C:\Users\BASOARO\AppData\Local\Programs\Python\Python38\lib\site-packages\pymodbus\client\mixin.py", line 135, in write_coil
+    return self.execute(
+  File "C:\Users\BASOARO\AppData\Local\Programs\Python\Python38\lib\site-packages\pymodbus\client\base.py", line 395, in execute
+    raise ConnectionException(f"Failed to connect[{self!s}]")
+pymodbus.exceptions.ConnectionException: Modbus Error: [Connection] Failed to connect[ModbusTcpClient 172.20.20.2:502]
+Connection to (172.20.20.2, 502) failed: timed out
+Connection to (172.20.20.2, 502) failed: timed out
+Traceback (most recent call last):
+  File "C:\LS3\VDE Transfer Cloud\v0_19\hwSetup.py", line 342, in _executeComTakt
+    self._hwSetup._check_GasFlussAktiv()
+  File "C:\LS3\VDE Transfer Cloud\v0_19\hwSetup.py", line 199, in _check_GasFlussAktiv
+    self.sgEA.GASFLOWACTIVE(gasFlow)
+  File "C:\LS3\VDE Transfer Cloud\v0_19\SimGasEA.py", line 103, in GASFLOWACTIVE
+    ans = self.__client.write_coil(3, __state).value
+  File "C:\Users\BASOARO\AppData\Local\Programs\Python\Python38\lib\site-packages\pymodbus\client\mixin.py", line 135, in write_coil
+    return self.execute(
+  File "C:\Users\BASOARO\AppData\Local\Programs\Python\Python38\lib\site-packages\pymodbus\client\base.py", line 395, in execute
+    raise ConnectionException(f"Failed to connect[{self!s}]")
+pymodbus.exceptions.ConnectionException: Modbus Error: [Connection] Failed to connect[ModbusTcpClient 172.20.20.2:502]
+Connection to (172.20.20.2, 502) failed: timed out
+Connection to (172.20.20.2, 502) failed: timed out
+Traceback (most recent call last):
+  File "C:\LS3\VDE Transfer Cloud\v0_19\hwSetup.py", line 342, in _executeComTakt
+    self._hwSetup._check_GasFlussAktiv()
+  File "C:\LS3\VDE Transfer Cloud\v0_19\hwSetup.py", line 199, in _check_GasFlussAktiv
+    self.sgEA.GASFLOWACTIVE(gasFlow)
+  File "C:\LS3\VDE Transfer Cloud\v0_19\SimGasEA.py", line 103, in GASFLOWACTIVE
+    ans = self.__client.write_coil(3, __state).value
+  File "C:\Users\BASOARO\AppData\Local\Programs\Python\Python38\lib\site-packages\pymodbus\client\mixin.py", line 135, in write_coil
+    return self.execute(
+  File "C:\Users\BASOARO\AppData\Local\Programs\Python\Python38\lib\site-packages\pymodbus\client\base.py", line 395, in execute
+    raise ConnectionException(f"Failed to connect[{self!s}]")
+pymodbus.exceptions.ConnectionException: Modbus Error: [Connection] Failed to connect[ModbusTcpClient 172.20.20.2:502]
+Connection to (172.20.20.2, 502) failed: timed out
+Connection to (172.20.20.2, 502) failed: timed out
+Traceback (most recent call last):
+  File "C:\LS3\VDE Transfer Cloud\v0_19\hwSetup.py", line 342, in _executeComTakt
+    self._hwSetup._check_GasFlussAktiv()
+  File "C:\LS3\VDE Transfer Cloud\v0_19\hwSetup.py", line 199, in _check_GasFlussAktiv
+    self.sgEA.GASFLOWACTIVE(gasFlow)
+  File "C:\LS3\VDE Transfer Cloud\v0_19\SimGasEA.py", line 103, in GASFLOWACTIVE
+    ans = self.__client.write_coil(3, __state).value
+  File "C:\Users\BASOARO\AppData\Local\Programs\Python\Python38\lib\site-packages\pymodbus\client\mixin.py", line 135, in write_coil
+    return self.execute(
+  File "C:\Users\BASOARO\AppData\Local\Programs\Python\Python38\lib\site-packages\pymodbus\client\base.py", line 395, in execute
+    raise ConnectionException(f"Failed to connect[{self!s}]")
+pymodbus.exceptions.ConnectionException: Modbus Error: [Connection] Failed to connect[ModbusTcpClient 172.20.20.2:502]
+Connection to (172.20.20.2, 502) failed: timed out
+Connection to (172.20.20.2, 502) failed: timed out
+Connection to (172.20.20.2, 502) failed: timed out
+Connection to (172.20.20.2, 502) failed: timed out

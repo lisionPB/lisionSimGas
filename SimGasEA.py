@@ -49,8 +49,6 @@ class SimGasEA(object):
             for i in range(3):
                 self.writeDigitalOutput(i, False)
             
-            print("Verbindung zu SimGasEA hergestellt\n")
-            
             return True
 
         except:
@@ -100,10 +98,13 @@ class SimGasEA(object):
             if __state == None:
                 return self.__dout[1]
             else:
-                ans = self.__client.write_coil(3, __state).value
-                if isinstance(ans, bool):
-                    self.__dout[3] = ans
-                    return ans
+                try:
+                    ans = self.__client.write_coil(3, __state).value
+                    if isinstance(ans, bool):
+                        self.__dout[3] = ans
+                        return ans
+                except:
+                    return None
         return None
     
     
@@ -116,10 +117,13 @@ class SimGasEA(object):
             if __state == None:
                 return self.__dout[1]
             else:
-                ans = self.__client.write_coil(4, __state).value
-                if isinstance(ans, bool):
-                    self.__dout[4] = ans
-                    return ans
+                try:
+                    ans = self.__client.write_coil(4, __state).value
+                    if isinstance(ans, bool):
+                        self.__dout[4] = ans
+                        return ans
+                except:
+                    return None
         return None
     
 
@@ -141,6 +145,7 @@ class SimGasEA(object):
             val = ((val >> 4) * fac + float(self._sensors[idstr]["min"]) ) * sig
             # Rückgabe eines Messwertfehlers. err=False => Wert ist gültig!
             return  err, val
+        
         return None        
     
     

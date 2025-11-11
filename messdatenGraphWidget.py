@@ -510,7 +510,8 @@ class MessdatenGraphPlot(pg.PlotWidget):
         df.plot()
         
         # Plot Settings
-        plt.legend(fontsize=8, loc="lower left")
+        # plt.legend(fontsize=8, loc="lower left")
+        plt.legend(loc="upper left", bbox_to_anchor=(1,1))
         plt.xlabel(xLabel)
         plt.ylabel(yLabel)
         plt.grid()
