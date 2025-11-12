@@ -176,7 +176,8 @@ class ReglerUI(QMainWindow):
             self.sms._sig_disableMGS.connect(self.print_DisableMessage_MGSBox)
             self.sms._sig_disableMGS.connect(self.hide_MGSBoxSensors)
             self.sms._sig_enableMGS.connect(self.print_EnableMessage_MGSBox)
-            self.sms._sig_enableMGS.connect(self.show_MGSBoxSensors)            
+            self.sms._sig_enableMGS.connect(self.show_MGSBoxSensors)          
+            self.sms._sig_disableGasSensor.connect(self.print_DisableMessage_GasSensors)  
             
             # Starten der SEC-Messschleife, sobald Verbindung hergestellt
             self.sms.sig_SEC_ConnectFinished.connect(self.sms._start_MessSchleife) 
@@ -383,6 +384,8 @@ class ReglerUI(QMainWindow):
             self.sgr.protokoll.append(cw.ProtokollEintrag("Fehler beim Verbinden der SEC-Hardware!", typ=cw.ProtokollEintrag.TYPE_FAILURE))
     
     
+    # GasGard
+
     def print_ConnectTryMessage_GasGard(self, check):
         if(check == 1): 
             self.sgr.protokoll.append(cw.ProtokollEintrag("Verbindung zur GasGard-Hardware hergestellt!", typ=cw.ProtokollEintrag.TYPE_SUCCESS))
@@ -405,7 +408,15 @@ class ReglerUI(QMainWindow):
     def show_GasGardSensors(self):
         self.rmw.gsWidget.setEnabled(True)
         self.rmw.gsWidget.setTitle("GasGard XL - online")
-        
+
+    # Gas Sensor
+
+    def print_DisableMessage_GasSensor(self, sensor):
+        print("disable sensor " + sensor)
+        self.sgr.protokoll.append(cw.ProtokollEintrag(f"Sensor {sensor} nicht verbunden.", typ=cw.ProtokollEintrag.TYPE_WARNING))
+
+
+    # MGS    
     
     def print_DisableMessage_MGSBox(self, box):
         self.sgr.protokoll.append(cw.ProtokollEintrag(f"MGS Box {box} nicht verbunden.", typ=cw.ProtokollEintrag.TYPE_WARNING))

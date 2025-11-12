@@ -1,0 +1,90 @@
+Init Data Manager
+Verbinde GasGard Setup ...
+Verbinde SEC-Setup ...
+Verbinde HW ...
+Verbindung zu GasGard hergestellt!
+COM1: Verbindung zum Port hergestellt!
+COM2: Verbindung zum Port hergestellt!
+Fehler beim Auslesen des Vordrucks von Gasflasche 2
+Fehler beim Auslesen des Vordrucks von Gasflasche 3
+Fehler beim Auslesen von MGS-Box 1 - Out 1
+Fehler beim Auslesen von MGS-Box 1 - Out 2
+Fehler beim Auslesen von MGS-Box 2 - Out 1
+Fehler beim Auslesen von MGS-Box 2 - Out 2
+COM3: Verbindung zum Port hergestellt!
+Fehler beim Auslesen des Vordrucks von Gasflasche 2
+Fehler beim Auslesen des Vordrucks von Gasflasche 3
+Fehler beim Auslesen von MGS-Box 1 - Out 1
+Fehler beim Auslesen von MGS-Box 1 - Out 2
+Fehler beim Auslesen von MGS-Box 2 - Out 1
+Fehler beim Auslesen von MGS-Box 2 - Out 2
+Fehler beim Auslesen des Vordrucks von Gasflasche 2
+Fehler beim Auslesen des Vordrucks von Gasflasche 3
+Fehler beim Auslesen von MGS-Box 1 - Out 1
+Fehler beim Auslesen von MGS-Box 1 - Out 2
+Fehler beim Auslesen von MGS-Box 2 - Out 1
+Fehler beim Auslesen von MGS-Box 2 - Out 2
+GasGard Sensoren aktiviert.
+Fehler beim Auslesen des Vordrucks von Gasflasche 2
+Fehler beim Auslesen des Vordrucks von Gasflasche 3
+Fehler beim Auslesen von MGS-Box 1 - Out 1
+Fehler beim Auslesen von MGS-Box 1 - Out 2
+Fehler beim Auslesen von MGS-Box 2 - Out 1
+Fehler beim Auslesen von MGS-Box 2 - Out 2
+Fehler beim Auslesen des Vordrucks von Gasflasche 2
+Fehler beim Auslesen des Vordrucks von Gasflasche 3
+Fehler beim Auslesen von MGS-Box 1 - Out 1
+Fehler beim Auslesen von MGS-Box 1 - Out 2
+Fehler beim Auslesen von MGS-Box 2 - Out 1
+Fehler beim Auslesen von MGS-Box 2 - Out 2
+Fehler beim Auslesen des Vordrucks von Gasflasche 2
+Fehler beim Auslesen des Vordrucks von Gasflasche 3
+Fehler beim Auslesen von MGS-Box 1 - Out 1
+Fehler beim Auslesen von MGS-Box 1 - Out 2
+Fehler beim Auslesen von MGS-Box 2 - Out 1
+Fehler beim Auslesen von MGS-Box 2 - Out 2
+Fehler beim Auslesen des Vordrucks von Gasflasche 2
+Fehler beim Auslesen des Vordrucks von Gasflasche 3
+Fehler beim Auslesen von MGS-Box 1 - Out 1
+Fehler beim Auslesen von MGS-Box 1 - Out 2
+Fehler beim Auslesen von MGS-Box 2 - Out 1
+Fehler beim Auslesen von MGS-Box 2 - Out 2
+Fehler beim Auslesen des Vordrucks von Gasflasche 2
+Fehler beim Auslesen des Vordrucks von Gasflasche 3
+Fehler beim Auslesen von MGS-Box 1 - Out 1
+Fehler beim Auslesen von MGS-Box 1 - Out 2
+Fehler beim Auslesen von MGS-Box 2 - Out 1
+Fehler beim Auslesen von MGS-Box 2 - Out 2
+Fehler beim Auslesen des Vordrucks von Gasflasche 2
+Fehler beim Auslesen des Vordrucks von Gasflasche 3
+Fehler beim Auslesen von MGS-Box 1 - Out 1
+Fehler beim Auslesen von MGS-Box 1 - Out 2
+Fehler beim Auslesen von MGS-Box 2 - Out 1
+Fehler beim Auslesen von MGS-Box 2 - Out 2
+Fehler beim Auslesen des Vordrucks von Gasflasche 2
+Fehler beim Auslesen des Vordrucks von Gasflasche 3
+Fehler beim Auslesen von MGS-Box 1 - Out 1
+Fehler beim Auslesen von MGS-Box 1 - Out 2
+Fehler beim Auslesen von MGS-Box 2 - Out 1
+Fehler beim Auslesen von MGS-Box 2 - Out 2
+Sensor Gasflasche 2 antwortet nicht und wird deaktiviert.
+Sensor Gasflasche 3 antwortet nicht und wird deaktiviert.
+Fehler beim Auslesen von MGS-Box 1 - Out 1
+MGS Box 1 antwortet nicht und wird deaktiviert.
+Fehler beim Auslesen von MGS-Box 2 - Out 1
+MGS Box 2 antwortet nicht und wird deaktiviert.
+Closing HW Setup ...
+COM1 closed
+COM2 closed
+COM3 closed
+HW-Setup closed
+SEC-Setup closed
+Verbindung zu GasGard getrennt.
+'NoneType' object has no attribute 'recv'
+GG: Fehler beim Auslesen der Messwertes!
+Regler-Konfiguration gespeichert.
+SEC Sensor-Konfiguration gespeichert.
+Konfiguration der Zuschalt-Grenzwerte gespeichert.
+Default-Einstellungen gespeichert.
+Regler UI closed
+Programm regulär geschlossen.

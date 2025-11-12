@@ -25,12 +25,15 @@ class SecSetup(QObject):
     """
     
     
+    TIMEOUT_DISABLE_GAS = 3     # Timeout für Verbindungsherstellung vor Deaktivierung [s]
     TIMEOUT_DISABLE_MSG = 3     # Timeout für Verbindungsherstellung vor Deaktivierung [s]
     
     DEFAULT_SCAN_INTERVAL = 250
     
     SEC_CONNECT_STATUS_NONE = -1     # Verbindung zu keinem COM-Port aufgebaut
-    SEC_CONNECT_STATUS_OK = 1        # Verbindungen zu allen Ports hergestellt.
+    SEC_CONNECT_STATUS_OK = 1        # Verbindung grundsätzlich hergestellt aber nicht alle Sensoren liefern Werte
+    SEC_CONNECT_STATUS_ALL = 2       # Verbindung vollständig hergestellt
+
     SEC_CONNECT_MAX_TRY_CNT = 10     # Maximale Anzahl Verbindungsversuche
 
     CONFIG_FILE_SENSOREN = "config_sensors.json"
@@ -43,6 +46,8 @@ class SecSetup(QObject):
     
     _sig_disableMGS = pyqtSignal(int)
     _sig_enableMGS = pyqtSignal(int)
+
+    _sig_disableGasSensor = pyqtSignal(str)
     
     sig_closeConnection = pyqtSignal()
     
@@ -65,17 +70,21 @@ class SecSetup(QObject):
         
         # Init Flaschendruck Data
         self.dataGas = {}
-        self.zuschaltung = {}
+        self.zuschaltung = {}           # Für Prüfung
+        self.enableGasSensoren = {}     # Hardware ansteuerung
+        self.gasSensorConnectStartTime = {}
         for f in self._sgEA._sensors:
             self.dataGas[f] = {"FP" : None, "TP" : None}
-            self.zuschaltung[f] = False
+            self.zuschaltung[f] = False        
+            self.enableGasSensoren[f] = True
+            self.gasSensorConnectStartTime[f] = time.time()
             
             
         # Init MGS Boxen Data
         
-        self.mgsConnectStartTime = {}
-        self.enableMGSBoxen = {} 
         self.dataMGS = {}
+        self.enableMGSBoxen = {} 
+        self.mgsConnectStartTime = {}
         for s in self._sgEA._sensorsMGS:
             self.dataMGS[s] = 0
             self.mgsConnectStartTime[self._sgEA._sensorsMGS[s]["box"]] = time.time()
@@ -189,6 +198,12 @@ class SecSetup(QObject):
         if(len(data) > 0):
             self._sig_NewSecData.emit(data)
 
+        # Verbindung vollständig hergestellt ?
+        if(len(data) == len(self.dataGas) + len(self.dataMGS)):
+            self._secConnectStatus = self.SEC_CONNECT_STATUS_ALL
+        
+        if(len(data) == 0):    # Keine Daten ? -> Verbindung prüfen!
+            self._secConnectStatus = self.SEC_CONNECT_STATUS_NONE
             
 
     def __read_Vordruck(self):
@@ -196,10 +211,10 @@ class SecSetup(QObject):
         data = {}
         
         # Versuche Verbindung neu aufzubauen, wenn Fehler vorliegt:
-        if(self._secConnectStatus != self.SEC_CONNECT_STATUS_OK):
+        if(self._secConnectStatus < self.SEC_CONNECT_STATUS_OK):
             self._connect_sec()           
                 
-        if(self._secConnectStatus == self.SEC_CONNECT_STATUS_OK):
+        if(self._secConnectStatus >= self.SEC_CONNECT_STATUS_OK):
             
             # Vordruck
             try:
@@ -209,7 +224,15 @@ class SecSetup(QObject):
                     err2, fp = self._sgEA.readAnalogInputVordruck(f)
 
                     if(err2):
-                        raise Exception("Fehler beim Auslesen des Vordrucks")
+                        if((self.enableGasSensoren[f] == True)):
+                            self._secConnectStatus = self.SEC_CONNECT_STATUS_OK # zurück von ALL
+                            if(time.time() - self.gasSensorConnectStartTime[f] > self.TIMEOUT_DISABLE_GAS):
+                                print("Sensor " + str(f) + " antwortet nicht und wird deaktiviert.")
+                                self.enableGasSensoren[f] = False
+                                self._sig_disableGasSensor.emit(f)
+                            else:
+                                print(f"Fehler beim Auslesen des Vordrucks von {f}")
+
                     else:
                         self.dataGas[f]["FP"] = fp
                         data[f] = fp
@@ -223,8 +246,10 @@ class SecSetup(QObject):
                 # Fehler beim Auslesen des Messwertes
                 print (e)
                 print ("SEC: Fehler beim Auslesen des Gasvordrucks !")
-                self._secConnectStatus = self.SEC_CONNECT_STATUS_NONE
                 
+
+
+
         return data
                 
                 
@@ -235,26 +260,15 @@ class SecSetup(QObject):
         data = {}
         
         # Versuche Verbindung neu aufzubauen, wenn Fehler vorliegt:
-        if(self._secConnectStatus != self.SEC_CONNECT_STATUS_OK):
+        if(self._secConnectStatus < self.SEC_CONNECT_STATUS_OK):
             self._connect_sec()
                 
-                
-                
-        if(self._secConnectStatus == self.SEC_CONNECT_STATUS_OK):
-            
-            # MGS Messboxen
-                                
-            ###
+        if(self._secConnectStatus >= self.SEC_CONNECT_STATUS_OK):
             try:
                 for f in self.dataMGS:
-                    # print(f"f: {f}")
                     err, val = self._sgEA.readAnalogInputMGSBox(f)
                     self.dataMGS[f] = val
-                    data[f] = val
-                    
-                    #print(f)
-                    #print(self._sgEA._sensorsMGS[f]["box"])
-                    #print(self.enableMGSBoxen[self._sgEA._sensorsMGS[f]["box"]])      
+                    data[f] = val  
 
                     if(err and (self.enableMGSBoxen[self._sgEA._sensorsMGS[f]["box"]] == True)):
                         print("Fehler beim Auslesen von " + str(f) )
@@ -262,6 +276,7 @@ class SecSetup(QObject):
                             self.enableMGSBoxen[self._sgEA._sensorsMGS[f]["box"]] = False
                             print("MGS Box " + str(self._sgEA._sensorsMGS[f]["box"]) + " antwortet nicht und wird deaktiviert.")
                             self._sig_disableMGS.emit(self._sgEA._sensorsMGS[f]["box"])
+                        
                     else:
                         self.mgsConnectStartTime[self._sgEA._sensorsMGS[f]["box"]] = time.time()
                         if(not err and self.enableMGSBoxen[self._sgEA._sensorsMGS[f]["box"]] == False):
@@ -271,13 +286,9 @@ class SecSetup(QObject):
                             # 2. signal auslösen -> aktivieren
                             self._sig_enableMGS.emit(self._sgEA._sensorsMGS[f]["box"])
                             
-                    
-                
             except Exception as e:
-                # Fehler beim Auslesen des Messwertes
                 print (e)
                 print ("SEC: Fehler beim Auslesen der MGS Boxen !")
-                # self._secConnectStatus = self.SEC_CONNECT_STATUS_NONE
                 
         return data
 
@@ -443,13 +454,11 @@ class SEC_ConnectThread(QThread):
         if(not self.hws._update_SECSetupInProcess):
         
             print ("Verbinde SEC-Setup ...")
-    
             self.hws._update_SECSetupInProcess = True         
-            
             self.hws._secConnectStatus = SecSetup.SEC_CONNECT_STATUS_NONE # Noch kein COM-Port wurde verbunden      
 
             if(self.hws._sgEA.connect() == True):
-                self.hws._secConnectStatus = SecSetup.SEC_CONNECT_STATUS_OK # Alle COM-Ports wurden verbunden
+                self.hws._secConnectStatus = self.checkConnectionStatus()                    
 
             self.hws._update_SECSetupInProcess = False
             
@@ -457,5 +466,9 @@ class SEC_ConnectThread(QThread):
                 self.hws.sig_SEC_ConnectFinished.emit(self.hws._secConnectStatus)
                 
             # Neuen Verbindungsversuch starten, wenn vorheriger fehlschlägt
-            if(self.hws._secConnectStatus != SecSetup.SEC_CONNECT_STATUS_OK and not self.hws.closing):
+            if(self.hws._secConnectStatus < SecSetup.SEC_CONNECT_STATUS_OK and not self.hws.closing):
                 self.hws._sig_SEC_SetupConnect.emit()
+
+
+    def checkConnectionStatus(self):
+        return SecSetup.SEC_CONNECT_STATUS_OK

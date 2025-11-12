@@ -176,7 +176,8 @@ class ReglerUI(QMainWindow):
             self.sms._sig_disableMGS.connect(self.print_DisableMessage_MGSBox)
             self.sms._sig_disableMGS.connect(self.hide_MGSBoxSensors)
             self.sms._sig_enableMGS.connect(self.print_EnableMessage_MGSBox)
-            self.sms._sig_enableMGS.connect(self.show_MGSBoxSensors)            
+            self.sms._sig_enableMGS.connect(self.show_MGSBoxSensors)          
+            self.sms._sig_disableGasSensor.connect(self.print_DisableMessage_GasSensor)  
             
             # Starten der SEC-Messschleife, sobald Verbindung hergestellt
             self.sms.sig_SEC_ConnectFinished.connect(self.sms._start_MessSchleife) 
@@ -267,7 +268,7 @@ class ReglerUI(QMainWindow):
         # Start der UI
                   
         self.showMaximized()
-        self.setFixedSize(app.primaryScreen().size().width()-2, app.primaryScreen().size().height()-10)
+        # self.setFixedSize(app.primaryScreen().size().width()-2, app.primaryScreen().size().height()-10)
                           
         # Starte UI Update Timer
         self.timer_updateUI = QTimer()
@@ -277,7 +278,7 @@ class ReglerUI(QMainWindow):
         
     
     def moveEvent(self, event):
-        # self.move(0,0)
+        #self.move(0,0)
         event.ignore()
         
         
@@ -383,6 +384,8 @@ class ReglerUI(QMainWindow):
             self.sgr.protokoll.append(cw.ProtokollEintrag("Fehler beim Verbinden der SEC-Hardware!", typ=cw.ProtokollEintrag.TYPE_FAILURE))
     
     
+    # GasGard
+
     def print_ConnectTryMessage_GasGard(self, check):
         if(check == 1): 
             self.sgr.protokoll.append(cw.ProtokollEintrag("Verbindung zur GasGard-Hardware hergestellt!", typ=cw.ProtokollEintrag.TYPE_SUCCESS))
@@ -405,7 +408,14 @@ class ReglerUI(QMainWindow):
     def show_GasGardSensors(self):
         self.rmw.gsWidget.setEnabled(True)
         self.rmw.gsWidget.setTitle("GasGard XL - online")
-        
+
+    # Gas Sensor
+
+    def print_DisableMessage_GasSensor(self, sensor):
+        self.sgr.protokoll.append(cw.ProtokollEintrag(f"Sensor {sensor} nicht verbunden.", typ=cw.ProtokollEintrag.TYPE_WARNING))
+
+
+    # MGS    
     
     def print_DisableMessage_MGSBox(self, box):
         self.sgr.protokoll.append(cw.ProtokollEintrag(f"MGS Box {box} nicht verbunden.", typ=cw.ProtokollEintrag.TYPE_WARNING))
@@ -1326,7 +1336,7 @@ if __name__ == '__main__':
         lock.lock()
     
         log = logger.Logger()
-        # log.startExternalLogging("log")
+        #log.startExternalLogging("log")
 
         app = QApplication(sys.argv)
     
@@ -1354,7 +1364,7 @@ if __name__ == '__main__':
             sgr._close_hwSetup()
             print ("Programm abgestürzt!")
 
-        # log.stopExternalLogging()
+        #log.stopExternalLogging()
 
     else:
         print("Es läuft bereits eine Instanz von SimGasUI!\nLöschen Sie andernfalls die Datei simgas.lock!")
