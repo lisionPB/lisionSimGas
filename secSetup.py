@@ -15,6 +15,8 @@ import time
 import math
 import json
 
+import exportConfig
+
 class SecSetup(QObject):
     """
     Klasse zur Verwaltung von Messkomponenten
@@ -63,7 +65,7 @@ class SecSetup(QObject):
         
         # Übergeben der Sensormessbereiche
         self._sgEA.setSensorBereiche(self._load_sensorConfig(self.CONFIG_FILE_SENSOREN))
-        self._sgEA.setMGSSensorBereiche(self._load_sensorConfig(self.CONFIG_FILE_SENSOREN_MGS))
+        self._sgEA.setMGSSensorBereiche(self._load_sensorConfig_MGS(self.CONFIG_FILE_SENSOREN_MGS))
         
         # Zuschaltsicherheitsbereiche für Flaschendruck
         self.zuschaltGrenzwerte = self.load_zuschaltungsGrenzwertConfig(self.CONFIG_FILE_ZUSCHALTGRENZEN)
@@ -141,6 +143,31 @@ class SecSetup(QObject):
         sensors = conf           
         f.close()
         
+        return sensors
+
+
+
+    def _load_sensorConfig_MGS(self, confFileURL):
+        """
+        Liest Sensor-Konfiguration aus json-File
+        """
+        # TODO: Ausnahmebehandlung, wenn Config File nicht gefunden wurde oder File ungültiges Format hat!
+        
+        # Gas Vordruck Sensoren
+        f = open(confFileURL)
+        conf = json.load(f)
+        
+        # Auslesen der Messbereiche der Sensoren
+        sensors = conf           
+        f.close()
+        
+        # Diagrammexport Konfiguration
+        for s in sensors:
+            exportConfig.channelExportConfigs[s] = {}
+            exportConfig.channelExportConfigs[s]["active"] = True
+            exportConfig.channelExportConfigs[s]["user_label"] = sensors[s]["user_label"]
+
+
         return sensors
 
 

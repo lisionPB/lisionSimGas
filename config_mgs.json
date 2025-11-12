@@ -4,6 +4,7 @@
         "partner": "MGS-Box 1 - Out 2",
         "label": "Sensor 1",
         "data_label": "MGS 1-1",
+        "user_label": "MGS 1-1",
         "min": 0.0,
         "max": 10000.0,
         "addr": [
@@ -16,6 +17,7 @@
         "partner": "MGS-Box 1 - Out 1",
         "label": "Sensor 2",
         "data_label": "MGS 1-2",
+        "user_label": "MGS 1-2",
         "min": 0.0,
         "max": 10000.0,
         "addr": [
@@ -28,6 +30,7 @@
         "partner": "MGS-Box 2 - Out 2",
         "label": "Sensor 1",
         "data_label": "MGS 2-1",
+        "user_label": "MGS 2-1",
         "min": 0.0,
         "max": 1000.0,
         "addr": [
@@ -40,6 +43,7 @@
         "partner": "MGS-Box 1 - Out 1",
         "label": "Sensor 2",
         "data_label": "MGS 2-2",
+        "user_label": "MGS 2-2",
         "min": 0.0,
         "max": 1000.0,
         "addr": [

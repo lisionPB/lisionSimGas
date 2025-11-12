@@ -1,13 +1,10 @@
-import parametrierung
+from PyQt5.QtWidgets import QGroupBox, QDialog, QLineEdit, QVBoxLayout, QHBoxLayout, QPushButton, QDoubleSpinBox, QLabel, QCheckBox
+from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QIcon
 
-from PyQt5 import Qt, QtCore, QtGui, QtWidgets, QtPrintSupport
-from PyQt5.QtWidgets import QGroupBox, QLineEdit, QVBoxLayout, QHBoxLayout, QPushButton, QDoubleSpinBox, QLabel
-from PyQt5.QtCore import QTimer, pyqtSignal
-from PyQt5.QtGui import QIcon, QPixmap
+import exportConfig
 
-
-
-class ExportConfigUI(QGroupBox):
+class ExportConfigUI(QDialog):
     
     def __init__(self):
         
@@ -16,13 +13,13 @@ class ExportConfigUI(QGroupBox):
         layout = QVBoxLayout()
         self.setLayout(layout)
   
-        self.setWindowTitle("Sensorkonfiguration")
+        self.setWindowTitle("Diagrammexport Konfiguration")
         self.setWindowIcon(QIcon("symbols/lision.ico"))
         self.setWindowFlag(Qt.WindowContextHelpButtonHint, False)
 
         # Konfig
-        self.sensorConfigGroup = ConfigGroup()
-        layout.addWidget(self.sensorConfigGroup)
+        self.channelConfigGroup = ConfigGroup()
+        layout.addWidget(self.channelConfigGroup)
 
         # Save and Cancel
         saveGroup = QGroupBox()
@@ -44,106 +41,64 @@ class ExportConfigUI(QGroupBox):
     
     def saveConfig(self):
         
-        # Gas Flaschen Sensorik
-        config_gfs = self.sensorConfigGroup.getConfig_GasFlaschenSensorik()    
-        for s in config_gfs:
-            self.sms._sgEA._sensors[s]["min"] = config_gfs[s][0]
-            self.sms._sgEA._sensors[s]["max"] = config_gfs[s][1]
-  
-        # MGS Boxen Sensorik
-        config_mgs = self.sensorConfigGroup.getConfig_MGSBoxenSensorik()    
-        for s in config_mgs:
-            self.sms._sgEA._sensorsMGS[s]["min"] = config_mgs[s][0]
-            self.sms._sgEA._sensorsMGS[s]["max"] = config_mgs[s][1]
-            
+        self.channelConfigGroup.saveConfig()          
         self.close()
   
   
     
   
 class ConfigGroup(QGroupBox):
-    def __init__(self, sms):
-        super().__init__("Sensorkonfiguration")
+    def __init__(self):
+        super().__init__("Kanäle")
 
-        layout = QVBoxLayout()
-        self.setLayout(layout)
+        self.mainLayout = QVBoxLayout()
+        self.setLayout(self.mainLayout)
         
-        
-        # Gas Flaschen
-        self.scrs_gfs = {}
-        
-        flaschenGroup = QGroupBox("Gas-Zufuhr Sensorik")
-        flaschenLayout = QVBoxLayout()
-        flaschenGroup.setLayout(flaschenLayout)
-        layout.addWidget(flaschenGroup)
-        
-        for s in sms._sgEA._sensors:
-            scr = SensorConfigRow(s, sms._sgEA._sensors[s])
-            self.scrs_gfs[s] = scr
-            flaschenLayout.addWidget(scr)
-            
-        # MGS Boxen
-        self.scrs_mgs = {}
-        
-        mgsGroup = QGroupBox("MGS Boxen Sensorik")
-        mgsLayout = QVBoxLayout()
-        mgsGroup.setLayout(mgsLayout)
-        layout.addWidget(mgsGroup)
-        
-        for s in sms._sgEA._sensorsMGS:
-            scr = SensorConfigRow(s, sms._sgEA._sensorsMGS[s])
-            self.scrs_mgs[s] = scr
-            mgsLayout.addWidget(scr)
-            
-            
-    def getConfig_GasFlaschenSensorik(self):
-        conf = {}
-        for s in self.scrs_gfs:
-            conf[s] = [self.scrs_gfs[s].sMin.value(), self.scrs_gfs[s].sMax.value()]
-            
-        return conf
-            
-    def getConfig_MGSBoxenSensorik(self):
-        conf = {}
-        for s in self.scrs_mgs:
-            conf[s] = [self.scrs_mgs[s].sMin.value(), self.scrs_mgs[s].sMax.value()]
-            
-        return conf
+        self.configRows = self.initConfigRows()
+
+
+    def initConfigRows(self):
+
+        configRows = {}
+        for c in exportConfig.channelExportConfigs:
+            configRows[c] = ConfigRow(c)
+            self.mainLayout.addWidget(configRows[c])
+
+        return configRows
+
+
+    def saveConfig(self):
+        for cr in self.configRows:
+            self.configRows[cr].saveConfigRow()
 
   
-class SensorConfigRow(QGroupBox):
-    def __init__(self,name, s):
-        
+
+
+class ConfigRow(QGroupBox):
+    def __init__(self, channel):
         super().__init__()
-        
-        self.s = s
-        
+
+        self.channel = channel
+
         layout = QHBoxLayout()
+        layout.setContentsMargins(0,0,0,0)
         self.setLayout(layout)
         
-        
         # Name
-        lName = QLabel(name)
-        layout.addWidget(lName)
+        self.lName = QLabel(channel)        
+        self.lName.setFixedWidth(200)
+        layout.addWidget(self.lName)
         
-        # Arbeitsbereich MIN
-        lMin = QLabel("Wert 4mA")
-        layout.addWidget(lMin)
-        self.sMin = QDoubleSpinBox()
-        self.sMin.setMinimum(0.00)
-        self.sMin.setMaximum(1000000.00)
-        self.sMin.setSingleStep(0.01)
-        self.sMin.setValue(self.s["min"])
-        self.sMin.setEnabled(True)
-        layout.addWidget(self.sMin)
-        
-        # Arbeitsbereich MAX
-        lMax = QLabel("Wert 20mA")
-        layout.addWidget(lMax)
-        self.sMax = QDoubleSpinBox()
-        self.sMax.setMinimum(0.00)
-        self.sMax.setMaximum(1000000.00)
-        self.sMax.setSingleStep(0.01)
-        self.sMax.setValue(self.s["max"])
-        self.sMax.setEnabled(True)
-        layout.addWidget(self.sMax)
+        # User Label
+        self.lLabel = QLineEdit(exportConfig.channelExportConfigs[channel]["user_label"])
+        self.lLabel.setFixedWidth(300)
+        layout.addWidget(self.lLabel)
+
+        # Active
+        self.cbActive = QCheckBox()
+        self.cbActive.setChecked(exportConfig.channelExportConfigs[channel]["active"])
+        layout.addWidget(self.cbActive)
+
+    def saveConfigRow(self):
+        exportConfig.channelExportConfigs[self.channel]["user_label"] = self.lLabel.text()
+        exportConfig.channelExportConfigs[self.channel]["active"] = self.cbActive.isChecked()

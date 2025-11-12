@@ -9,6 +9,8 @@ import time
 import math
 import json
 
+import exportConfig
+
 class GasGardSetup(QObject):
     """
     Klasse zur Verwaltung von Messkomponenten
@@ -93,7 +95,13 @@ class GasGardSetup(QObject):
         # Auslesen der Messbereiche der Sensoren
         sensors = conf           
         f.close()
-        
+
+        # Diagrammexport Konfiguration
+        for s in sensors:
+            exportConfig.channelExportConfigs[s] = {}
+            exportConfig.channelExportConfigs[s]["active"] = True
+            exportConfig.channelExportConfigs[s]["user_label"] = sensors[s]["user_label"]
+
         return sensors
 
 

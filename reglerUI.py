@@ -146,7 +146,7 @@ class ReglerUI(QMainWindow):
         self.configExport = QAction('&Exportkonfiguration', self)
         self.configExport.setStatusTip('Exportkonfiguration')
         self.configExport.triggered.connect(self.open_configExport)
-        # configMenu.addAction(self.configExport)
+        configMenu.addAction(self.configExport)
         
         self.configExpertModeAct = QAction('&Expertenmodus', configMenu, checkable=True)    
         configMenu.addAction(self.configExpertModeAct)
