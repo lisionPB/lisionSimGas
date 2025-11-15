@@ -139,6 +139,8 @@ class DiagrammConfigGroup(QGroupBox):
         self.yMax_spinner.setValue(exportConfig.Y_MAX)
         layout_yMax.addWidget(self.yMax_spinner)
 
+        layout_yMax.addStretch()
+
         # Y STEP
         group_yStep = QGroupBox()
         layout_yStep = QHBoxLayout()
@@ -148,13 +150,15 @@ class DiagrammConfigGroup(QGroupBox):
 
         yStep_label = QLabel("y-Achsen Schrittweite")
         yStep_label.setFixedWidth(200)
-        layout_yStep.addWidget(yMax_label)
+        layout_yStep.addWidget(yStep_label)
 
         self.yStep_spinner = QDoubleSpinBox()
         self.yStep_spinner.setDecimals(0)
         self.yStep_spinner.setFixedWidth(100)
         self.yStep_spinner.setValue(exportConfig.Y_STEP)
         layout_yStep.addWidget(self.yStep_spinner)
+        
+        layout_yStep.addStretch()
 
 
     def saveConfig(self):
