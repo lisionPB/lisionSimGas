@@ -6,7 +6,7 @@
         "channel": 1,
         "addr": 40010,
         "type": "Serie 47K-HT",
-        "active": false
+        "active": true
     },
     "GG Sensor 2": {
         "label": "Sensor 2",

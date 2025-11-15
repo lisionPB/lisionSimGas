@@ -563,7 +563,7 @@ class PruefWidget(QGroupBox):
                     # Graph MGS Boxen
                     offsetGraphKonzentration = 330
                     c.drawString(offsetX, offsetGraphKonzentration,"Zeitverlauf Gaskonzentration:")
-                    offsetGraph_Sensorik = 0
+                    offsetGraph_Sensorik = -20
                     exporterSensorik = pyexp.ImageExporter(self.mw.graphWidget_gasSensorik.graphWidget.plotItem)
                     # imgNameSens = QtCore.QFileInfo(fn).baseName() + ".png"
                     imgNameSens = QtCore.QFileInfo(fn).absoluteFilePath() + QtCore.QFileInfo(fn).baseName() + "sensorik.png"
