@@ -19,9 +19,15 @@ class ExportConfigUI(QDialog):
         self.setWindowIcon(QIcon("symbols/lision.ico"))
         self.setWindowFlag(Qt.WindowContextHelpButtonHint, False)
 
-        # Konfig
+        # Channel Config
+        
         self.channelConfigGroup = ConfigGroup()
         layout.addWidget(self.channelConfigGroup)
+
+        # Graph Config
+        self.diagrammConfigGroup = DiagrammConfigGroup()
+        layout.addWidget(self.diagrammConfigGroup)
+
 
         # Save and Cancel
         saveGroup = QGroupBox()
@@ -44,6 +50,7 @@ class ExportConfigUI(QDialog):
     def saveConfig(self):
         
         self.channelConfigGroup.saveConfig() 
+        self.diagrammConfigGroup.saveConfig()
         self.sig_exportConfig_changed.emit()         
         self.close()
   
@@ -105,3 +112,51 @@ class ConfigRow(QGroupBox):
     def saveConfigRow(self):
         exportConfig.channelExportConfigs[self.channel]["user_label"] = self.lLabel.text()
         exportConfig.channelExportConfigs[self.channel]["active"] = self.cbActive.isChecked()
+
+    
+class DiagrammConfigGroup(QGroupBox):
+
+    def __init__(self):
+        super().__init__("Diagramm")
+
+        self.mainLayout = QVBoxLayout()
+        self.setLayout(self.mainLayout)
+        
+        # Y MAX
+        group_yMax = QGroupBox()
+        layout_yMax = QHBoxLayout()
+        layout_yMax.setContentsMargins(0,0,0,0)
+        group_yMax.setLayout(layout_yMax)    
+        self.mainLayout.addWidget(group_yMax)
+
+        yMax_label = QLabel("Max. Gaskonzentration: ")
+        yMax_label.setFixedWidth(200)
+        layout_yMax.addWidget(yMax_label)
+
+        self.yMax_spinner = QDoubleSpinBox()
+        self.yMax_spinner.setDecimals(0)
+        self.yMax_spinner.setFixedWidth(100)
+        self.yMax_spinner.setValue(exportConfig.Y_MAX)
+        layout_yMax.addWidget(self.yMax_spinner)
+
+        # Y STEP
+        group_yStep = QGroupBox()
+        layout_yStep = QHBoxLayout()
+        layout_yStep.setContentsMargins(0,0,0,0)
+        group_yStep.setLayout(layout_yStep)    
+        self.mainLayout.addWidget(group_yStep)
+
+        yStep_label = QLabel("y-Achsen Schrittweite")
+        yStep_label.setFixedWidth(200)
+        layout_yStep.addWidget(yMax_label)
+
+        self.yStep_spinner = QDoubleSpinBox()
+        self.yStep_spinner.setDecimals(0)
+        self.yStep_spinner.setFixedWidth(100)
+        self.yStep_spinner.setValue(exportConfig.Y_STEP)
+        layout_yStep.addWidget(self.yStep_spinner)
+
+
+    def saveConfig(self):
+        exportConfig.Y_MAX = int(self.yMax_spinner.value())
+        exportConfig.Y_STEP = int(self.yStep_spinner.value())

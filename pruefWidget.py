@@ -511,7 +511,7 @@ class PruefWidget(QGroupBox):
         
     
     def exportPruefPDF(self, parentDir=""):
-        
+
         if(self.pruefung): # and self.pruefung._state == self.pruefung.PRUEF_STATE_DONE):  
             
             result = ""
@@ -554,7 +554,7 @@ class PruefWidget(QGroupBox):
                     # imgNameGas = QtCore.QFileInfo(fn).baseName() + ".png"
                     imgNameGas = QtCore.QFileInfo(fn).absoluteFilePath() + QtCore.QFileInfo(fn).baseName() + "gaszufuhr.png"
                     # Erstelle Plot
-                    self.mw.graphWidget.pltDataImage(imgNameGas, ["GES_SOLL", "GES_IST"], "Zeitstempel [s]", "g/min")
+                    self.mw.graphWidget.pltDataImage(self.pruefung.get_endTime(), imgNameGas, ["GES_SOLL", "GES_IST"], "Zeitstempel [s]", "g/min")
                     # Zeichne Plot in PDF
                     c.drawImage(imgNameGas, offsetX , offsetGraph_Gasfluss, width = 17 * cm, preserveAspectRatio=True)
                     # Entferne zwischengespeicherte Plot Datei
@@ -591,7 +591,7 @@ class PruefWidget(QGroupBox):
                         sensorLabels[s] = exportConfig.channelExportConfigs[s]["user_label"]
 
                     # Erstelle Plot
-                    self.mw.graphWidget_gasSensorik.pltDataImage(imgNameSens, vizSensors, "Zeitstempel [s]", yLabel, channelLabels=sensorLabels, yMax=exportConfig.Y_MAX, yStep=exportConfig.Y_STEP)
+                    self.mw.graphWidget_gasSensorik.pltDataImage(self.pruefung.get_endTime(), imgNameSens, vizSensors, "Zeitstempel [s]", yLabel, channelLabels=sensorLabels, yMax=exportConfig.Y_MAX, yStep=exportConfig.Y_STEP)
                     # Zeichne Plot in PDF
                     c.drawImage(imgNameSens, offsetX , offsetGraph_Sensorik, width = 17 * cm, preserveAspectRatio=True)
                     # Entferne zwischengespeicherte Plot Datei

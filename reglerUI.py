@@ -250,6 +250,7 @@ class ReglerUI(QMainWindow):
         self.rmw.graphWidget_gasSensorik.set_selectedChannelNames(chNameList)
 
         # Set eingeblendete Gas Sensoren
+        self.update_gasSensorGraphChannelLabels()
         self.update_gasSensorGraphVisibilities()
 
         

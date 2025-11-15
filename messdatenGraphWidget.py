@@ -122,8 +122,8 @@ class MessdatenGraphWidget(QGroupBox):
         self.graphWidget.set_timeRangeOnFocus(timeRange)
 
 
-    def pltDataImage(self, path, channels, xLabel, yLabel, channelLabels=None, yMax=None, yStep=None):
-        self.graphWidget.pltDataImage(path, channels, xLabel, yLabel, channelLabels, yMax, yStep)
+    def pltDataImage(self, endTime, path, channels, xLabel, yLabel, channelLabels=None, yMax=None, yStep=None):
+        self.graphWidget.pltDataImage(endTime, path, channels, xLabel, yLabel, channelLabels, yMax, yStep)
         
 
     # TODO: mit exportImg zusammenführen
@@ -355,10 +355,12 @@ class MessdatenGraphPlot(pg.PlotWidget):
 
         for c in curveNames:
             if c in self.curves:
+                print(f"{c} -> {curveNames[c]}")
                 self.curves[c].name = curveNames[c]
+
         self.getPlotItem().legend.update()
 
-        
+
 
     def set_update(self, update):
         self.__update = update
@@ -510,9 +512,13 @@ class MessdatenGraphPlot(pg.PlotWidget):
                 
                 
     
-    def pltDataImage(self, path, channels, xLabel, yLabel, channelLabels, yMax = None, yStep=None):
+    def pltDataImage(self, endTime, path, channels, xLabel, yLabel, channelLabels, yMax = None, yStep=None):
 
         df = pd.DataFrame.from_dict(self.__dataMan.get_DataDict())
+
+        # Filter to time of run
+        df = df[df[self.__dataMan.TIME_LABEL] < endTime]
+
         df.set_index(self.__dataMan.TIME_LABEL, inplace=True)
         df = df[channels]
         
