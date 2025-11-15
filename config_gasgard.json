@@ -11,7 +11,7 @@
     "GG Sensor 2": {
         "label": "Sensor 2",
         "data_label": "GG S2",
-        "user_label": "Test 3",
+        "user_label": "GG S2",
         "channel": 2,
         "addr": 40020,
         "type": "Serie 47K-HT",

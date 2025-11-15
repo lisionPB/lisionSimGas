@@ -78,12 +78,16 @@ class ReglerUI(QMainWindow):
     
     # Entwickleransicht
     SHOW_EXTENDED_FUNCTIONS = False
-    
+
+
     ###################################
     
     def __init__(self, sgr, sms, ggs, app):
         super().__init__()
     
+        # lade Diagramm Config
+        exportConfig.load_diagrammConfig()
+
         # lade HW-Setup
     
         self.sgr = sgr
@@ -356,6 +360,10 @@ class ReglerUI(QMainWindow):
             
             # Save PruefConfig
             self.rmw.pruefWidget.save_pruefConfig()
+
+            # Save Diagramm Config
+            exportConfig.save_diagrammConfig()
+            
             
             
             print ("Regler UI closed")
@@ -555,6 +563,7 @@ class ReglerMainWidget(QWidget):
         self.leftLayout.addWidget(self.graphWidget_gasSensorik)
         self.graphWidget_gasSensorik.set_floatingWindowEnabled(False)
         self.graphWidget_gasSensorik.sig_closeExternal.connect(self.closeMessdatenUI_GasGard)
+        self.graphWidget_gasSensorik.graphWidget.sig_curveVisibilityChanged.connect(self.update_exportConfigVisibilitiesFromGraph)
         
         
         
@@ -707,6 +716,13 @@ class ReglerMainWidget(QWidget):
 
     def closeMessdatenUI_GasGard(self):
         self.leftLayout.insertWidget(1, self.graphWidget_gasSensorik)
+
+
+    def update_exportConfigVisibilitiesFromGraph(self):
+        ""
+        # print(self.graphWidget_gasSensorik.graphWidget.getCurveVisibility())
+        # exportConfig.channelExportConfigs
+        pass
         
         
 
@@ -1376,6 +1392,7 @@ if __name__ == '__main__':
         #log.startExternalLogging("log")
 
         app = QApplication(sys.argv)
+        app.setStyleSheet(LisionStyle.LISION_GLOBAL_STYLE_SHEET)
     
         # SecSetup (Magnetschalter)
         sgEA = SimGasEA(wagoIP) 

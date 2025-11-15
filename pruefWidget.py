@@ -313,7 +313,7 @@ class PruefWidget(QGroupBox):
         
     
     def buttonSavePDF_clicked(self):
-        self.exportPruefPDF()
+        self.exportPruefPDF("protokolle/")
 
     
     def calc_initFluss(self):
@@ -591,7 +591,7 @@ class PruefWidget(QGroupBox):
                         sensorLabels[s] = exportConfig.channelExportConfigs[s]["user_label"]
 
                     # Erstelle Plot
-                    self.mw.graphWidget_gasSensorik.pltDataImage(self.pruefung.get_endTime(), imgNameSens, vizSensors, "Zeitstempel [s]", yLabel, channelLabels=sensorLabels, yMax=exportConfig.Y_MAX, yStep=exportConfig.Y_STEP)
+                    self.mw.graphWidget_gasSensorik.pltDataImage(self.pruefung.get_endTime(), imgNameSens, vizSensors, "Zeitstempel [s]", yLabel, channelLabels=sensorLabels, yMax=exportConfig.Y_MAX, yStep=exportConfig.Y_STEP, numLegendCols=exportConfig.N_COLS)
                     # Zeichne Plot in PDF
                     c.drawImage(imgNameSens, offsetX , offsetGraph_Sensorik, width = 17 * cm, preserveAspectRatio=True)
                     # Entferne zwischengespeicherte Plot Datei

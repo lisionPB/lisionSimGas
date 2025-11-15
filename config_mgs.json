@@ -4,7 +4,7 @@
         "partner": "MGS-Box 1 - Out 2",
         "label": "Sensor 1",
         "data_label": "MGS 1-1",
-        "user_label": "Test 1",
+        "user_label": "Test",
         "min": 0.0,
         "max": 10000.0,
         "addr": [
@@ -25,7 +25,7 @@
             4,
             0
         ],
-        "active": true
+        "active": false
     },
     "MGS-Box 2 - Out 1": {
         "box": 2,
@@ -46,7 +46,7 @@
         "partner": "MGS-Box 1 - Out 1",
         "label": "Sensor 2",
         "data_label": "MGS 2-2",
-        "user_label": "MGS 2-2",
+        "user_label": "Konzentration Sensor 1",
         "min": 0.0,
         "max": 1000.0,
         "addr": [

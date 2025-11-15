@@ -139,6 +139,9 @@ class DiagrammConfigGroup(QGroupBox):
         self.yMax_spinner.setValue(exportConfig.Y_MAX)
         layout_yMax.addWidget(self.yMax_spinner)
 
+        yMax_proz = QLabel("%")
+        layout_yMax.addWidget(yMax_proz)
+
         layout_yMax.addStretch()
 
         # Y STEP
@@ -154,13 +157,40 @@ class DiagrammConfigGroup(QGroupBox):
 
         self.yStep_spinner = QDoubleSpinBox()
         self.yStep_spinner.setDecimals(0)
+        self.yStep_spinner.setMinimum(1)
+        self.yStep_spinner.setMaximum(1000)
         self.yStep_spinner.setFixedWidth(100)
         self.yStep_spinner.setValue(exportConfig.Y_STEP)
         layout_yStep.addWidget(self.yStep_spinner)
-        
+
+        yStep_proz = QLabel("%")
+        layout_yStep.addWidget(yStep_proz)
+
         layout_yStep.addStretch()
+
+        # N COLS
+        group_nCols = QGroupBox()
+        layout_nCols = QHBoxLayout()
+        layout_nCols.setContentsMargins(0,0,0,0)
+        group_nCols.setLayout(layout_nCols)    
+        self.mainLayout.addWidget(group_nCols)
+
+        nCols_label = QLabel("Anz. Spalten in Legende")
+        nCols_label.setFixedWidth(200)
+        layout_nCols.addWidget(nCols_label)
+
+        self.nCols_spinner = QDoubleSpinBox()
+        self.nCols_spinner.setDecimals(0)
+        self.nCols_spinner.setMinimum(1)
+        self.nCols_spinner.setMaximum(10)
+        self.nCols_spinner.setFixedWidth(100)
+        self.nCols_spinner.setValue(exportConfig.N_COLS)
+        layout_nCols.addWidget(self.nCols_spinner)
+        
+        layout_nCols.addStretch()
 
 
     def saveConfig(self):
         exportConfig.Y_MAX = int(self.yMax_spinner.value())
         exportConfig.Y_STEP = int(self.yStep_spinner.value())
+        exportConfig.N_COLS = int(self.nCols_spinner.value())

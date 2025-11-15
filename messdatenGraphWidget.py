@@ -122,8 +122,8 @@ class MessdatenGraphWidget(QGroupBox):
         self.graphWidget.set_timeRangeOnFocus(timeRange)
 
 
-    def pltDataImage(self, endTime, path, channels, xLabel, yLabel, channelLabels=None, yMax=None, yStep=None):
-        self.graphWidget.pltDataImage(endTime, path, channels, xLabel, yLabel, channelLabels, yMax, yStep)
+    def pltDataImage(self, endTime, path, channels, xLabel, yLabel, channelLabels=None, yMax=None, yStep=None, numLegendCols=None):
+        self.graphWidget.pltDataImage(endTime, path, channels, xLabel, yLabel, channelLabels, yMax, yStep, numLegendCols)
         
 
     # TODO: mit exportImg zusammenführen
@@ -225,10 +225,10 @@ class MessdatenGraphPlot(pg.PlotWidget):
         pg.mkPen(0,0,0, width=1),            #   schwarz     ? 
         pg.mkPen(0,0,0, width=1),            #   schwarz     ? 
         pg.mkPen(0,0,0, width=1)           #   schwarz      ? 
-        
-        
-
+     
     ]
+
+    sig_curveVisibilityChanged = pyqtSignal()
     
     def __init__(self, dataMan, chNames=None):	       
         super().__init__(axisItems={'bottom': FmtXAxisItem(orientation='bottom')})
@@ -320,7 +320,8 @@ class MessdatenGraphPlot(pg.PlotWidget):
             if(k in self.__chNames):
                 self.plotVis[k] = True                
                 self.curves[k]  = self.plot(xInit, yInit, name=self.__dataMan.get_channelLabels()[k], pen=self.DEFAULT_CURVE_PENS[i])   
-    
+                self.curves[k].visibleChanged.connect(self.on_visibility_changed)
+
     
     def set_rightAxisLabels(self, labels):
         pass
@@ -355,10 +356,25 @@ class MessdatenGraphPlot(pg.PlotWidget):
 
         for c in curveNames:
             if c in self.curves:
-                print(f"{c} -> {curveNames[c]}")
-                self.curves[c].name = curveNames[c]
 
-        self.getPlotItem().legend.update()
+                if hasattr(self.curves[c], "setName"):
+                    # preferred API for PlotDataItem / curves
+                    self.curves[c].setName(curveNames[c])
+                else:
+                    self.curves[c].name = curveNames[c]
+
+                # try to refresh legend entry (some pyqtgraph versions need explicit replace)
+                try:
+                    legend = self.getPlotItem().legend
+                    # remove old entry and re-add it with new name
+                    legend.removeItem(self.curves[c])
+                    legend.addItem(self.curves[c], curveNames[c])
+                except Exception:
+                    # fallback: update() (and setName above usually suffices)
+                    try:
+                        self.getPlotItem().legend.update()
+                    except Exception:
+                        pass
 
 
 
@@ -470,6 +486,9 @@ class MessdatenGraphPlot(pg.PlotWidget):
         for k in self.plotVis.keys():
             self.plotVis[k] = visibility
             
+
+    def on_visibility_changed(self):
+        self.sig_curveVisibilityChanged.emit()
     
         
     def set_referenzLinie(self, pos):
@@ -512,7 +531,7 @@ class MessdatenGraphPlot(pg.PlotWidget):
                 
                 
     
-    def pltDataImage(self, endTime, path, channels, xLabel, yLabel, channelLabels, yMax = None, yStep=None):
+    def pltDataImage(self, endTime, path, channels, xLabel, yLabel, channelLabels, yMax = None, yStep=None, numLegendCols=None):
 
         df = pd.DataFrame.from_dict(self.__dataMan.get_DataDict())
 
@@ -530,7 +549,7 @@ class MessdatenGraphPlot(pg.PlotWidget):
         df.plot()        
         
         # Plot Settings
-        plt.legend(loc="upper left", bbox_to_anchor=(1,1))
+        plt.legend(loc='upper left', bbox_to_anchor=(0, -0.15), ncol = numLegendCols or 3)
         plt.xlabel(xLabel)
         plt.ylabel(yLabel)
 
@@ -543,7 +562,7 @@ class MessdatenGraphPlot(pg.PlotWidget):
         plt.grid()
         
         plt.gca().yaxis.set_major_formatter(StrMethodFormatter('{x:,.2f}')) # 2 decimals
-        plt.gcf().set_size_inches(10, 4.5)
+        plt.gcf().set_size_inches(10, 4.0)
         plt.savefig(path, bbox_inches='tight', pad_inches=0)
 
 
