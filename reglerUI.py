@@ -468,6 +468,12 @@ class ReglerUI(QMainWindow):
         
 
     def open_configExport(self):
+
+        # Get Curve Visibility from 
+        for c, vis in self.rmw.graphWidget_gasSensorik.graphWidget.getCurveVisibility().items():
+            if (c in exportConfig.channelExportConfigs):
+                exportConfig.channelExportConfigs[c]["active"] = vis
+
         configExportUI = ecui.ExportConfigUI()
         configExportUI.sig_exportConfig_changed.connect(self.update_gasSensorGraphVisibilities)
         configExportUI.exec()
