@@ -4,55 +4,71 @@
         "data_label": "GG S1",
         "user_label": "GG S1",
         "channel": 1,
-        "addr": 40010
+        "addr": 40010,
+        "type": "Serie 47K-HT",
+        "active": true
     },
     "GG Sensor 2": {
         "label": "Sensor 2",
         "data_label": "GG S2",
-        "user_label": "GG S2",
+        "user_label": "Test 2",
         "channel": 2,
-        "addr": 40020
+        "addr": 40020,
+        "type": "Serie 47K-HT",
+        "active": false
     },
     "GG Sensor 3": {
         "label": "Sensor 3",
         "data_label": "GG S3",
         "user_label": "GG S3",
         "channel": 3,
-        "addr": 40030
+        "addr": 40030,
+        "type": "Serie 47K-HT",
+        "active": true
     },
     "GG Sensor 4": {
         "label": "Sensor 4",
         "data_label": "GG S4",
         "user_label": "GG S4",
         "channel": 4,
-        "addr": 40040
+        "addr": 40040,
+        "type": "Serie 47K-HT",
+        "active": true
     },
     "GG Sensor 5": {
         "label": "Sensor 5",
         "data_label": "GG S5",
         "user_label": "GG S5",
         "channel": 5,
-        "addr": 40050
+        "addr": 40050,
+        "type": "Serie 47K-HT",
+        "active": true
     },
     "GG Sensor 6": {
         "label": "Sensor 6",
         "data_label": "GG S6",
         "user_label": "GG S6",
         "channel": 6,
-        "addr": 40060
+        "addr": 40060,
+        "type": "Serie 47K-HT",
+        "active": true
     },
     "GG Sensor 7": {
         "label": "Sensor 7",
         "data_label": "GG S7",
         "user_label": "GG S7",
         "channel": 7,
-        "addr": 40070
+        "addr": 40070,
+        "type": "Serie 47K-HT",
+        "active": true
     },
     "GG Sensor 8": {
         "label": "Sensor 8",
         "data_label": "GG S8",
         "user_label": "GG S8",
         "channel": 8,
-        "addr": 40080
+        "addr": 40080,
+        "type": "Serie 47K-HT",
+        "active": true
     }
 }

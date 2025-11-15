@@ -436,6 +436,7 @@ class MessdatenGraphPlot(pg.PlotWidget):
         for c in visibilities:
             if(c in self.curves):
                 self.curves[c].setVisible(bool(visibilities[c]))     
+        
                 
     def getCurveVisibility(self):
         visibilities = {}       
@@ -443,17 +444,20 @@ class MessdatenGraphPlot(pg.PlotWidget):
             visibilities[c] = self.curves[c].isVisible()
         return visibilities
     
+    
     def getVisibileCurves(self):
         vizs = []
         for c in self.curves:
             if(self.curves[c].isVisible()):
                 vizs.append(c)
         return vizs        
-                       
+
+    """              
     def toggle_plotVisibility(self, channel):
         # unused?
         self.plotVis[channel] = not self.plotVis[channel]
-    
+    """
+
         
     def set_plotVisibility_global(self, visibility):
         for k in self.plotVis.keys():

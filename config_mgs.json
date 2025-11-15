@@ -4,13 +4,14 @@
         "partner": "MGS-Box 1 - Out 2",
         "label": "Sensor 1",
         "data_label": "MGS 1-1",
-        "user_label": "MGS 1-1",
+        "user_label": "Test 1",
         "min": 0.0,
         "max": 10000.0,
         "addr": [
             3,
             0
-        ]
+        ],
+        "active": false
     },
     "MGS-Box 1 - Out 2": {
         "box": 1,
@@ -23,7 +24,8 @@
         "addr": [
             4,
             0
-        ]
+        ],
+        "active": true
     },
     "MGS-Box 2 - Out 1": {
         "box": 2,
@@ -36,7 +38,8 @@
         "addr": [
             5,
             0
-        ]
+        ],
+        "active": true
     },
     "MGS-Box 2 - Out 2": {
         "box": 2,
@@ -49,6 +52,7 @@
         "addr": [
             6,
             0
-        ]
+        ],
+        "active": true
     }
 }

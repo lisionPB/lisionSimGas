@@ -99,13 +99,21 @@ class GasGardSetup(QObject):
         # Diagrammexport Konfiguration
         for s in sensors:
             exportConfig.channelExportConfigs[s] = {}
-            exportConfig.channelExportConfigs[s]["active"] = True
+            exportConfig.channelExportConfigs[s]["active"] = sensors[s]["active"]
             exportConfig.channelExportConfigs[s]["user_label"] = sensors[s]["user_label"]
 
         return sensors
 
 
     def save_sensorConfig(self):       
+
+        # Diagrammexport Konfiguration
+        for s in self._ggEA._sensors:
+            if(s in exportConfig.channelExportConfigs):
+                self._ggEA._sensors[s]["active"] = exportConfig.channelExportConfigs[s]["active"]
+                self._ggEA._sensors[s]["user_label"] = exportConfig.channelExportConfigs[s]["user_label"]
+
+
         with open(self.CONFIG_FILE_SENSOREN, "w") as outfile:
             json.dump(self._ggEA._sensors, outfile, indent=4)
             

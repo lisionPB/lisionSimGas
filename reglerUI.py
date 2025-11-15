@@ -23,6 +23,7 @@ from gasGardEA import GasGardEA
 
 import lock
 import logger
+import exportConfig
 
 import hwSetup as hs
 import reglerSetup as rs
@@ -239,14 +240,24 @@ class ReglerUI(QMainWindow):
         chNameList = []
         # GasGard
         chNameList.extend(list(self.ggs._ggEA._sensors.keys()))
+
         # MGS Boxen
         chNameList.extend(list(self.sms._sgEA._sensorsMGS.keys()))
         
         self.rmw.graphWidget_gasSensorik.set_selectedChannelNames(chNameList)
+
+        # Set eingeblendete Gas Sensoren
+        visibleGasSensors = {}
+        for s in exportConfig.channelExportConfigs:
+            visibleGasSensors[s] = exportConfig.channelExportConfigs[s]["active"]
+        self.rmw.graphWidget_gasSensorik.graphWidget.setCurveVisibility(visibleGasSensors)
+
         
-        # Gaszufuhr
+        # Diagramm Gaszufuhr
         self.rmw.graphWidget.set_selectedChannelNames(["COM1", "COM1_SOLL", "COM2", "COM2_SOLL", "COM3", "COM3_SOLL", "GES_IST", "GES_SOLL", "Gasflasche 1", "Gasflasche 2", "Gasflasche 3"])
         self.rmw.graphWidget.graphWidget.setCurveVisibility(self.rmw.pruefWidget.conf["visibility"])
+
+
             
         ###
         # Gas Durchfluss Regler
@@ -337,7 +348,8 @@ class ReglerUI(QMainWindow):
             
             # Save SensorConfig
             self.sms.save_sensorConfig()
-            
+            self.ggs.save_sensorConfig()
+
             # Save ZuschaltConfig
             self.sms.save_zuschaltungsGrenzwertConfig()
             

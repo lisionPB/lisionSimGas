@@ -164,7 +164,7 @@ class SecSetup(QObject):
         # Diagrammexport Konfiguration
         for s in sensors:
             exportConfig.channelExportConfigs[s] = {}
-            exportConfig.channelExportConfigs[s]["active"] = True
+            exportConfig.channelExportConfigs[s]["active"] = sensors[s]["active"]
             exportConfig.channelExportConfigs[s]["user_label"] = sensors[s]["user_label"]
 
 
@@ -178,6 +178,12 @@ class SecSetup(QObject):
         with open(self.CONFIG_FILE_SENSOREN, "w") as outfile:
             json.dump(self._sgEA._sensors, outfile, indent=4)
             
+        # Diagrammexport Konfiguration
+        for s in self._sgEA._sensorsMGS:
+            if(s in exportConfig.channelExportConfigs):
+                self._sgEA._sensorsMGS[s]["active"] = exportConfig.channelExportConfigs[s]["active"]
+                self._sgEA._sensorsMGS[s]["user_label"] = exportConfig.channelExportConfigs[s]["user_label"]
+
         # MGS Boxen Sensorik
         with open(self.CONFIG_FILE_SENSOREN_MGS, "w") as outfile:
             json.dump(self._sgEA._sensorsMGS, outfile, indent=4)
