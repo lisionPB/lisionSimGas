@@ -29,6 +29,7 @@ import consoleWidget as cw
 import parametrierung
 from parametrierungUI import ParametrierungUI
 
+import exportConfig
 
 class PruefWidget(QGroupBox):
     
@@ -462,6 +463,7 @@ class PruefWidget(QGroupBox):
                 self.pbStartPruefung.setVisible(True)
                 self.groupConfig.setEnabled(True)
                 self.mw.set_ManualModeEnabled(True)
+                self.buttonSavePDF.setEnabled(True)
                 
                 self.sgr.protokoll.append(cw.ProtokollEintrag("Prüfung abgebrochen!", typ=cw.ProtokollEintrag.TYPE_STANDARD))
             
@@ -510,7 +512,7 @@ class PruefWidget(QGroupBox):
     
     def exportPruefPDF(self, parentDir=""):
         
-        if(self.pruefung and self.pruefung._state == self.pruefung.PRUEF_STATE_DONE):  
+        if(self.pruefung): # and self.pruefung._state == self.pruefung.PRUEF_STATE_DONE):  
             
             result = ""
             try:
@@ -576,7 +578,7 @@ class PruefWidget(QGroupBox):
                         if(str(v).startswith("GG")):
                             selectedGG = True
                             
-                    print(selectedMGS,selectedGG)
+                    # print(selectedMGS,selectedGG)
                     
                     yLabel = ""
                     if(selectedMGS):
@@ -584,8 +586,12 @@ class PruefWidget(QGroupBox):
                     if(selectedGG):
                         yLabel = "%"
                     
+                    sensorLabels = {}
+                    for s in exportConfig.channelExportConfigs:
+                        sensorLabels[s] = exportConfig.channelExportConfigs[s]["user_label"]
+
                     # Erstelle Plot
-                    self.mw.graphWidget_gasSensorik.pltDataImage(imgNameSens, vizSensors, "Zeitstempel [s]", yLabel)
+                    self.mw.graphWidget_gasSensorik.pltDataImage(imgNameSens, vizSensors, "Zeitstempel [s]", yLabel, channelLabels=sensorLabels, yMax=exportConfig.Y_MAX, yStep=exportConfig.Y_STEP)
                     # Zeichne Plot in PDF
                     c.drawImage(imgNameSens, offsetX , offsetGraph_Sensorik, width = 17 * cm, preserveAspectRatio=True)
                     # Entferne zwischengespeicherte Plot Datei

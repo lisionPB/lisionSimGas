@@ -52,6 +52,9 @@ class ReglerUI(QMainWindow):
     TITEL = "SimGas Regler GUI - CORI"
     VERSION = "0.19"
     YEAR = "2025"
+
+    IP_WAGO = '172.20.20.2'
+    IP_GASGARD = '172.20.30.2'
     
     _sig_close = pyqtSignal()
     
@@ -412,11 +415,11 @@ class ReglerUI(QMainWindow):
     
     def hide_GasGardSensors(self):
         self.rmw.gsWidget.setEnabled(False)
-        self.rmw.gsWidget.setTitle("GasGard XL - offline")
+        self.rmw.gsWidget.setTitle(f"GasGard XL ({ReglerUI.IP_GASGARD}) - offline")
     
     def show_GasGardSensors(self):
         self.rmw.gsWidget.setEnabled(True)
-        self.rmw.gsWidget.setTitle("GasGard XL - online")
+        self.rmw.gsWidget.setTitle(f"GasGard XL ({ReglerUI.IP_GASGARD}) - online")
 
     # Gas Sensor
 
@@ -476,6 +479,7 @@ class ReglerUI(QMainWindow):
 
         configExportUI = ecui.ExportConfigUI()
         configExportUI.sig_exportConfig_changed.connect(self.update_gasSensorGraphVisibilities)
+        configExportUI.sig_exportConfig_changed.connect(self.update_gasSensorGraphChannelLabels)
         configExportUI.exec()
 
         
@@ -487,6 +491,13 @@ class ReglerUI(QMainWindow):
         if(self.ENABLE_SEC_MAGNET_SWITCH):
             self.rmw.smsWidget.update_SecMagnetSwitch()   
             self.rmw.mgsWidget.update_MGSWidget()
+
+
+    def update_gasSensorGraphChannelLabels(self):
+        curveNames = {}
+        for c in exportConfig.channelExportConfigs:
+            curveNames[c] = exportConfig.channelExportConfigs[c]["user_label"]
+        self.rmw.graphWidget_gasSensorik.set_curveNames(curveNames)
 
 
     def update_gasSensorGraphVisibilities(self):
@@ -1354,8 +1365,8 @@ class GasData_Widget(QGroupBox):
 if __name__ == '__main__':
 
 
-    wagoIP = '172.20.20.2'
-    gasgardIP = '172.20.30.2'
+    wagoIP = ReglerUI.IP_WAGO
+    gasgardIP = ReglerUI.IP_GASGARD
 
     if(not lock.islocked()):
         lock.lock()

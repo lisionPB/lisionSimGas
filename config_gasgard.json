@@ -6,7 +6,7 @@
         "channel": 1,
         "addr": 40010,
         "type": "Serie 47K-HT",
-        "active": true
+        "active": false
     },
     "GG Sensor 2": {
         "label": "Sensor 2",
@@ -15,7 +15,7 @@
         "channel": 2,
         "addr": 40020,
         "type": "Serie 47K-HT",
-        "active": false
+        "active": true
     },
     "GG Sensor 3": {
         "label": "Sensor 3",
@@ -24,7 +24,7 @@
         "channel": 3,
         "addr": 40030,
         "type": "Serie 47K-HT",
-        "active": true
+        "active": false
     },
     "GG Sensor 4": {
         "label": "Sensor 4",

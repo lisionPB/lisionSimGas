@@ -122,8 +122,8 @@ class MessdatenGraphWidget(QGroupBox):
         self.graphWidget.set_timeRangeOnFocus(timeRange)
 
 
-    def pltDataImage(self, path, channels, xLabel, yLabel):
-        self.graphWidget.pltDataImage(path, channels, xLabel, yLabel)
+    def pltDataImage(self, path, channels, xLabel, yLabel, channelLabels=None, yMax=None, yStep=None):
+        self.graphWidget.pltDataImage(path, channels, xLabel, yLabel, channelLabels, yMax, yStep)
         
 
     # TODO: mit exportImg zusammenführen
@@ -351,9 +351,14 @@ class MessdatenGraphPlot(pg.PlotWidget):
         self.init_curves()
 
 
-    def set_curveNames(self, curveNames):
-        # self.__curveNames = curveNames
-        pass
+    def set_curveNames(self, curveNames:dict):
+
+        for c in curveNames:
+            if c in self.curves:
+                self.curves[c].name = curveNames[c]
+        self.getPlotItem().legend.update()
+
+        
 
     def set_update(self, update):
         self.__update = update
@@ -505,26 +510,37 @@ class MessdatenGraphPlot(pg.PlotWidget):
                 
                 
     
-    def pltDataImage(self, path, channels, xLabel, yLabel):
+    def pltDataImage(self, path, channels, xLabel, yLabel, channelLabels, yMax = None, yStep=None):
 
         df = pd.DataFrame.from_dict(self.__dataMan.get_DataDict())
         df.set_index(self.__dataMan.TIME_LABEL, inplace=True)
         df = df[channels]
         
-        df.plot()
+        # Rename columns to use channel labels
+        if (channelLabels != None):
+            rename_dict = {ch: channelLabels[ch] for ch in channels if ch in channelLabels}
+            df.rename(columns=rename_dict, inplace=True)
+        
+        df.plot()        
         
         # Plot Settings
-        # plt.legend(fontsize=8, loc="lower left")
         plt.legend(loc="upper left", bbox_to_anchor=(1,1))
         plt.xlabel(xLabel)
         plt.ylabel(yLabel)
+
+        if(yMax != None):
+            plt.ylim(0, yMax * 1.04)
+    
+            if(yStep != None):
+                plt.yticks(range(0, int(yMax + yStep), int(yStep)))
+
         plt.grid()
         
         plt.gca().yaxis.set_major_formatter(StrMethodFormatter('{x:,.2f}')) # 2 decimals
         plt.gcf().set_size_inches(10, 4.5)
         plt.savefig(path, bbox_inches='tight', pad_inches=0)
-        
-        
+
+
 class FmtXAxisItem(pg.AxisItem):    
     """
     Formatierungsklasse für die Darstellung der X-Achse als Laufzeit
