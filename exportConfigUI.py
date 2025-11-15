@@ -1,11 +1,13 @@
 from PyQt5.QtWidgets import QGroupBox, QDialog, QLineEdit, QVBoxLayout, QHBoxLayout, QPushButton, QDoubleSpinBox, QLabel, QCheckBox
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QIcon
 
 import exportConfig
 
 class ExportConfigUI(QDialog):
     
+    sig_exportConfig_changed = pyqtSignal()
+
     def __init__(self):
         
         super().__init__()
@@ -41,7 +43,8 @@ class ExportConfigUI(QDialog):
     
     def saveConfig(self):
         
-        self.channelConfigGroup.saveConfig()          
+        self.channelConfigGroup.saveConfig() 
+        self.sig_exportConfig_changed.emit()         
         self.close()
   
   

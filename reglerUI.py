@@ -247,10 +247,7 @@ class ReglerUI(QMainWindow):
         self.rmw.graphWidget_gasSensorik.set_selectedChannelNames(chNameList)
 
         # Set eingeblendete Gas Sensoren
-        visibleGasSensors = {}
-        for s in exportConfig.channelExportConfigs:
-            visibleGasSensors[s] = exportConfig.channelExportConfigs[s]["active"]
-        self.rmw.graphWidget_gasSensorik.graphWidget.setCurveVisibility(visibleGasSensors)
+        self.update_gasSensorGraphVisibilities()
 
         
         # Diagramm Gaszufuhr
@@ -472,6 +469,7 @@ class ReglerUI(QMainWindow):
 
     def open_configExport(self):
         configExportUI = ecui.ExportConfigUI()
+        configExportUI.sig_exportConfig_changed.connect(self.update_gasSensorGraphVisibilities)
         configExportUI.exec()
 
         
@@ -483,6 +481,15 @@ class ReglerUI(QMainWindow):
         if(self.ENABLE_SEC_MAGNET_SWITCH):
             self.rmw.smsWidget.update_SecMagnetSwitch()   
             self.rmw.mgsWidget.update_MGSWidget()
+
+
+    def update_gasSensorGraphVisibilities(self):
+        visibleGasSensors = {}
+        for s in exportConfig.channelExportConfigs:
+            visibleGasSensors[s] = exportConfig.channelExportConfigs[s]["active"]
+        self.rmw.graphWidget_gasSensorik.graphWidget.setCurveVisibility(visibleGasSensors)
+
+
 
 
 class ReglerMainWidget(QWidget):
