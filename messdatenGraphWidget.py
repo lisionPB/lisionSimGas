@@ -92,7 +92,7 @@ class MessdatenGraphWidget(QGroupBox):
         self.referenzSpinner.setValue(0)
         self.referenzSpinner.setFixedWidth(100)
         self.referenzSpinner.valueChanged.connect(self.set_referenzLinie)
-        self.referenzSpinner.setEnabled(True)
+        self.referenzSpinner.setEnabled(False)
         
         self.refLineLabel = QLabel("Ref. Linie")
         self.refLineLabel.setAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
@@ -453,8 +453,9 @@ class MessdatenGraphPlot(pg.PlotWidget):
                                 r = self.__dataMan.get_Data(DataManager.TIME_LABEL)[-1]
                                 self.getPlotItem().getViewBox().setXRange(r - self.__timeRangeOnFokus, r, padding=0.0)
                             else:
-                                self.getPlotItem().getViewBox().setXRange(0, self.__timeRangeOnFokus, padding=0.0)
-                
+                                # self.getPlotItem().getViewBox().setXRange(0, self.__timeRangeOnFokus, padding=0.0)
+                                pass
+                            
                 #print ("Graph updated")
                         
                 
@@ -516,7 +517,9 @@ class MessdatenGraphPlot(pg.PlotWidget):
                     r = self.__dataMan.get_Data(DataManager.TIME_LABEL)[-1]
                     self.getPlotItem().getViewBox().setXRange(r - self.__timeRangeOnFokus, r, padding = 0)
                 else:
-                    self.getPlotItem().getViewBox().setXRange(0, self.__timeRangeOnFokus, padding = 0)
+                    # self.getPlotItem().getViewBox().setXRange(0, self.__timeRangeOnFokus, padding = 0)
+                    pass
+
                 
     
     def loseFokus(self):
