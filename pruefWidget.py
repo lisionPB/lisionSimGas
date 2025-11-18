@@ -429,9 +429,14 @@ class PruefWidget(QGroupBox):
 
     def start_aufzeichnungClicked(self):
         self.pbStartAufzeichnung.setVisible(False)
-        self.pbCancelAufzeichnung.setVisible(True)            
+        self.pbCancelAufzeichnung.setVisible(True)      
+
         # Datamanager zurücksetzen
         self.sgr.reset()
+
+        # Graph Update aktivieren
+        self.mw.graphWidget.set_update(True)
+        self.mw.graphWidget_gasSensorik.set_update(True)
 
 
     def stop_aufzeichnungClicked(self):
@@ -443,6 +448,7 @@ class PruefWidget(QGroupBox):
         self.mw.graphWidget.stop_update()
         self.mw.graphWidget_gasSensorik.stop_update()
 
+        # PDF exportieren
         self.reportPruefung()
 
 
@@ -461,9 +467,6 @@ class PruefWidget(QGroupBox):
         
         # Go
         self.evt_startPruefung()
-        # Graph Update aktivieren
-        self.mw.graphWidget.set_update(True)
-        self.mw.graphWidget_gasSensorik.set_update(True)
 
         # Buttons resetten, wenn Prüfung fertig.
         self.pruefung._sig_pruefCanceled.connect(self.resetPruefButtons)
