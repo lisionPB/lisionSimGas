@@ -34,6 +34,7 @@ import exportConfig
 class PruefWidget(QGroupBox):
     
     DEFAULT_ZEIT_MIN = 1
+    DEFAULT_ZEIT_AUFZEICHNUNG_MIN = 1
     DEFAULT_MASSE_G = 8
     DEFAULT_RAMPENZEIT_S = 5
     
@@ -134,13 +135,13 @@ class PruefWidget(QGroupBox):
         
         # self.layoutConfig.setContentsMargins(0,0,0,0)
         
-        # Gesamtzeit
+        # Prüfungzeit
         groupZeit = QWidget()
         layoutZeit = QHBoxLayout()
         groupZeit.setLayout(layoutZeit)
         self.layoutConfig.addWidget(groupZeit)
         
-        lZeitLabel = QLabel("Zeit [min]")
+        lZeitLabel = QLabel("Einströmzeit [min]")
         layoutZeit.addWidget(lZeitLabel)
         lZeitLabel.setFixedWidth(200)
         
@@ -156,7 +157,31 @@ class PruefWidget(QGroupBox):
         
         layoutZeit.addStretch(1)
         layoutZeit.setContentsMargins(0,0,0,0)
-            
+
+
+        # Aufzeichnungszeit
+        groupAufzeichnungsZeit = QWidget()
+        layoutAufzeichnungsZeit = QHBoxLayout()
+        groupAufzeichnungsZeit.setLayout(layoutAufzeichnungsZeit)
+        self.layoutConfig.addWidget(groupAufzeichnungsZeit)
+        
+        lAufzeichnungsZeitLabel = QLabel("Aufzeichnungszeit [min]")
+        layoutAufzeichnungsZeit.addWidget(lAufzeichnungsZeitLabel)
+        lAufzeichnungsZeitLabel.setFixedWidth(200)
+        
+        self.sAufzeichnungsZeitSpinner = QDoubleSpinBox()
+        layoutAufzeichnungsZeit.addWidget(self.sAufzeichnungsZeitSpinner)
+        self.sAufzeichnungsZeitSpinner.setDecimals(0)
+        self.sAufzeichnungsZeitSpinner.setSingleStep(1)
+        self.sAufzeichnungsZeitSpinner.setValue(self.DEFAULT_ZEIT_AUFZEICHNUNG_MIN)
+        self.sAufzeichnungsZeitSpinner.setMinimum(1)
+        self.sAufzeichnungsZeitSpinner.setMaximum(10000)
+        self.sAufzeichnungsZeitSpinner.setFixedWidth(150)
+        self.sAufzeichnungsZeitSpinner.valueChanged.connect(self.calc_initFluss)
+        
+        layoutAufzeichnungsZeit.addStretch(1)
+        layoutAufzeichnungsZeit.setContentsMargins(0,0,0,0)
+
         
         # GesamtGasMenge
         groupMenge = QWidget()
@@ -279,24 +304,75 @@ class PruefWidget(QGroupBox):
         # CONTROLS
         ############
         
+        # Controls
+        #   START/STOP
+        #       PrüfungButtons
+        #           Start
+        #           Stop
+        #       AufzeichnungButtons
+        #           Start
+        #           Stop
+        # Export
+
+        # Control
+
         groupPruefControls = QGroupBox()
         layoutPruefControls = QHBoxLayout()
+        layoutPruefControls.setContentsMargins(0,0,0,0)
         groupPruefControls.setLayout(layoutPruefControls)
         self.mainLayout.addWidget(groupPruefControls)
         
+        # START / STOP
+
+        groupStartStopControls = QGroupBox()
+        layoutStartStopControls = QVBoxLayout()
+        layoutStartStopControls.setContentsMargins(0,0,0,0)
+        groupStartStopControls.setLayout(layoutStartStopControls)
+        layoutPruefControls.addWidget(groupStartStopControls)
+
+        # Prüfung
+
+        groupPruefButtons = QGroupBox()
+        layoutPruefButtons = QHBoxLayout()
+        layoutPruefButtons.setContentsMargins(0,0,0,0)
+        groupPruefButtons.setLayout(layoutPruefButtons)
+        layoutStartStopControls.addWidget(groupPruefButtons)
+
         # Start Prüfung
         
         self.pbStartPruefung = QPushButton("Prüfung starten")
-        layoutPruefControls.addWidget(self.pbStartPruefung)
+        layoutPruefButtons.addWidget(self.pbStartPruefung)
         self.pbStartPruefung.clicked.connect(self.start_pruefungClicked)
         self.pbStartPruefung.setEnabled(False)
         
         # Prüfung Abbrechen
         
         self.pbCancelPruefung = QPushButton("Prüfung abbrechen")
-        layoutPruefControls.addWidget(self.pbCancelPruefung)
+        layoutPruefButtons.addWidget(self.pbCancelPruefung)
         self.pbCancelPruefung.clicked.connect(self.cancel_pruefungClicked)
         self.pbCancelPruefung.setVisible(False)
+
+        # Aufzeichnung
+
+        groupAufzeichnungButtons = QGroupBox()
+        layoutAufzeichnungButtons = QHBoxLayout()
+        layoutAufzeichnungButtons.setContentsMargins(0,0,0,0)
+        groupAufzeichnungButtons.setLayout(layoutAufzeichnungButtons)
+        layoutStartStopControls.addWidget(groupAufzeichnungButtons)
+
+        # Start Aufzeichnung
+        
+        self.pbStartAufzeichnung = QPushButton("Aufzeichnung starten")
+        layoutAufzeichnungButtons.addWidget(self.pbStartAufzeichnung)
+        self.pbStartAufzeichnung.clicked.connect(self.start_aufzeichnungClicked)
+        self.pbStartAufzeichnung.setEnabled(True)
+        
+        # Aufzeichnung Abbrechen
+        
+        self.pbCancelAufzeichnung = QPushButton("Aufzeichnung beenden")
+        layoutAufzeichnungButtons.addWidget(self.pbCancelAufzeichnung)
+        self.pbCancelAufzeichnung.clicked.connect(self.stop_aufzeichnungClicked)
+        self.pbCancelAufzeichnung.setVisible(False)
         
         # Save PDF
         self.buttonSavePDF = QPushButton("PDF exportieren...")
@@ -350,6 +426,26 @@ class PruefWidget(QGroupBox):
         self.groupParametrierung.update_Params(params)
 
         
+
+    def start_aufzeichnungClicked(self):
+        self.pbStartAufzeichnung.setVisible(False)
+        self.pbCancelAufzeichnung.setVisible(True)            
+        # Datamanager zurücksetzen
+        self.sgr.reset()
+
+
+    def stop_aufzeichnungClicked(self):
+        self.pbStartAufzeichnung.setVisible(True)
+        self.pbCancelAufzeichnung.setVisible(False)
+        self.pruefung.stop_aufzeichnung()
+
+        # Graph Aktualisierung aussetzen
+        self.mw.graphWidget.stop_update()
+        self.mw.graphWidget_gasSensorik.stop_update()
+
+        self.reportPruefung()
+
+
         
     def start_pruefungClicked(self):
 
@@ -368,16 +464,12 @@ class PruefWidget(QGroupBox):
         # Graph Update aktivieren
         self.mw.graphWidget.set_update(True)
         self.mw.graphWidget_gasSensorik.set_update(True)
-        self.pruefung._sig_pruefCanceled.connect(self.mw.graphWidget.stop_update)
-        self.pruefung._sig_pruefCanceled.connect(self.mw.graphWidget_gasSensorik.stop_update)
+
         # Buttons resetten, wenn Prüfung fertig.
         self.pruefung._sig_pruefCanceled.connect(self.resetPruefButtons)
-        # Graph Aktualisierung aussetzen wenn Prüfung nicht mehr läuft.
-        self.pruefung._sig_pruefCanceled.connect(self.mw.graphWidget.stop_update)
-        self.pruefung._sig_pruefCanceled.connect(self.mw.graphWidget_gasSensorik.stop_update)
-        self.pruefung._sig_pruefEnded.connect(self.mw.graphWidget.stop_update)
-        self.pruefung._sig_pruefEnded.connect(self.mw.graphWidget_gasSensorik.stop_update)
-        self.pruefung._sig_pruefEnded.connect(self.reportPruefung)
+
+        # self.pruefung._sig_pruefEnded.connect(self.reportPruefung)    # erst wenn Aufzeichnung beendet wird !!!
+        
         # Flaschenzuschaltungen zurücksetzen wenn canceled or ended
         self.pruefung._sig_pruefCanceled.connect(self.mw.smsWidget.clear_allFlaschenZuschaltungen)
         self.pruefung._sig_pruefEnded.connect(self.mw.smsWidget.clear_allFlaschenZuschaltungen)
@@ -398,8 +490,7 @@ class PruefWidget(QGroupBox):
         
         if(self.pruefung.prepare_pruefung()):
             self.buttonSavePDF.setEnabled(False)
-            # Neue Prüfung starten
-            self.sgr.reset()
+
             # Starten einer neuen Prüfung nach Start verhindern: Startknopf ausblenden
             self.pbStartPruefung.setVisible(False)
             self.pbCancelPruefung.setVisible(True)
@@ -429,16 +520,14 @@ class PruefWidget(QGroupBox):
     def cmd_start_pruefung(self):
         if(self.pruefung.start_pruefung()):
             
-            # Daten Reset
-            self.sgr.reset()
-            
             # Timer zum Beenden der Prüfung
             self.timer_finishPruefung.setInterval(int(self.sZeitSpinner.value() * 60000))
             self.timer_finishPruefung.start()
             self.sgr.protokoll.append(cw.ProtokollEintrag("Prüfung gestartet!", typ=cw.ProtokollEintrag.TYPE_SUCCESS))
             
             # print ("Set Graph Range: " + str(self.pruefung.get_gesZeit() * 60))
-            self.mw.set_GraphRange(self.pruefung.get_gesZeit() * 60 + 5)
+            # self.mw.set_GraphRange(self.pruefung.get_gesZeit() * 60 + 5)
+
         else:
             self.sgr.protokoll.append(cw.ProtokollEintrag("Starten der Prüfung fehlgeschlagen!", typ=cw.ProtokollEintrag.TYPE_FAILURE))
             self.evt_cancelPruefung()

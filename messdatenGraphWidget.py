@@ -4,7 +4,7 @@ Created on Mon Sep 12 19:15:31 2022
 
 @author: Paul Benz
 
-v2.3 (Verwende Label statt Namen aus Datamanager)
+v2.4 (Floating Window -> Autorange Support)
 """
 
 
@@ -234,6 +234,7 @@ class MessdatenGraphPlot(pg.PlotWidget):
         super().__init__(axisItems={'bottom': FmtXAxisItem(orientation='bottom')})
 
         self.__update = True
+        self.__autoRange = False
 
         self.__dataMan = dataMan
         self.__chNames = chNames if chNames != None else dataMan.get_channelNames()
@@ -345,6 +346,9 @@ class MessdatenGraphPlot(pg.PlotWidget):
 
     def set_floatingWindowEnabled(self, enabled):
         self.__floatingWindow = enabled
+        self.__autoRange = not enabled
+        self.getPlotItem().getViewBox().enableAutoRange(x=self.__autoRange, y=self.__autoRange)
+
 
 
     def set_selectedChannelNames(self, chNames):
@@ -503,8 +507,8 @@ class MessdatenGraphPlot(pg.PlotWidget):
     def resetFokus(self):	
                     
         self.__timeRange = self.__timeRangeOnFokus # Setze Datenfenster auf timeRangeOnFokus Sekunden
-        self.getPlotItem().getViewBox().enableAutoRange(x=False, y=True)
-        self.__showLast = True
+        self.getPlotItem().getViewBox().enableAutoRange(x=self.__autoRange, y=self.__autoRange)
+        self.__showLast = not self.__autoRange
 
         if(DataManager.TIME_LABEL in self.__dataMan.get_DataDict()):
             if(len(self.__dataMan.get_Data(DataManager.TIME_LABEL)) > 0):		

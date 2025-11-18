@@ -122,7 +122,7 @@ class Pruefung(QObject):
                 return False
             
             # Startzeit setzen
-            self._startTime = time.time()
+            self.__startTime = time.time()
             # Prüfstate setzen
             self._state = self.PRUEF_STATE_RUNNING
             
@@ -148,8 +148,6 @@ class Pruefung(QObject):
         self._sms.clear_sms_zuschaltungen()
         # Schließe alle Ventile
         self._sms.write_sms_zuschaltungen()
-
-        self.__endTime = self._rs.get_datamanager().get_LastTime()
 
         self._state = self.PRUEF_STATE_FAILURE        
         self._sig_pruefCanceled.emit()
@@ -191,10 +189,13 @@ class Pruefung(QObject):
         # Schließe alle Ventile
         self._sms.write_sms_zuschaltungen()
         
-        self.__endTime = self._rs.get_datamanager().get_LastTime()
+
         self._state = self.PRUEF_STATE_DONE
         self._sig_pruefEnded.emit()
-        
+
+    
+    def stop_aufzeichnung(self):
+        self.__endTime = self._rs.get_datamanager().get_LastTime()
     
         
     def update_pruefung(self):
@@ -265,12 +266,7 @@ class Pruefung(QObject):
     
     
     def get_pruefLaufZeit(self):
-        zeit = self._rs.get_datamanager().get_LastTime()
-        if(zeit != None):
-            return zeit
-        else:
-            print ("LastTime NONE !!!")
-            return 0
+        return time.time() - self.__startTime
     
     
     def get_pruefLaufMenge(self):
