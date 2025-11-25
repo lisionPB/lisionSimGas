@@ -22,6 +22,7 @@ class Pruefung(QObject):
     _sig_pruefCanceled = pyqtSignal()
     _sig_pruefFinalized = pyqtSignal()
     _sig_pruefEnded = pyqtSignal()
+    _sig_recordingEnded = pyqtSignal()
     
     DEFAULT_ZEIT_START = 10000 # ms
     DEFAULT_ZEIT_ENDE =  10000 # ms
@@ -56,10 +57,15 @@ class Pruefung(QObject):
         self.__gesZeit = gesZeit
         self.__gesMenge = gesMenge
         
+        self.__recordStartTime = None
         self.__startTime = 0
-        self.__endTime = 0
+        self.__recordEndTime = None
         
-        
+
+    def start_aufzeichnung(self):
+        self.__recordStartTime = time.time()
+        self.__recordEndTime = None
+
         
     def prepare_pruefung(self):
         """
@@ -195,7 +201,8 @@ class Pruefung(QObject):
 
     
     def stop_aufzeichnung(self):
-        self.__endTime = self._rs.get_datamanager().get_LastTime()
+        self.__recordStartTime = None
+        self.__recordEndTime = self._rs.get_datamanager().get_LastTime()
     
         
     def update_pruefung(self):
@@ -282,9 +289,12 @@ class Pruefung(QObject):
         """
         return self._gsr.lastMassSum
 
-    def get_endTime(self):
-        return self.__endTime
+    def get_recordEndTime(self):
+        return self.__recordEndTime
     
 
     def is_busy(self):
         return (self._state == self.PRUEF_STATE_STARTING) or (self._state == self.PRUEF_STATE_RUNNING) or (self._state == self.PRUEF_STATE_ENDING)
+    
+    def is_recording(self):
+        return self.__recordStartTime is not None
