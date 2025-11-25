@@ -66,7 +66,7 @@ class PruefWidget(QGroupBox):
         # Prüfzeit-Time
         self.timer_startPruefung = QTimer()
         self.timer_startPruefung.setSingleShot(True)
-        self.timer_startPruefung.timeout.connect(self.cmd_start_pruefung)
+        self.timer_startPruefung.timeout.connect(self.start_pruefung)
         
         self.timer_finishPruefung = QTimer()
         self.timer_finishPruefung.setSingleShot(True)
@@ -340,14 +340,14 @@ class PruefWidget(QGroupBox):
 
         # Start Prüfung
         
-        self.pbStartPruefung = QPushButton("Prüfung starten")
+        self.pbStartPruefung = QPushButton("Einströmung starten")
         layoutPruefButtons.addWidget(self.pbStartPruefung)
         self.pbStartPruefung.clicked.connect(self.start_pruefungClicked)
         self.pbStartPruefung.setEnabled(False)
         
         # Prüfung Abbrechen
         
-        self.pbCancelPruefung = QPushButton("Prüfung abbrechen")
+        self.pbCancelPruefung = QPushButton("Einströmung abbrechen")
         layoutPruefButtons.addWidget(self.pbCancelPruefung)
         self.pbCancelPruefung.clicked.connect(self.cancel_pruefungClicked)
         self.pbCancelPruefung.setVisible(False)
@@ -369,7 +369,7 @@ class PruefWidget(QGroupBox):
         
         # Aufzeichnung Abbrechen
         
-        self.pbCancelAufzeichnung = QPushButton("Aufzeichnung beenden")
+        self.pbCancelAufzeichnung = QPushButton("Aufzeichnung beenden und speichern")
         layoutAufzeichnungButtons.addWidget(self.pbCancelAufzeichnung)
         self.pbCancelAufzeichnung.clicked.connect(self.stop_aufzeichnungClicked)
         self.pbCancelAufzeichnung.setVisible(False)
@@ -425,11 +425,26 @@ class PruefWidget(QGroupBox):
         # print (params)
         self.groupParametrierung.update_Params(params)
 
-        
+    
+
+    ##################
+    # AUFZEICHNUNG
+
 
     def start_aufzeichnungClicked(self):
+        self.init_aufzeichnung() 
+
+
+    
+    def init_aufzeichnung(self):
+        
+        self.pruefung = Pruefung(self.sgr, self.sms, self.sZeitSpinner.value(), self.sMengeSpinner.value(), self.sStartzeitSpinner.value())
+        
         self.pbStartAufzeichnung.setVisible(False)
-        self.pbCancelAufzeichnung.setVisible(True)      
+        self.pbCancelAufzeichnung.setVisible(True)     
+        self.buttonSavePDF.setEnabled(False)
+
+        self.lock_configButtons()
 
         # Datamanager zurücksetzen
         self.sgr.reset()
@@ -439,9 +454,13 @@ class PruefWidget(QGroupBox):
         self.mw.graphWidget_gasSensorik.set_update(True)
 
 
+
     def stop_aufzeichnungClicked(self):
-        self.pbStartAufzeichnung.setVisible(True)
-        self.pbCancelAufzeichnung.setVisible(False)
+        self.stop_aufzeichnung()
+
+
+    def stop_aufzeichnung(self):
+    
         self.pruefung.stop_aufzeichnung()
 
         # Graph Aktualisierung aussetzen
@@ -452,64 +471,65 @@ class PruefWidget(QGroupBox):
         self.reportPruefung()
 
 
+        self.pbStartAufzeichnung.setVisible(True)
+        self.pbCancelAufzeichnung.setVisible(False)
+        self.buttonSavePDF.setEnabled(True)
+
+        self.reset_configButtons()
+
+        self.pbStartPruefung.setVisible(True)
+        self.pbCancelPruefung.setVisible(False)
+        self.pbCancelPruefung.setEnabled(True)
+        
+
+
+
+
+    #################
+    # PRÜFUNG
+
         
     def start_pruefungClicked(self):
 
         # Check: Übertragung der PIDs        
         if(not self.groupParametrierung.send_Params()):
-            self.sgr.protokoll.append(cw.ProtokollEintrag("Prüfung konnte nicht gestartet werden! Regler-PID-Werte konnten nicht übertragen werden! Kommunikationsverbindung zu Regelstellgliedern prüfen!", typ=cw.ProtokollEintrag.TYPE_FAILURE))
+            self.sgr.protokoll.append(cw.ProtokollEintrag("Einströmung konnte nicht gestartet werden! Regler-PID-Werte konnten nicht übertragen werden! Kommunikationsverbindung zu Regelstellgliedern prüfen!", typ=cw.ProtokollEintrag.TYPE_FAILURE))
             return False
         
         # Check: Stellglieder auf 0?
         if(not self.sgr.safetyCheck_allConnectedAndZero()):
-            self.sgr.protokoll.append(cw.ProtokollEintrag("Prüfung konnte nicht gestartet werden! Vor Prüfungsstart müssen alle Regelstellglieder in der 0-Position sein!", typ=cw.ProtokollEintrag.TYPE_FAILURE))
+            self.sgr.protokoll.append(cw.ProtokollEintrag("Einströmung konnte nicht gestartet werden! Vor Start müssen alle Regelstellglieder in der 0-Position sein!", typ=cw.ProtokollEintrag.TYPE_FAILURE))
             return False
         
         # Go
-        self.evt_startPruefung()
+        self.init_aufzeichnung() 
+        self.init_pruefung()
 
         # Buttons resetten, wenn Prüfung fertig.
-        self.pruefung._sig_pruefCanceled.connect(self.resetPruefButtons)
+        self.pruefung._sig_pruefCanceled.connect(self.reset_configButtons)
 
-        # self.pruefung._sig_pruefEnded.connect(self.reportPruefung)    # erst wenn Aufzeichnung beendet wird !!!
-        
         # Flaschenzuschaltungen zurücksetzen wenn canceled or ended
         self.pruefung._sig_pruefCanceled.connect(self.mw.smsWidget.clear_allFlaschenZuschaltungen)
         self.pruefung._sig_pruefEnded.connect(self.mw.smsWidget.clear_allFlaschenZuschaltungen)
         
             
-    
-    def cancel_pruefungClicked(self):     
-        self.evt_cancelPruefung()
-         
-    
-    def evt_startPruefung(self):
-        self.cmd_init_pruefung()
 
+    def init_pruefung(self):
 
-    def cmd_init_pruefung(self):
-        
-        self.pruefung = Pruefung(self.sgr, self.sms, self.sZeitSpinner.value(), self.sMengeSpinner.value(), self.sStartzeitSpinner.value())
-        
         if(self.pruefung.prepare_pruefung()):
-            self.buttonSavePDF.setEnabled(False)
 
-            # Starten einer neuen Prüfung nach Start verhindern: Startknopf ausblenden
             self.pbStartPruefung.setVisible(False)
             self.pbCancelPruefung.setVisible(True)
-            self.pbCancelPruefung.setEnabled(False)
-            self.groupConfig.setEnabled(False)
-            
-            self.mw.set_ManualModeEnabled(False)
+
             self.mw.dataTable.clear_table()
             
-            print ("Prüfung wird gestartet ...")
+            print ("Einströmung wird gestartet ...")
             # Starten der Messschleife          
             self.sgr._start_MessSchleife()
             
             self.timer_startPruefung.setInterval(self.pruefung.DEFAULT_ZEIT_START)
             self.timer_startPruefung.start()
-            self.sgr.protokoll.append(cw.ProtokollEintrag("Prüfung wird gestartet... ", typ=cw.ProtokollEintrag.TYPE_STANDARD))
+            self.sgr.protokoll.append(cw.ProtokollEintrag("Einströmung wird gestartet... ", typ=cw.ProtokollEintrag.TYPE_STANDARD))
 
             # öffne Magnetventile
             self.sms.write_sms_zuschaltungen()
@@ -518,61 +538,57 @@ class PruefWidget(QGroupBox):
 
         return False
         
-        
-        
-    def cmd_start_pruefung(self):
+
+    def start_pruefung(self):
+        """
+        Nach Ablauf der Vorlaufzeit getriggert durch Timer
+        """
+
         if(self.pruefung.start_pruefung()):
             
             # Timer zum Beenden der Prüfung
             self.timer_finishPruefung.setInterval(int(self.sZeitSpinner.value() * 60000))
             self.timer_finishPruefung.start()
-            self.sgr.protokoll.append(cw.ProtokollEintrag("Prüfung gestartet!", typ=cw.ProtokollEintrag.TYPE_SUCCESS))
+            self.sgr.protokoll.append(cw.ProtokollEintrag("Einströmung gestartet!", typ=cw.ProtokollEintrag.TYPE_SUCCESS))
             
             # print ("Set Graph Range: " + str(self.pruefung.get_gesZeit() * 60))
             # self.mw.set_GraphRange(self.pruefung.get_gesZeit() * 60 + 5)
 
         else:
-            self.sgr.protokoll.append(cw.ProtokollEintrag("Starten der Prüfung fehlgeschlagen!", typ=cw.ProtokollEintrag.TYPE_FAILURE))
-            self.evt_cancelPruefung()
+            self.sgr.protokoll.append(cw.ProtokollEintrag("Starten der Einströmung fehlgeschlagen!", typ=cw.ProtokollEintrag.TYPE_FAILURE))
+            self.cancel_pruefung()
             
         
+            
+    def cancel_pruefungClicked(self):     
+        self.cancel_pruefung()
 
     
-    def evt_cancelPruefung(self):
+    def cancel_pruefung(self):
         
         if(self.pruefung != None):
             # Prüfung läuft bereits -> Prüfung abbrechen
-            if((self.pruefung._state == Pruefung.PRUEF_STATE_RUNNING) or (self.pruefung._state == Pruefung.PRUEF_STATE_STARTING) or (self.pruefung._state == Pruefung.PRUEF_STATE_ENDING)):
-                print ("Prüfung abgebrochen!")
+            if(self.pruefung.is_busy()):
+                print ("Einströmung abgebrochen!")
                 self.pruefung.cancel_pruefung()
                 # Halte Finish Timer an.
                 # self.timer_finishPruefung.disconnect()
                 self.timer_finishPruefung.stop()
                 # self.timer_endPruefung.stop()     # Oder lieber Abbrechen unterbinden?
                 self.timer_startPruefung.stop()
-                # Sichtbarkeiten setzen
-                self.pbCancelPruefung.setVisible(False)
-                self.pbStartPruefung.setVisible(True)
-                self.groupConfig.setEnabled(True)
-                self.mw.set_ManualModeEnabled(True)
-                self.buttonSavePDF.setEnabled(True)
                 
-                self.sgr.protokoll.append(cw.ProtokollEintrag("Prüfung abgebrochen!", typ=cw.ProtokollEintrag.TYPE_STANDARD))
+                self.sgr.protokoll.append(cw.ProtokollEintrag("Einströmung abgebrochen!", typ=cw.ProtokollEintrag.TYPE_STANDARD))
             
+                self.pbCancelPruefung.setEnabled(False)
+
                 return        
-        
-    
-    def resetPruefButtons(self):
-        self.pbCancelPruefung.setVisible(False)
-        self.pbStartPruefung.setVisible(True)
-        self.groupConfig.setEnabled(True)
-        self.mw.set_ManualModeEnabled(True)
-        
-        
+
         
     def finishPruefung(self):
         if(self.pruefung != None):
-            
+
+            self.pbCancelPruefung.setEnabled(False)
+
             self.pruefung.finalize_pruefung()
             
             self.lRunZeitValue.setText(self.format_timeString(self.pruefung.get_gesZeit() * 60) + "  (100%)")
@@ -587,18 +603,14 @@ class PruefWidget(QGroupBox):
     
     def endPruefung(self):
         if(self.pruefung != None):
-            print("Prüfung beendet.")
+            print("Einströmung beendet.")
             self.pruefung.end_pruefung()
-            self.resetPruefButtons()
-        
-            
+
+
     
     def reportPruefung(self):
-
-        if(self.pruefung._state == self.pruefung.PRUEF_STATE_DONE):
-            self.buttonSavePDF.setEnabled(True)
-            self.exportPruefPDF("protokolle/")
             
+        self.exportPruefPDF("protokolle/")           
         print("Prüf-Report erstellt.")
         
     
@@ -704,6 +716,18 @@ class PruefWidget(QGroupBox):
             print("Kann nur von abgeschlossenen Prüfungen PDF erstellen!")
         
     
+    def lock_configButtons(self):
+
+        self.groupConfig.setEnabled(False)
+        self.mw.set_ManualModeEnabled(False)
+    
+
+    def reset_configButtons(self):
+
+        if(not self.pruefung.is_busy()):
+            self.groupConfig.setEnabled(True)
+            self.mw.set_ManualModeEnabled(True)
+
         
     def update_pruefWidget(self, data):
         if(self.pruefung != None):

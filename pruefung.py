@@ -76,7 +76,7 @@ class Pruefung(QObject):
         
         # Prüfe auf gültige Reglerkonfiguration        
         if(not self._reglerAuswahlArbeitsBereichMax > 0):
-            self._rs.protokoll.append(cw.ProtokollEintrag("Prüfung konnte nicht gestartet werden! Prüfdurchfluss nicht im Arbeitsbereich!", typ=cw.ProtokollEintrag.TYPE_FAILURE))
+            self._rs.protokoll.append(cw.ProtokollEintrag("Einströmung kann nicht gestartet werden! Prüfdurchfluss nicht im Arbeitsbereich!", typ=cw.ProtokollEintrag.TYPE_FAILURE))
             return False
  
             
@@ -264,21 +264,17 @@ class Pruefung(QObject):
     def get_gesMenge(self):
         return self.__gesMenge
     
-    
     def get_pruefLaufZeit(self):
         return time.time() - self.__startTime
     
-    
     def get_pruefLaufMenge(self):
         return self._gsr.totalFlowSum
-    
     
     def get_pruefCurrentFlowSum(self):
         """
         Summierte Intgrale über Flüsse der in der Prüfung aktiven Regler
         """
         return self._gsr.lastFlow
-    
     
     def get_pruefCurrentMassSum(self):
         """
@@ -288,3 +284,7 @@ class Pruefung(QObject):
 
     def get_endTime(self):
         return self.__endTime
+    
+
+    def is_busy(self):
+        return (self._state == self.PRUEF_STATE_STARTING) or (self._state == self.PRUEF_STATE_RUNNING) or (self._state == self.PRUEF_STATE_ENDING)
