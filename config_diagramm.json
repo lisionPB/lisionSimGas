@@ -1,4 +1,5 @@
 {
+    "y_max_regler": 100,
     "y_max": 50,
     "y_step": 5,
     "n_cols": 3

@@ -7,6 +7,8 @@ import gesamtSollwertRegler
 import consoleWidget as cw
 import datamanager as dm
 
+import exportConfig
+
 class Pruefung(QObject):
     """
     Ablaufsteuerung der Prüfung
@@ -53,6 +55,7 @@ class Pruefung(QObject):
         self._reglerAuswahl = self._rs.calc_reglerAuswahl(fluss)
         self._rs.set_reglerAuswahl(self._reglerAuswahl)
         self._reglerAuswahlArbeitsBereichMax = self.calc_gesArbeitsBereichMax()
+        exportConfig.Y_MAX_REGLER = int(self._reglerAuswahlArbeitsBereichMax * 1.05)
         
         self.__gesZeit = gesZeit
         self.__gesMenge = gesMenge
@@ -179,7 +182,7 @@ class Pruefung(QObject):
         # self._rs.set_paused(True)
         
         print ("Prüfung wird abgeschlossen ...")
-        self._rs.protokoll.append(cw.ProtokollEintrag("Gesamtfluss: " + str(round(self._gsr.totalFlowSum, 2)) + "g", typ=cw.ProtokollEintrag.TYPE_SUCCESS))    
+        self._rs.protokoll.append(cw.ProtokollEintrag("Gesamtfluss: " + str(round(self._gsr.totalFlowSum, 2)) + "g", typ=cw.ProtokollEintrag.TYPE_STANDARD))    
         
         self._sig_pruefFinalized.emit() # not used?!
         

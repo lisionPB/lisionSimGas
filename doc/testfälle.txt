@@ -1,0 +1,55 @@
+Testfälle
+------------
+0 : Weder Aufzeichnung noch Einströmung laufen
+A : Aufzeichnung läuft, Einströmen nicht
+E : Einströmen läuft, Aufzeichnung nicht
+V : Vorlaufzeit läuft, Aufzeichnung und Einströmen nicht.
+AV: Aufzeichnung und Vorlaufzeit laufen  
+AE: Aufzeichnung und Einströmung laufen
+--------------------------------------------------------------------------
+as: Aufzeichnung manuell starten
+aa: Aufzeichnung automatisch starten (mit Einströmung)
+ax: Aufzeichnung manuell beenden
+ab: Aufzeichnung automatisch beenden (nach Ablauf Aufzeichnungszeit)
+es: Einströmung manuell starten
+ea: Einströmung automatisch starten
+ex: Einströmung manuell beenden
+eb: Einströmung automatisch beenden  (nach Ablauf der Einströmzeit)
+-------------------------------------------------------------------------- 
+
+    | 0  | A  | E  | V  | AV | AE |
+---------------------------------------------------
+  0 | -- | as | -- | es | -- | -- |
+  A |abax| -- | -- | -- | es | -- |
+  E |ebex| -- | -- | -- | -- | -- |
+  V | ex | -- | -- | -- | -- |aaea|
+  AV| -- | ex | -- | ab | -- | ea |
+  AE|abeb|ebex|abax| -- | -- | -- |
+
+
+------------
+
+Nur Aufzeichnung
+1 [X] 0 as A ax 0
+2 [X] 0 as A ab 0
+Erst Aufzeichnung dann Einströmung
+3 [X] 0 as A es AV ea AE ab E eb 0
+4 [X] 0 as A es AV ea AE ab E ex 0
+5 [X] 0 as A es AV ea AE ax E eb 0
+6 [X] 0 as A es AV ea AE ax E ex 0
+Erst Einströmung dann Aufzeichnung
+7 [X] 0 es V ex 0
+8 [X] 0 es V ea AE abeb 0
+9 [X] 0 es V ea AE eb A ab 0
+10[X] 0 es V ea AE eb A ax 0 
+11[X] 0 es V ea AE ex A ab 0
+12[X] 0 es V ea AE ex A ax 0 
+13[X] 0 es V ea AE ab E eb 0
+14[X] 0 es V ea AE ab E ex 0
+15[X] 0 es V ea AE ax E eb 0
+16[X] 0 es V ea AE ax E ex 0
+Erst Aufzeichnung dann Vorlaufzeit
+17[X] 0 as A es AV ex A ab 0
+18[X] 0 as A es AV ex A ax 0
+19[X] 0 as A es AV ab V ...     (es bei A:55s)
+

@@ -121,8 +121,32 @@ class DiagrammConfigGroup(QGroupBox):
 
         self.mainLayout = QVBoxLayout()
         self.setLayout(self.mainLayout)
-        
-        # Y MAX
+
+
+        # Y MAX Regler
+        group_yMax_regler = QGroupBox()
+        layout_yMax_regler = QHBoxLayout()
+        layout_yMax_regler.setContentsMargins(0,0,0,0)
+        group_yMax_regler.setLayout(layout_yMax_regler)    
+        self.mainLayout.addWidget(group_yMax_regler)
+
+        yMax_regler_label = QLabel("Max. Gaszufuhr: ")
+        yMax_regler_label.setFixedWidth(200)
+        layout_yMax_regler.addWidget(yMax_regler_label)
+
+        self.yMax_regler_spinner = QDoubleSpinBox()
+        self.yMax_regler_spinner.setDecimals(0)
+        self.yMax_regler_spinner.setMaximum(10000)
+        self.yMax_regler_spinner.setFixedWidth(100)
+        self.yMax_regler_spinner.setValue(exportConfig.Y_MAX_REGLER)
+        layout_yMax_regler.addWidget(self.yMax_regler_spinner)
+
+        yMax_regler_unit = QLabel("g/min")
+        layout_yMax_regler.addWidget(yMax_regler_unit)
+
+        layout_yMax_regler.addStretch()
+
+        # Y MAX Gas
         group_yMax = QGroupBox()
         layout_yMax = QHBoxLayout()
         layout_yMax.setContentsMargins(0,0,0,0)
@@ -191,6 +215,7 @@ class DiagrammConfigGroup(QGroupBox):
 
 
     def saveConfig(self):
+        exportConfig.Y_MAX_REGLER = int(self.yMax_regler_spinner.value())
         exportConfig.Y_MAX = int(self.yMax_spinner.value())
         exportConfig.Y_STEP = int(self.yStep_spinner.value())
         exportConfig.N_COLS = int(self.nCols_spinner.value())

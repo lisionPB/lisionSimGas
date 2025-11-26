@@ -316,6 +316,7 @@ class PruefWidget(QGroupBox):
         #       AufzeichnungButtons
         #           Start
         #           Stop
+        #           Vorlaufzeit
         # Export
 
         # Control
@@ -377,6 +378,11 @@ class PruefWidget(QGroupBox):
         layoutAufzeichnungButtons.addWidget(self.pbCancelAufzeichnung)
         self.pbCancelAufzeichnung.clicked.connect(self.stop_aufzeichnungClicked)
         self.pbCancelAufzeichnung.setVisible(False)
+
+        self.pbVorlaufAufzeichnung = QPushButton("Vorlaufzeit läuft ... ")
+        layoutAufzeichnungButtons.addWidget(self.pbVorlaufAufzeichnung)
+        self.pbVorlaufAufzeichnung.setVisible(False)
+        self.pbVorlaufAufzeichnung.setEnabled(False)
         
         # Save PDF
         self.buttonSavePDF = QPushButton("PDF exportieren...")
@@ -423,7 +429,7 @@ class PruefWidget(QGroupBox):
             stringFlows += self.sgr._ports[r].get_name() + ": " + '{0:.3f}'.format(theoFlows[r]) + " "
             
         self.lInitFlussLabel.setText('{0:.2f}'.format(fluss) + "    (" + stringFlows + ")")
-
+        
         # Berechne neu Parameter und zeige sie an
         params = parametrierung.calc_parameter(theoretischeFluesse=theoFlows)
         # print (params)
@@ -436,7 +442,9 @@ class PruefWidget(QGroupBox):
 
 
     def start_aufzeichnungClicked(self):
-        self.pruefung = Pruefung(self.sgr, self.sms, self.sZeitSpinner.value(), self.sMengeSpinner.value(), self.sStartzeitSpinner.value())
+        if((self.pruefung is None) or (not self.pruefung.is_busy())):
+            self.pruefung = Pruefung(self.sgr, self.sms, self.sZeitSpinner.value(), self.sMengeSpinner.value(), self.sStartzeitSpinner.value())
+        
         self.init_aufzeichnung() 
 
 
@@ -445,7 +453,9 @@ class PruefWidget(QGroupBox):
         
         self.pbStartAufzeichnung.setVisible(False)
         self.pbStartAufzeichnung.setEnabled(False)
-        self.pbCancelAufzeichnung.setVisible(True)     
+        self.pbCancelAufzeichnung.setVisible(True)  
+        self.pbVorlaufAufzeichnung.setVisible(False) 
+
         self.buttonSavePDF.setEnabled(False)
 
         self.lock_configButtons()
@@ -464,6 +474,8 @@ class PruefWidget(QGroupBox):
         self.mw.graphWidget.set_update(True)
         self.mw.graphWidget_gasSensorik.set_update(True)
 
+        self.sgr.protokoll.append(cw.ProtokollEintrag("Aufzeichnung gestartet.", typ=cw.ProtokollEintrag.TYPE_SUCCESS))
+
 
 
     def stop_aufzeichnungClicked(self):
@@ -479,12 +491,14 @@ class PruefWidget(QGroupBox):
         self.mw.graphWidget.stop_update()
         self.mw.graphWidget_gasSensorik.stop_update()
 
-        # PDF exportieren
+        # PDF exportieren        
+        self.buttonSavePDF.setEnabled(True)
         self.reportPruefung()
+
+        self.sgr.protokoll.append(cw.ProtokollEintrag("Aufzeichnung abgeschlossen.", typ=cw.ProtokollEintrag.TYPE_SUCCESS))
 
         self.pbStartAufzeichnung.setVisible(True)
         self.pbCancelAufzeichnung.setVisible(False)
-        self.buttonSavePDF.setEnabled(True)
 
         if(not self.pruefung.is_busy()):
             self.pbStartAufzeichnung.setEnabled(True)
@@ -505,7 +519,8 @@ class PruefWidget(QGroupBox):
         
     def start_pruefungClicked(self):
         
-        self.pruefung = Pruefung(self.sgr, self.sms, self.sZeitSpinner.value(), self.sMengeSpinner.value(), self.sStartzeitSpinner.value())
+        if((self.pruefung is None) or (not self.pruefung.is_recording())):
+            self.pruefung = Pruefung(self.sgr, self.sms, self.sZeitSpinner.value(), self.sMengeSpinner.value(), self.sStartzeitSpinner.value())
 
         # Check: Übertragung der PIDs        
         if(not self.groupParametrierung.send_Params()):
@@ -518,8 +533,7 @@ class PruefWidget(QGroupBox):
             return False
         
         # Go
-        self.init_pruefung()
-        self.init_aufzeichnung() 
+        self.init_pruefung() 
 
         # Buttons resetten, wenn Prüfung fertig.
         self.pruefung._sig_pruefCanceled.connect(self.reset_configButtons)
@@ -537,6 +551,12 @@ class PruefWidget(QGroupBox):
             self.pbStartPruefung.setVisible(False)
             self.pbCancelPruefung.setVisible(True)
 
+            self.pbVorlaufAufzeichnung.setVisible(True)
+            self.pbStartAufzeichnung.setVisible(False)
+            self.pbCancelAufzeichnung.setVisible(False)
+
+            self.buttonSavePDF.setEnabled(False)
+
             self.mw.dataTable.clear_table()
             
             print ("Einströmung wird gestartet ...")
@@ -545,7 +565,7 @@ class PruefWidget(QGroupBox):
             
             self.timer_startPruefung.setInterval(self.pruefung.DEFAULT_ZEIT_START)
             self.timer_startPruefung.start()
-            self.sgr.protokoll.append(cw.ProtokollEintrag("Einströmung wird gestartet... ", typ=cw.ProtokollEintrag.TYPE_STANDARD))
+            self.sgr.protokoll.append(cw.ProtokollEintrag("Einströmung wird gestartet ... ", typ=cw.ProtokollEintrag.TYPE_STANDARD))
 
             # öffne Magnetventile
             self.sms.write_sms_zuschaltungen()
@@ -561,12 +581,21 @@ class PruefWidget(QGroupBox):
         """
 
         if(self.pruefung.start_pruefung()):
+        
+            
+            if(not self.pruefung.is_recording()):
+                # Wenn noch keine Aufzeichnung läuft, dann jetzt starten
+                self.init_aufzeichnung()
+            else:
+                # Button zum Stoppen der Aufzeichnung wieder anzeigen
+                self.pbVorlaufAufzeichnung.setVisible(False)
+                self.pbCancelAufzeichnung.setVisible(True)
             
             # Timer zum Beenden der Prüfung
             self.timer_finishPruefung.setInterval(int(self.sZeitSpinner.value() * 60000))
             self.timer_finishPruefung.start()
             print ("Einströmung läuft")
-            self.sgr.protokoll.append(cw.ProtokollEintrag("Einströmung läuft", typ=cw.ProtokollEintrag.TYPE_SUCCESS))
+            self.sgr.protokoll.append(cw.ProtokollEintrag("Einströmung läuft", typ=cw.ProtokollEintrag.TYPE_STANDARD))
             
             # print ("Set Graph Range: " + str(self.pruefung.get_gesZeit() * 60))
             # self.mw.set_GraphRange(self.pruefung.get_gesZeit() * 60 + 5)
@@ -594,24 +623,32 @@ class PruefWidget(QGroupBox):
                 # self.timer_endPruefung.stop()     # Oder lieber Abbrechen unterbinden?
                 self.timer_startPruefung.stop()
                 
-                self.sgr.protokoll.append(cw.ProtokollEintrag("Einströmung abgebrochen!", typ=cw.ProtokollEintrag.TYPE_STANDARD))
+                self.sgr.protokoll.append(cw.ProtokollEintrag("Einströmung abgebrochen!", typ=cw.ProtokollEintrag.TYPE_WARNING))
             
                 self.pbCancelPruefung.setEnabled(False)
 
                 if(not self.pruefung.is_recording()):
                     self.pbStartAufzeichnung.setEnabled(True)
+                    self.pbStartAufzeichnung.setVisible(True)
+                    self.pbVorlaufAufzeichnung.setVisible(False)
 
                     self.reset_configButtons()
 
                     self.pbStartPruefung.setVisible(True)
                     self.pbCancelPruefung.setVisible(False)
                     self.pbCancelPruefung.setEnabled(True)
+                else:
+                    self.pbCancelAufzeichnung.setVisible(True)
+                    self.pbCancelAufzeichnung.setEnabled(True)
+                    self.pbVorlaufAufzeichnung.setVisible(False)
 
                 return        
 
         
     def finishPruefung(self):
         if(self.pruefung != None):
+ 
+            self.sgr.protokoll.append(cw.ProtokollEintrag("Einströmung wird beendet ...", typ=cw.ProtokollEintrag.TYPE_STANDARD))
 
             self.pbCancelPruefung.setEnabled(False)
 
@@ -640,6 +677,9 @@ class PruefWidget(QGroupBox):
                 self.pbStartPruefung.setVisible(True)
                 self.pbCancelPruefung.setVisible(False)
                 self.pbCancelPruefung.setEnabled(True)
+
+            self.sgr.protokoll.append(cw.ProtokollEintrag("Einströmung abgeschlossen.", typ=cw.ProtokollEintrag.TYPE_SUCCESS))
+
 
 
     
@@ -693,7 +733,7 @@ class PruefWidget(QGroupBox):
                     # imgNameGas = QtCore.QFileInfo(fn).baseName() + ".png"
                     imgNameGas = QtCore.QFileInfo(fn).absoluteFilePath() + QtCore.QFileInfo(fn).baseName() + "gaszufuhr.png"
                     # Erstelle Plot
-                    self.mw.graphWidget.pltDataImage(self.pruefung.get_recordEndTime(), imgNameGas, ["GES_SOLL", "GES_IST"], "Zeitstempel [s]", "g/min")
+                    self.mw.graphWidget.pltDataImage(self.pruefung.get_recordEndTime(), imgNameGas, ["GES_SOLL", "GES_IST"], "Zeitstempel [s]", "g/min", yMax=exportConfig.Y_MAX_REGLER)
                     # Zeichne Plot in PDF
                     c.drawImage(imgNameGas, offsetX , offsetGraph_Gasfluss, width = 17 * cm, preserveAspectRatio=True)
                     # Entferne zwischengespeicherte Plot Datei
